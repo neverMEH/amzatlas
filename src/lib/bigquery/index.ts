@@ -2,6 +2,10 @@ export * from './client';
 export * from './connection-pool';
 export * from './errors';
 export * from './permissions';
+export * from './types';
+export * from './queries/sqp-query-builder';
+export * from './extractors/sqp-data-extractor';
+export * from './validators/data-validator';
 
 import { BigQueryClient } from './client';
 import { BigQueryConnectionPool } from './connection-pool';
