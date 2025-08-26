@@ -43,7 +43,7 @@ export const getSupabaseClient = (): SupabaseClient => {
         persistSession: false,
       },
       db: {
-        schema: 'public', // Will use sqp schema after migrations
+        schema: 'public', // Default schema, we'll use sqp.table_name notation
       },
     });
   }
@@ -66,7 +66,7 @@ export const getSupabaseAdminClient = (): SupabaseClient => {
         persistSession: false,
       },
       db: {
-        schema: 'public', // Will use sqp schema after migrations
+        schema: 'public', // Default schema, we'll use sqp.table_name notation
       },
     });
   }
@@ -82,7 +82,7 @@ export const testSupabaseConnection = async (): Promise<boolean> => {
     
     // Try to query the database (this will fail if connection is bad)
     const { error } = await client
-      .from('weekly_summary')
+      .from('sqp_weekly_summary')
       .select('count')
       .limit(1)
       .single();

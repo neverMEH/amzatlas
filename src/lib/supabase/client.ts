@@ -88,7 +88,7 @@ export class SupabaseService {
   // Weekly Summary Operations
   async upsertWeeklySummary(data: WeeklySummary | WeeklySummary[]) {
     return this.client
-      .from('weekly_summary')
+      .from('sqp_weekly_summary')
       .upsert(data, { onConflict: 'period_start,query,asin' });
   }
 
@@ -100,7 +100,7 @@ export class SupabaseService {
     limit?: number;
   }) {
     let query = this.client
-      .from('weekly_summary')
+      .from('sqp_weekly_summary')
       .select('*');
 
     if (filters.startDate) {
@@ -125,7 +125,7 @@ export class SupabaseService {
   // Monthly Summary Operations
   async upsertMonthlySummary(data: MonthlySummary | MonthlySummary[]) {
     return this.client
-      .from('monthly_summary')
+      .from('sqp_monthly_summary')
       .upsert(data, { onConflict: 'year,month,query,asin' });
   }
 
@@ -137,7 +137,7 @@ export class SupabaseService {
     limit?: number;
   }) {
     let query = this.client
-      .from('monthly_summary')
+      .from('sqp_monthly_summary')
       .select('*');
 
     if (filters.year) {
@@ -162,7 +162,7 @@ export class SupabaseService {
   // Period Comparison Operations
   async upsertPeriodComparison(data: PeriodComparison | PeriodComparison[]) {
     return this.client
-      .from('period_comparisons')
+      .from('sqp_period_comparisons')
       .upsert(data, { onConflict: 'period_type,current_period_start,query,asin' });
   }
 
@@ -173,7 +173,7 @@ export class SupabaseService {
     currentPeriodStart?: string;
   }) {
     let query = this.client
-      .from('period_comparisons')
+      .from('sqp_period_comparisons')
       .select('*');
 
     if (filters.periodType) {
@@ -195,7 +195,7 @@ export class SupabaseService {
   // View Operations
   async getWeeklyTrends(query: string, asin?: string) {
     let dbQuery = this.client
-      .from('weekly_trends')
+      .from('sqp_weekly_trends')
       .select('*')
       .eq('query', query);
 
@@ -208,7 +208,7 @@ export class SupabaseService {
 
   async getMarketShare(periodStart: string, query: string) {
     return this.client
-      .from('market_share')
+      .from('sqp_market_share')
       .select('*')
       .eq('period_start', periodStart)
       .eq('query', query)
@@ -217,7 +217,7 @@ export class SupabaseService {
 
   async getTopKeywords(periodType: 'weekly' | 'monthly', periodStart: string, limit: number = 10) {
     return this.client
-      .from('top_keywords_by_period')
+      .from('sqp_top_keywords_by_period')
       .select('*')
       .eq('period_type', periodType)
       .eq('period_start', periodStart)
@@ -238,14 +238,14 @@ export class SupabaseService {
   }
 
   async refreshMaterializedViews() {
-    return this.adminClient.rpc('refresh_all_views');
+    return this.adminClient.rpc('refresh_sqp_views');
   }
 
   // Utility Methods
   async testConnection(): Promise<boolean> {
     try {
       const { error } = await this.client
-        .from('weekly_summary')
+        .from('sqp_weekly_summary')
         .select('count')
         .limit(1);
 
