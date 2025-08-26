@@ -86,11 +86,49 @@ export class SupabaseService {
   }
 
   // Weekly Summary Operations
-  async upsertWeeklySummary(data: WeeklySummary | WeeklySummary[]) {
-    // Use insert instead of upsert due to view limitations
+  async insertWeeklySummary(data: WeeklySummary | WeeklySummary[]) {
     return this.client
       .from('sqp_weekly_summary')
       .insert(data);
+  }
+
+  async upsertWeeklySummary(data: WeeklySummary | WeeklySummary[]) {
+    // For upsert, we need to check if record exists first
+    const dataArray = Array.isArray(data) ? data : [data];
+    const results = [];
+
+    for (const record of dataArray) {
+      // Check if record exists
+      const { data: existing } = await this.client
+        .from('sqp_weekly_summary')
+        .select('id')
+        .eq('period_start', record.period_start)
+        .eq('query', record.query)
+        .eq('asin', record.asin)
+        .single();
+
+      if (existing) {
+        // Update existing record
+        const { data: updated, error } = await this.client
+          .from('sqp_weekly_summary')
+          .update(record)
+          .eq('id', existing.id);
+        results.push({ data: updated, error });
+      } else {
+        // Insert new record
+        const { data: inserted, error } = await this.client
+          .from('sqp_weekly_summary')
+          .insert(record);
+        results.push({ data: inserted, error });
+      }
+    }
+
+    // Return single result if input was single record
+    if (!Array.isArray(data)) {
+      return results[0];
+    }
+    
+    return { data: results.map(r => r.data).filter(Boolean), error: results.find(r => r.error)?.error };
   }
 
   async getWeeklySummaries(filters: {
