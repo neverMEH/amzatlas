@@ -87,9 +87,10 @@ export class SupabaseService {
 
   // Weekly Summary Operations
   async upsertWeeklySummary(data: WeeklySummary | WeeklySummary[]) {
+    // Use insert instead of upsert due to view limitations
     return this.client
       .from('sqp_weekly_summary')
-      .upsert(data, { onConflict: 'period_start,query,asin' });
+      .insert(data);
   }
 
   async getWeeklySummaries(filters: {
@@ -124,9 +125,10 @@ export class SupabaseService {
 
   // Monthly Summary Operations
   async upsertMonthlySummary(data: MonthlySummary | MonthlySummary[]) {
+    // Use insert instead of upsert due to view limitations
     return this.client
       .from('sqp_monthly_summary')
-      .upsert(data, { onConflict: 'year,month,query,asin' });
+      .insert(data);
   }
 
   async getMonthlySummaries(filters: {
@@ -161,9 +163,10 @@ export class SupabaseService {
 
   // Period Comparison Operations
   async upsertPeriodComparison(data: PeriodComparison | PeriodComparison[]) {
+    // Use insert instead of upsert due to view limitations
     return this.client
       .from('sqp_period_comparisons')
-      .upsert(data, { onConflict: 'period_type,current_period_start,query,asin' });
+      .insert(data);
   }
 
   async getPeriodComparisons(filters: {
