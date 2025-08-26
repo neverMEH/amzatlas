@@ -251,6 +251,9 @@ export interface TransformationOptions {
 
 export interface AggregatedMetrics extends SQPMetrics {
   date: string;
+  period?: PeriodType;
+  periodStart?: string;
+  periodEnd?: string;
   query: string;
   asin: string;
   totalImpressions: number;
@@ -369,4 +372,39 @@ export interface AggregationConfig {
   metrics: string[];
   includeStats?: boolean;
   customAggregations?: Record<string, (records: any[]) => any>;
+}
+
+// Period types
+export type PeriodType = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+
+export interface PeriodComparison {
+  period: PeriodType;
+  currentPeriod: string;
+  previousPeriod: string;
+  query: string;
+  asin: string;
+  currentMetrics: {
+    impressions: number;
+    clicks: number;
+    purchases: number;
+    ctr: number;
+    cvr: number;
+  };
+  previousMetrics: {
+    impressions: number;
+    clicks: number;
+    purchases: number;
+    ctr: number;
+    cvr: number;
+  };
+  changes: {
+    impressions: number;
+    impressionsPercent: number;
+    clicks: number;
+    clicksPercent: number;
+    purchases: number;
+    purchasesPercent: number;
+    ctr: number;
+    cvr: number;
+  };
 }

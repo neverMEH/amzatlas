@@ -12,6 +12,14 @@ export interface EnvironmentConfig {
     sqpMetrics: string;
     sqpDaily: string;
     processingLogs: string;
+    sqp_weekly_summary?: string;
+    sqp_monthly_summary?: string;
+    sqp_quarterly_summary?: string;
+    sqp_yearly_summary?: string;
+    sqp_weekly_comparison?: string;
+    sqp_monthly_comparison?: string;
+    sqp_quarterly_comparison?: string;
+    sqp_yearly_comparison?: string;
   };
 }
 
@@ -151,12 +159,20 @@ export const getTableNames = (env?: Environment) => {
 
 // Helper to build fully qualified table names
 export const getFullTableName = (
-  tableName: keyof EnvironmentConfig['tables'],
+  tableName: keyof EnvironmentConfig['tables'] | string,
   env?: Environment
 ): string => {
   const config = getConfig(env);
   const tables = config.tables;
-  return `${config.bigquery.projectId}.${config.bigquery.dataset}.${tables[tableName]}`;
+  const tableKey = tableName as keyof EnvironmentConfig['tables'];
+  
+  // Check if it's a known table key
+  if (tableKey in tables && tables[tableKey]) {
+    return `${config.bigquery.projectId}.${config.bigquery.dataset}.${tables[tableKey]}`;
+  }
+  
+  // Otherwise, use the table name directly
+  return `${config.bigquery.projectId}.${config.bigquery.dataset}.${tableName}`;
 };
 
 // Export current environment for debugging
