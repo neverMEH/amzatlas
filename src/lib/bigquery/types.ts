@@ -408,3 +408,37 @@ export interface PeriodComparison {
     cvr: number;
   };
 }
+
+// Table management types
+export interface TableField {
+  name: string;
+  type: 'STRING' | 'INTEGER' | 'INT64' | 'FLOAT' | 'FLOAT64' | 'TIMESTAMP' | 'DATE' | 'DATETIME' | 'BOOLEAN' | 'BOOL' | 'BYTES' | 'JSON' | 'ARRAY' | 'STRUCT';
+  mode?: 'NULLABLE' | 'REQUIRED' | 'REPEATED';
+  description?: string;
+  fields?: TableField[];
+}
+
+export interface TableLifecycleConfig {
+  tableId: string;
+  retentionDays?: number;
+  archiveAfterDays?: number;
+  archiveTableId?: string;
+  partitionExpirationDays?: number;
+  description?: string;
+}
+
+export interface TableStatistics {
+  sizeBytes: number;
+  sizeMB: number;
+  sizeGB: number;
+  rowCount: number;
+  lastModified: Date;
+}
+
+export interface TableInfo {
+  tableId: string;
+  createdAt: Date;
+  expiresAt: Date | null;
+  sizeBytes: number;
+  rowCount: number;
+}

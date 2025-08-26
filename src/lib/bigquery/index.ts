@@ -6,6 +6,7 @@ export * from './types';
 export * from './queries/sqp-query-builder';
 export * from './extractors/sqp-data-extractor';
 export * from './validators/data-validator';
+export * from './table-manager';
 
 import { BigQueryClient } from './client';
 import { BigQueryConnectionPool } from './connection-pool';

@@ -14,6 +14,7 @@ vi.mock('@supabase/supabase-js', () => ({
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       upsert: vi.fn(() => Promise.resolve({ error: null })),
+      insert: vi.fn(() => Promise.resolve({ data: null, error: null })),
     };
 
     // Make select return the chainable object

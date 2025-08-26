@@ -44,6 +44,20 @@ export class BigQueryQuotaError extends BigQueryError {
   }
 }
 
+export class BigQueryTableNotFoundError extends BigQueryError {
+  constructor(message: string, details?: any) {
+    super(message, 'TABLE_NOT_FOUND', details);
+    this.name = 'BigQueryTableNotFoundError';
+  }
+}
+
+export class BigQueryRateLimitError extends BigQueryError {
+  constructor(message: string, details?: any) {
+    super(message, 'RATE_LIMIT_ERROR', details);
+    this.name = 'BigQueryRateLimitError';
+  }
+}
+
 export const isRetryableError = (error: Error): boolean => {
   const retryableMessages = [
     'service temporarily unavailable',
