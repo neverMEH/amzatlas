@@ -238,3 +238,135 @@ export interface QueryError extends Error {
     column?: number;
   };
 }
+
+// Transformation types
+export interface TransformationOptions {
+  includeShareMetrics?: boolean;
+  includeRanking?: boolean;
+  movingAveragePeriod?: number;
+  customAggregations?: Record<string, (records: any[]) => any>;
+  batchSize?: number;
+  continueOnError?: boolean;
+}
+
+export interface AggregatedMetrics extends SQPMetrics {
+  date: string;
+  query: string;
+  asin: string;
+  totalImpressions: number;
+  totalClicks: number;
+  totalPurchases: number;
+  avgCTR: number;
+  avgCVR: number;
+  purchasesPerImpression: number;
+  impressionShare?: number;
+  clickShare?: number;
+  purchaseShare?: number;
+}
+
+export interface WeeklyTrend {
+  week: string;
+  impressions: number;
+  clicks: number;
+  purchases: number;
+  impressionsWoW: number;
+  impressionsWoWPercent: number;
+  clicksWoW: number;
+  clicksWoWPercent: number;
+  purchasesWoW: number;
+  purchasesWoWPercent: number;
+  trend: 'growing' | 'declining' | 'stable';
+  purchasesMA?: number;
+  ctrMA?: number;
+  cvrMA?: number;
+}
+
+export interface KeywordPerformanceScore {
+  query: string;
+  performanceScore: number;
+  tier: 'A' | 'B' | 'C' | 'D';
+  rank?: number;
+  components: {
+    volumeScore: number;
+    efficiencyScore: number;
+    valueScore: number;
+    consistencyScore: number;
+  };
+  metrics: {
+    ctr: number;
+    cvr: number;
+    aov: number;
+    rpi: number; // Revenue per impression
+  };
+}
+
+export interface MarketShareData {
+  [keyword: string]: {
+    totalMarket: number;
+    competitors: number;
+    shares: {
+      [asin: string]: {
+        purchases: number;
+        share: number;
+        rank: number;
+      };
+    };
+  };
+}
+
+export interface MarketOpportunity {
+  keyword: string;
+  marketSize: number;
+  currentShare: number;
+  growthRate: number;
+  competitorCount: number;
+  opportunityScore: number;
+  estimatedPotential: number;
+}
+
+export interface DerivedMetrics {
+  ctr: number;
+  cvr: number;
+  purchasesPerThousandImpressions: number;
+  clicksPerPurchase: number;
+  impressionsPerPurchase: number;
+  qualityScore: number;
+}
+
+export interface AdvancedMetrics extends DerivedMetrics {
+  roas: number; // Return on ad spend
+  acos: number; // Advertising cost of sale
+  profitMargin: number;
+  ltv: number; // Lifetime value
+  cac: number; // Customer acquisition cost
+}
+
+export interface DataQualityReport {
+  missingDates: string[];
+  anomalies: AnomalyDetectionResult[];
+  inconsistencies: Array<{
+    date: string;
+    issue: string;
+    severity: 'low' | 'medium' | 'high';
+  }>;
+  qualityScore: number;
+  coverageScore: number;
+}
+
+export interface BatchProcessResult {
+  batchesProcessed: number;
+  totalRecords: number;
+  successfulBatches: number;
+  errors: Array<{
+    batch: number;
+    error: string;
+    recordsAffected: number;
+  }>;
+}
+
+export interface AggregationConfig {
+  dimensions: string[];
+  metrics: string[];
+  includeStats?: boolean;
+  customAggregations?: Record<string, (records: any[]) => any>;
+}

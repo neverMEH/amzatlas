@@ -10,6 +10,7 @@ export interface EnvironmentConfig {
     sqpRaw: string;
     sqpProcessed: string;
     sqpMetrics: string;
+    sqpDaily: string;
     processingLogs: string;
   };
 }
@@ -53,6 +54,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       sqpRaw: 'sqp_raw_dev',
       sqpProcessed: 'sqp_processed_dev',
       sqpMetrics: 'sqp_metrics_dev',
+      sqpDaily: 'sqp_daily_dev',
       processingLogs: 'processing_logs_dev',
     },
   },
@@ -74,6 +76,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       sqpRaw: 'sqp_raw_staging',
       sqpProcessed: 'sqp_processed_staging',
       sqpMetrics: 'sqp_metrics_staging',
+      sqpDaily: 'sqp_daily_staging',
       processingLogs: 'processing_logs_staging',
     },
   },
@@ -95,6 +98,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       sqpRaw: 'sqp_raw',
       sqpProcessed: 'sqp_processed',
       sqpMetrics: 'sqp_metrics',
+      sqpDaily: 'sqp_daily',
       processingLogs: 'processing_logs',
     },
   },
@@ -122,6 +126,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       sqpRaw: 'sqp_raw_test',
       sqpProcessed: 'sqp_processed_test',
       sqpMetrics: 'sqp_metrics_test',
+      sqpDaily: 'sqp_daily_test',
       processingLogs: 'processing_logs_test',
     },
   },
