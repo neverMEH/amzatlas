@@ -1,6 +1,9 @@
 -- Create schema for SQP data
 CREATE SCHEMA IF NOT EXISTS sqp;
 
+-- Set search path to include both schemas
+SET search_path TO sqp, public;
+
 -- Weekly summary table (base aggregation since data comes in weekly)
 CREATE TABLE sqp.weekly_summary (
   id BIGSERIAL PRIMARY KEY,
