@@ -38,4 +38,5 @@ next-env.d.ts
 
 # BigQuery credentials
 /credentials
-*.json
+google-credentials.json
+service-account.json
