@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node prepare-build.js",
     "build": "next build",
     "build:debug": "node debug-build.js && next build",
     "build:cli": "tsc",
