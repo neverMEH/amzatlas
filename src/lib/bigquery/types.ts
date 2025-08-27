@@ -442,3 +442,97 @@ export interface TableInfo {
   sizeBytes: number;
   rowCount: number;
 }
+
+// Data Inspection types
+export interface ASINDistribution {
+  query: string;
+  totalASINs: number;
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+  topASINs: Array<{
+    asin: string;
+    count: number;
+    impressions: number;
+    clicks: number;
+    purchases: number;
+    rank: number;
+  }>;
+  metrics: {
+    avgASINsPerDay: number;
+    medianImpressions: number;
+    totalImpressions: number;
+    totalClicks: number;
+    totalPurchases: number;
+  };
+}
+
+export interface DataQualityMetrics {
+  completeness: number;
+  nullValueCounts: Record<string, number>;
+  duplicateCount?: number;
+  uniqueRecords?: number;
+  coverage?: number;
+}
+
+export interface DataQualityComparison {
+  bigquery: {
+    totalRows: number;
+    distinctQueries: number;
+    distinctASINs: number;
+  };
+  supabase: {
+    totalRows: number;
+    distinctQueries: number;
+    distinctASINs: number;
+  };
+  discrepancies: {
+    rowCountDiff: number;
+    rowCountDiffPercent: number;
+    queryCountDiff: number;
+    asinCountDiff: number;
+    asinCountDiffPercent: number;
+  };
+  quality: {
+    dataCompleteness: number;
+    schemaConsistency: boolean;
+    hasDiscrepancies: boolean;
+  };
+}
+
+export interface SamplingStrategy {
+  name: string;
+  description: string;
+  estimatedRows: number;
+  asins: string[] | null;
+}
+
+export interface InspectionConfig {
+  tables: string[];
+  queries: string[];
+  dateRange: {
+    start: Date;
+    end: Date;
+  };
+}
+
+export interface InspectionReport {
+  timestamp: Date;
+  config: InspectionConfig;
+  schemas: Record<string, TableField[]>;
+  distributions: Record<string, ASINDistribution>;
+  samplingStrategies?: Record<string, Record<string, SamplingStrategy>>;
+  recommendations: string[];
+}
+
+export interface DataStructureValidation {
+  isValid: boolean;
+  sourceTable: string;
+  targetTable: string;
+  issues: string[];
+  metrics: {
+    matchRate: number;
+    discrepancyRate: number;
+  };
+}

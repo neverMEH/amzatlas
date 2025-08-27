@@ -48,7 +48,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
   development: {
     bigquery: {
       projectId: process.env.BIGQUERY_PROJECT_ID || 'amazon-sp-report-loader',
-      dataset: process.env.BIGQUERY_DATASET_DEV || 'sqp_data_dev',
+      dataset: process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85',
       location: process.env.BIGQUERY_LOCATION || 'US',
       credentials: getCredentials(),
     },
@@ -59,7 +59,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       acquireTimeoutMs: 30000, // 30 seconds
     },
     tables: {
-      sqpRaw: 'sqp_raw_dev',
+      sqpRaw: 'seller-search_query_performance',
       sqpProcessed: 'sqp_processed_dev',
       sqpMetrics: 'sqp_metrics_dev',
       sqpDaily: 'sqp_daily_dev',
@@ -103,7 +103,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       acquireTimeoutMs: 60000, // 1 minute
     },
     tables: {
-      sqpRaw: 'sqp_raw',
+      sqpRaw: 'seller-search_query_performance',
       sqpProcessed: 'sqp_processed',
       sqpMetrics: 'sqp_metrics',
       sqpDaily: 'sqp_daily',

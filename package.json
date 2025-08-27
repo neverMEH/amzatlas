@@ -5,15 +5,23 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:cli": "tsc",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "cli": "node dist/cli/test-data-sync.js",
+    "pipeline:run": "tsx src/scripts/run-pipeline.ts",
+    "pipeline:test": "tsx src/scripts/test-pipeline.ts",
+    "pipeline:status": "tsx src/scripts/pipeline-status.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
+    "@google-cloud/logging": "^11.2.0",
     "@supabase/supabase-js": "^2.56.0",
+    "commander": "^14.0.0",
+    "cron-parser": "^5.1.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.1",
     "next": "14.0.0",
@@ -25,6 +33,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@vitest/ui": "^3.2.4",
+    "tsx": "^4.19.2",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

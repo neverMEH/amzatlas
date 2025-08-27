@@ -1,0 +1,43 @@
+#!/bin/bash
+
+echo "BigQuery to Supabase Data Testing"
+echo "================================="
+echo ""
+echo "Your BigQuery Configuration:"
+echo "  Dataset: dataclient_amzatlas_agency_85"
+echo "  Table: seller-search_query_performance"
+echo ""
+
+echo "Available Tests (no compilation needed):"
+echo ""
+
+echo "1. Test BigQuery Connection:"
+echo "   node test-bigquery-connection.js"
+echo ""
+echo "   This will verify your connection and show available tables."
+echo ""
+
+echo "2. Analyze ASIN Distribution:"
+echo "   node test-asin-distribution.js"
+echo ""
+echo "   This will:"
+echo "   - Find queries with multiple ASINs"
+echo "   - Show ASIN distribution for top queries"
+echo "   - Test different sampling strategies (top 1, top 5, top 10)"
+echo "   - Recommend optimal strategy based on data"
+echo ""
+
+echo "Key Findings from Initial Tests:"
+echo "  • For 'knife sharpener' query: 42 ASINs total"
+echo "  • Top 5 ASINs cover 80.93% of impressions"
+echo "  • Top 10 ASINs cover 92.80% of impressions"
+echo "  • Recommendation: Use 'top 5' or 'top 10' strategy for testing"
+echo ""
+
+echo "Column Mappings (BigQuery → Expected):"
+echo "  • 'Search Query' → 'query'"
+echo "  • 'Child ASIN' → 'asin'"
+echo "  • 'ASIN Impression Count' → 'impressions'"
+echo "  • 'ASIN Click Count' → 'clicks'"
+echo "  • 'ASIN Purchase Count' → 'purchases'"
+echo "  • 'Date' → 'query_date'"
