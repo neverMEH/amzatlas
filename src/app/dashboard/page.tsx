@@ -5,6 +5,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
+import { usePurchaseMetrics } from '@/hooks/use-sqp-data'
 import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
@@ -43,6 +44,7 @@ const defaultLayouts = {
 export default function DashboardPage() {
   const [layouts, setLayouts] = useState(defaultLayouts)
   const [isDraggable, setIsDraggable] = useState(false)
+  const { data: metrics, isLoading, error } = usePurchaseMetrics()
 
   const handleLayoutChange = (layout: any, layouts: any) => {
     setLayouts(layouts)
@@ -84,50 +86,55 @@ export default function DashboardPage() {
         <div key="purchase-velocity">
           <MetricsWidget
             title="Purchase Velocity"
-            metric="2,547"
-            change="+12.3%"
-            trend="up"
+            metric={metrics?.totalPurchases.toLocaleString() || '—'}
+            change={metrics ? `${metrics.weekOverWeekChange > 0 ? '+' : ''}${metrics.weekOverWeekChange.toFixed(1)}%` : '—'}
+            trend={metrics && metrics.weekOverWeekChange > 0 ? 'up' : 'down'}
             description="Weekly purchases"
+            isLoading={isLoading}
           />
         </div>
         
         <div key="market-share">
           <MetricsWidget
             title="Market Share"
-            metric="23.7%"
-            change="+2.1%"
-            trend="up"
+            metric={metrics ? `${metrics.marketShare.toFixed(1)}%` : '—'}
+            change={metrics ? `${metrics.marketShareChange > 0 ? '+' : ''}${metrics.marketShareChange.toFixed(1)}%` : '—'}
+            trend={metrics && metrics.marketShareChange > 0 ? 'up' : 'down'}
             description="Of total market purchases"
+            isLoading={isLoading}
           />
         </div>
         
         <div key="conversion-rate">
           <MetricsWidget
             title="Purchase CVR"
-            metric="4.2%"
-            change="-0.3%"
-            trend="down"
+            metric={metrics ? `${metrics.purchaseCVR.toFixed(1)}%` : '—'}
+            change={metrics ? `${metrics.cvrChange > 0 ? '+' : ''}${metrics.cvrChange.toFixed(1)}%` : '—'}
+            trend={metrics && metrics.cvrChange > 0 ? 'up' : 'down'}
             description="Clicks to purchases"
+            isLoading={isLoading}
           />
         </div>
         
         <div key="zero-purchase">
           <MetricsWidget
             title="Zero Purchase Keywords"
-            metric="127"
-            change="-15"
-            trend="up"
+            metric={metrics?.zeroPurchaseKeywords.toString() || '—'}
+            change={metrics ? `${metrics.zeroPurchaseChange > 0 ? '+' : ''}${metrics.zeroPurchaseChange}` : '—'}
+            trend={metrics && metrics.zeroPurchaseChange < 0 ? 'up' : 'down'}
             description="Keywords with wasted spend"
+            isLoading={isLoading}
           />
         </div>
         
         <div key="roi-summary">
           <MetricsWidget
             title="Purchase ROI"
-            metric="247%"
-            change="+18%"
-            trend="up"
+            metric={metrics ? `${metrics.purchaseROI.toFixed(0)}%` : '—'}
+            change={metrics ? `${metrics.roiChange > 0 ? '+' : ''}${metrics.roiChange.toFixed(0)}%` : '—'}
+            trend={metrics && metrics.roiChange > 0 ? 'up' : 'down'}
             description="Return on ad spend"
+            isLoading={isLoading}
           />
         </div>
         

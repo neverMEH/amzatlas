@@ -12,6 +12,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { usePurchaseTrends } from '@/hooks/use-sqp-data'
 
 interface ChartWidgetProps {
   title: string
@@ -19,28 +20,13 @@ interface ChartWidgetProps {
   type?: 'line' | 'bar'
 }
 
-// Placeholder data - will be replaced with real data
-const data = [
-  { week: 'W1', purchases: 1800, market: 7800 },
-  { week: 'W2', purchases: 2100, market: 8200 },
-  { week: 'W3', purchases: 2400, market: 8600 },
-  { week: 'W4', purchases: 2200, market: 8400 },
-  { week: 'W5', purchases: 2600, market: 9000 },
-  { week: 'W6', purchases: 2900, market: 9400 },
-  { week: 'W7', purchases: 3200, market: 9800 },
-  { week: 'W8', purchases: 3100, market: 9600 },
-  { week: 'W9', purchases: 3400, market: 10200 },
-  { week: 'W10', purchases: 3700, market: 10800 },
-  { week: 'W11', purchases: 3500, market: 10400 },
-  { week: 'W12', purchases: 3900, market: 11200 },
-]
-
 export default function ChartWidget({
   title,
   description,
   type = 'line',
 }: ChartWidgetProps) {
   const [chartType, setChartType] = useState(type)
+  const { data, isLoading } = usePurchaseTrends()
 
   return (
     <div className="h-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
@@ -77,9 +63,14 @@ export default function ChartWidget({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height="85%">
-        {chartType === 'line' ? (
-          <LineChart data={data}>
+      {isLoading ? (
+        <div className="h-64 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="85%">
+          {chartType === 'line' ? (
+            <LineChart data={data || []}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
             <XAxis 
               dataKey="week" 
@@ -118,7 +109,7 @@ export default function ChartWidget({
             />
           </LineChart>
         ) : (
-          <BarChart data={data}>
+            <BarChart data={data || []}>
             <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-800" />
             <XAxis 
               dataKey="week" 
@@ -142,6 +133,7 @@ export default function ChartWidget({
           </BarChart>
         )}
       </ResponsiveContainer>
+      )}
     </div>
   )
 }
