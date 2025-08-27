@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:debug": "node debug-build.js && next build",
     "build:cli": "tsc",
     "start": "next start",
     "lint": "next lint",
