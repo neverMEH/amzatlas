@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { TrendingUp, BarChart3, Activity, Zap } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
+import MarketShareChart from '@/components/dashboard/widgets/market-share-chart'
+import KeywordVelocityChart from '@/components/dashboard/widgets/keyword-velocity-chart'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
 import { usePurchaseMetrics, useRisingKeywords } from '@/hooks/use-sqp-data'
 
@@ -79,11 +81,7 @@ export default function GrowthReports() {
               />
             </div>
             
-            <ChartWidget
-              title="Market Share Trend (12 Weeks)"
-              description="Your purchase share vs market average"
-              type="line"
-            />
+            <MarketShareChart weeks={12} />
             
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
               <h3 className="text-lg font-medium text-gray-900 dark:text-gray-50 mb-4">
@@ -170,28 +168,18 @@ export default function GrowthReports() {
                   Fastest Rising Keywords
                 </h3>
                 <div className="space-y-3">
-                  {[
-                    { keyword: 'wireless earbuds noise cancelling', growth: '+523%' },
-                    { keyword: 'bluetooth headphones gym', growth: '+412%' },
-                    { keyword: 'sports earbuds waterproof', growth: '+387%' },
-                    { keyword: 'gaming headset wireless', growth: '+342%' },
-                    { keyword: 'earbuds with microphone', growth: '+298%' },
-                  ].map((item) => (
+                  {(risingKeywords || []).slice(0, 5).map((item) => (
                     <div key={item.keyword} className="flex items-center justify-between py-2">
                       <span className="text-sm text-gray-700 dark:text-gray-300">{item.keyword}</span>
                       <span className="text-sm font-semibold text-success-600 dark:text-success-400">
-                        {item.growth}
+                        +{item.roi.toFixed(0)}%
                       </span>
                     </div>
                   ))}
                 </div>
               </div>
               
-              <ChartWidget
-                title="Velocity Distribution"
-                description="Keywords grouped by growth rate"
-                type="bar"
-              />
+              <KeywordVelocityChart limit={15} />
             </div>
           </div>
         )

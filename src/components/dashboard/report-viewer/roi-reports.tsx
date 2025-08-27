@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DollarSign, PiggyBank, Calculator, TrendingDown } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
+import ROITrendChart from '@/components/dashboard/widgets/roi-trend-chart'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
 import { usePurchaseMetrics, useNegativeROIKeywords } from '@/hooks/use-sqp-data'
 
@@ -80,11 +81,7 @@ export default function ROIReports() {
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ChartWidget
-                title="ROI Trend (12 Weeks)"
-                description="Purchase ROI over time"
-                type="line"
-              />
+              <ROITrendChart weeks={12} />
               <ChartWidget
                 title="ROI by Campaign Type"
                 description="Performance across campaign strategies"
