@@ -27,7 +27,11 @@ export class BigQueryDataInspector {
     
     try {
       const [projectId, datasetId, tableId] = tableName.split('.');
-      const dataset = client.dataset(datasetId);
+      const rawClient = client.getRawClient();
+      if (!rawClient) {
+        throw new Error('BigQuery client not initialized');
+      }
+      const dataset = rawClient.dataset(datasetId);
       const table = dataset.table(tableId);
       
       const [metadata] = await table.getMetadata();
@@ -97,16 +101,13 @@ export class BigQueryDataInspector {
         FROM asin_stats
       `;
 
-      const options = {
-        query: sql,
-        params: {
-          query,
-          startDate: dateStart,
-          endDate: dateEnd,
-        },
+      const params = {
+        query,
+        startDate: dateStart,
+        endDate: dateEnd,
       };
 
-      const [rows] = await client.query(options);
+      const rows = await client.query(sql, params);
       const result = rows[0] || {};
 
       return {
@@ -158,15 +159,12 @@ export class BigQueryDataInspector {
         WHERE DATE(query_date) BETWEEN @startDate AND @endDate
       `;
 
-      const options = {
-        query: sql,
-        params: {
-          startDate: dateStart,
-          endDate: dateEnd,
-        },
+      const params = {
+        startDate: dateStart,
+        endDate: dateEnd,
       };
 
-      const [rows] = await client.query(options);
+      const rows = await client.query(sql, params);
       const bqData = rows[0] || { total_rows: 0, distinct_queries: 0, distinct_asins: 0 };
 
       const rowCountDiff = Math.abs(bqData.total_rows - supabaseData.total_rows);
@@ -348,15 +346,9 @@ export class BigQueryDataInspector {
         GROUP BY query, asin
       `;
 
-      const [sourceRows] = await client.query({
-        query: sourceSQL,
-        params: { query, startDate: dateStart, endDate: dateEnd },
-      });
+      const sourceRows = await client.query(sourceSQL, { query, startDate: dateStart, endDate: dateEnd });
 
-      const [targetRows] = await client.query({
-        query: targetSQL,
-        params: { query, startDate: dateStart, endDate: dateEnd },
-      });
+      const targetRows = await client.query(targetSQL, { query, startDate: dateStart, endDate: dateEnd });
 
       // Compare results
       const sourceMap = new Map(
@@ -458,15 +450,12 @@ export class BigQueryDataInspector {
         WHERE DATE(query_date) BETWEEN @startDate AND @endDate
       `;
 
-      const options = {
-        query: sql,
-        params: {
-          startDate: dateStart,
-          endDate: dateEnd,
-        },
+      const params = {
+        startDate: dateStart,
+        endDate: dateEnd,
       };
 
-      const [rows] = await client.query(options);
+      const rows = await client.query(sql, params);
       const result = rows[0] || {};
 
       const totalFields = 5; // query, asin, impressions, clicks, purchases

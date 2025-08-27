@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 
 // Set up test environment variables
-process.env.NODE_ENV = 'test';
+(process.env as any).NODE_ENV = 'test';
 process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON = JSON.stringify({
   type: 'service_account',
   project_id: 'test-project',

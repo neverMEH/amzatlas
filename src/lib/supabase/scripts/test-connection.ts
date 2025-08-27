@@ -48,7 +48,7 @@ async function testConnection() {
         console.log(`   Found ${data?.length || 0} records in weekly_summary table`);
       }
     } catch (tableError) {
-      console.log('⚠️  Could not check tables:', tableError.message);
+      console.log('⚠️  Could not check tables:', tableError instanceof Error ? tableError.message : String(tableError));
     }
 
     // Summary

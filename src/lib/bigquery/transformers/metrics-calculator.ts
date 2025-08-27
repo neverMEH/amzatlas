@@ -31,11 +31,10 @@ export class MetricsCalculator {
     return {
       ctr,
       cvr,
-      purchasesPerImpression,
-      funnelEfficiency,
-      engagementScore,
-      purchaseValueScore,
-      lifetimeValueScore,
+      purchasesPerThousandImpressions: purchasesPerImpression * 1000,
+      clicksPerPurchase: record.purchases > 0 ? record.clicks / record.purchases : 0,
+      impressionsPerPurchase: record.purchases > 0 ? record.impressions / record.purchases : 0,
+      qualityScore: (ctr * 0.4 + cvr * 0.4 + (purchasesPerImpression * 100) * 0.2),
     };
   }
 
@@ -80,40 +79,20 @@ export class MetricsCalculator {
     const overallEfficiency = (costEfficiency + revenueEfficiency) / 2;
 
     return {
-      query: data.query,
-      asin: data.asin,
-      metrics: {
-        // Basic metrics
-        ctr,
-        cvr,
-        impressions,
-        clicks,
-        purchases,
-        revenue,
-        adSpend,
-        
-        // Cost metrics
-        cpc,
-        cpa,
-        acos,
-        
-        // Revenue metrics
-        roas,
-        revenuePerClick,
-        revenuePerImpression,
-        averageOrderValue,
-        
-        // Profitability metrics
-        profit,
-        profitMargin,
-        profitPerClick,
-        profitPerImpression,
-        
-        // Efficiency scores
-        costEfficiency,
-        revenueEfficiency,
-        overallEfficiency,
-      },
+      // Basic DerivedMetrics properties
+      ctr,
+      cvr,
+      purchasesPerThousandImpressions: (purchases / impressions) * 1000,
+      clicksPerPurchase: purchases > 0 ? clicks / purchases : 0,
+      impressionsPerPurchase: purchases > 0 ? impressions / purchases : 0,
+      qualityScore: (ctr * 0.4 + cvr * 0.4 + ((purchases / impressions) * 100) * 0.2),
+      
+      // AdvancedMetrics properties
+      roas,
+      acos,
+      profitMargin,
+      ltv: averageOrderValue * 2.5, // Placeholder LTV calculation
+      cac: purchases > 0 ? adSpend / purchases : 0, // Customer acquisition cost
     };
   }
 

@@ -78,7 +78,7 @@ async function runMigrations() {
             console.log(' ✅');
           } catch (error) {
             console.log(' ❌');
-            console.error(`\n   Error executing statement: ${error.message}`);
+            console.error(`\n   Error executing statement: ${error instanceof Error ? error.message : String(error)}`);
             
             // Continue with next statement or abort?
             const shouldContinue = process.argv.includes('--continue-on-error');
@@ -103,7 +103,7 @@ async function runMigrations() {
       await client.rpc('refresh_all_views');
       console.log('✅ Materialized views refreshed successfully');
     } catch (error) {
-      console.warn('⚠️  Could not refresh materialized views:', error.message);
+      console.warn('⚠️  Could not refresh materialized views:', error instanceof Error ? error.message : String(error));
     }
 
   } catch (error) {

@@ -57,11 +57,32 @@ export class MarketShareCalculator {
       overallShares[asin] = totalPurchases > 0 ? purchases / totalPurchases : 0;
     }
 
-    return {
-      sharesByKeyword,
-      overallShares,
-      topCompetitorsByKeyword,
-    };
+    // Convert to MarketShareData format
+    const marketShareData: MarketShareData = {};
+    
+    for (const [query, asins] of byKeyword.entries()) {
+      const totalPurchases = asins.reduce((sum, a) => sum + a.purchases, 0);
+      const shares: { [asin: string]: { purchases: number; share: number; rank: number } } = {};
+      
+      // Sort ASINs by purchases to assign ranks
+      const sortedAsins = [...asins].sort((a, b) => b.purchases - a.purchases);
+      
+      sortedAsins.forEach((asin, index) => {
+        shares[asin.asin] = {
+          purchases: asin.purchases,
+          share: totalPurchases > 0 ? asin.purchases / totalPurchases : 0,
+          rank: index + 1
+        };
+      });
+      
+      marketShareData[query] = {
+        totalMarket: totalPurchases,
+        competitors: asins.length,
+        shares
+      };
+    }
+    
+    return marketShareData;
   }
 
   /**
@@ -199,16 +220,54 @@ export class MarketShareCalculator {
       return client.query<any>(query, criteria);
     });
 
-    return results.map(row => ({
-      query: row.query,
-      marketSize: row.marketSize,
-      currentShare: row.currentShare || 0,
-      growthRate: row.avgGrowthRate || 0,
-      competitorCount: row.competitorCount,
-      leaderShare: row.leaderShare || 0,
-      potentialShare: Math.min(0.3, row.leaderShare * 0.5), // Conservative estimate
-      estimatedPotential: row.marketSize * Math.min(0.3, row.leaderShare * 0.5),
-    }));
+    return results.map(row => {
+      const potentialShare = Math.min(0.3, (row.leaderShare || 0) * 0.5);
+      const estimatedPotential = row.marketSize * potentialShare;
+      const opportunityScore = this.calculateOpportunityScore(
+        row.marketSize,
+        row.currentShare || 0,
+        row.avgGrowthRate || 0,
+        row.competitorCount,
+        potentialShare
+      );
+      
+      return {
+        keyword: row.query,
+        marketSize: row.marketSize,
+        currentShare: row.currentShare || 0,
+        growthRate: row.avgGrowthRate || 0,
+        competitorCount: row.competitorCount,
+        opportunityScore,
+        estimatedPotential,
+      };
+    });
+  }
+
+  /**
+   * Calculate opportunity score based on various factors
+   */
+  private calculateOpportunityScore(
+    marketSize: number,
+    currentShare: number,
+    growthRate: number,
+    competitorCount: number,
+    potentialShare: number
+  ): number {
+    // Normalize factors to 0-1 scale
+    const sizeScore = Math.min(marketSize / 10000, 1); // Normalize market size
+    const growthScore = Math.min(Math.max(growthRate, 0) / 2, 1); // Cap growth at 200%
+    const competitionScore = Math.max(1 - (competitorCount / 20), 0.1); // Lower competition = higher score
+    const potentialScore = potentialShare - currentShare; // Upside potential
+    
+    // Weighted average
+    const opportunityScore = (
+      sizeScore * 0.3 +
+      growthScore * 0.25 +
+      competitionScore * 0.2 +
+      potentialScore * 0.25
+    );
+    
+    return Math.min(Math.max(opportunityScore, 0), 1);
   }
 
   /**

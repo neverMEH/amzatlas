@@ -123,8 +123,8 @@ export class ErrorTracker {
       this.resolveError(errorId, 'Retry successful');
       return { success: true, result };
     } catch (retryError) {
-      error.message = `Retry ${error.retryCount} failed: ${retryError.message}`;
-      return { success: false, error: retryError };
+      error.message = `Retry ${error.retryCount} failed: ${retryError instanceof Error ? retryError.message : String(retryError)}`;
+      return { success: false, error: retryError instanceof Error ? retryError : new Error(String(retryError)) };
     }
   }
 
@@ -183,7 +183,7 @@ export class ErrorTracker {
         errors = errors.filter(e => e.resolved === filter.resolved);
       }
       if (filter.since) {
-        errors = errors.filter(e => e.timestamp > filter.since);
+        errors = errors.filter(e => e.timestamp > filter.since!);
       }
     }
 
@@ -383,12 +383,12 @@ export function trackErrors(category: ErrorCategory) {
       } catch (error) {
         errorTracker.trackError({
           category,
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
           context: {
             method: propertyKey,
             args: args.slice(0, 3), // Limit args to prevent large payloads
           },
-          stackTrace: error.stack,
+          stackTrace: error instanceof Error ? error.stack : undefined,
         });
         throw error;
       }

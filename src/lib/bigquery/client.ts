@@ -14,7 +14,7 @@ export interface BigQueryConfig {
   credentials?: object;
 }
 
-export interface QueryOptions {
+export interface BigQueryQueryOptions {
   timeoutMs?: number;
   maxRetries?: number;
   useLegacySql?: boolean;
@@ -102,7 +102,7 @@ export class BigQueryClient {
   public async query<T = any>(
     query: string,
     params?: Record<string, any>,
-    options?: QueryOptions
+    options?: BigQueryQueryOptions
   ): Promise<T[]> {
     // Basic SQL validation
     if (!this.validateSQL(query)) {
@@ -117,7 +117,7 @@ export class BigQueryClient {
       ...(options?.timeoutMs && { timeoutMs: options.timeoutMs }),
     };
 
-    return this.executeWithRetry<T>(
+    return this.executeWithRetry<T[]>(
       () => this.executeQuery<T>(queryOptions),
       options?.maxRetries ?? 3
     );
@@ -222,6 +222,10 @@ export class BigQueryClient {
         `Failed to create dataset: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  public getRawClient(): BigQuery | null {
+    return this.client;
   }
 
   public close(): void {

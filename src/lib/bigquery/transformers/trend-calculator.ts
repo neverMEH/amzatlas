@@ -61,19 +61,38 @@ export class TrendCalculator {
       });
     });
 
-    return results.map(row => ({
-      week: row.week,
-      asin,
-      impressions: row.impressions,
-      clicks: row.clicks,
-      purchases: row.purchases,
-      impressionsGrowth: row.impressions_growth || 0,
-      clicksGrowth: row.clicks_growth || 0,
-      purchasesGrowth: row.purchases_growth || 0,
-      ctr: row.ctr || 0,
-      cvr: row.cvr || 0,
-      uniqueQueries: row.unique_queries,
-    }));
+    return results.map(row => {
+      const impressionsWoW = row.impressions_growth || 0;
+      const clicksWoW = row.clicks_growth || 0;
+      const purchasesWoW = row.purchases_growth || 0;
+      
+      return {
+        week: row.week,
+        impressions: row.impressions,
+        clicks: row.clicks,
+        purchases: row.purchases,
+        impressionsWoW,
+        impressionsWoWPercent: row.impressions > 0 ? (impressionsWoW / row.impressions) * 100 : 0,
+        clicksWoW,
+        clicksWoWPercent: row.clicks > 0 ? (clicksWoW / row.clicks) * 100 : 0,
+        purchasesWoW,
+        purchasesWoWPercent: row.purchases > 0 ? (purchasesWoW / row.purchases) * 100 : 0,
+        trend: this.determineTrend(impressionsWoW, clicksWoW, purchasesWoW),
+        purchasesMA: row.purchases, // Placeholder - would need actual moving average calculation
+        ctrMA: row.ctr || 0, // Placeholder - would need actual moving average calculation
+        cvrMA: row.cvr || 0, // Placeholder - would need actual moving average calculation
+      };
+    });
+  }
+
+  /**
+   * Determine trend direction based on growth metrics
+   */
+  private determineTrend(impressionsWoW: number, clicksWoW: number, purchasesWoW: number): 'growing' | 'declining' | 'stable' {
+    const avgGrowth = (impressionsWoW + clicksWoW + purchasesWoW) / 3;
+    if (avgGrowth > 5) return 'growing';
+    if (avgGrowth < -5) return 'declining';
+    return 'stable';
   }
 
   /**

@@ -158,7 +158,7 @@ export class BigQueryTableManager {
     
     // Check for duplicate fields
     for (const newField of newFields) {
-      if (existingFields.some(f => f.name === newField.name)) {
+      if (existingFields.some((f: any) => f.name === newField.name)) {
         throw new BigQueryError(`Field "${newField.name}" already exists in table ${tableId}`, 'DUPLICATE_FIELD');
       }
     }

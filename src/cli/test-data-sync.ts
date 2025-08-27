@@ -38,7 +38,7 @@ program
       // Initialize BigQuery connection
       const bqConfig = getConfig();
       const poolConfig = getPoolConfig();
-      const pool = new BigQueryConnectionPool(poolConfig);
+      const pool = new BigQueryConnectionPool(bqConfig.bigquery, poolConfig);
       const inspector = new BigQueryDataInspector(pool);
       
       // Perform inspection
@@ -91,7 +91,7 @@ program
       const supabaseUrl = process.env.SUPABASE_URL!;
       const supabaseKey = process.env.SUPABASE_ANON_KEY!;
       const poolConfig = getPoolConfig();
-      const pool = new BigQueryConnectionPool(poolConfig);
+      const pool = new BigQueryConnectionPool(bqConfig.bigquery, poolConfig);
       
       // Configure sync
       const sync = new BigQueryToSupabaseSync({
@@ -186,7 +186,7 @@ program
       const supabaseUrl = process.env.SUPABASE_URL!;
       const supabaseKey = process.env.SUPABASE_ANON_KEY!;
       const poolConfig = getPoolConfig();
-      const pool = new BigQueryConnectionPool(poolConfig);
+      const pool = new BigQueryConnectionPool(bqConfig.bigquery, poolConfig);
       
       const sync = new BigQueryToSupabaseSync({
         supabaseUrl,
@@ -243,7 +243,7 @@ program
       const supabaseUrl = process.env.SUPABASE_URL!;
       const supabaseKey = process.env.SUPABASE_ANON_KEY!;
       const poolConfig = getPoolConfig();
-      const pool = new BigQueryConnectionPool(poolConfig);
+      const pool = new BigQueryConnectionPool(bqConfig.bigquery, poolConfig);
       const inspector = new BigQueryDataInspector(pool);
       const validator = new DataValidator();
       

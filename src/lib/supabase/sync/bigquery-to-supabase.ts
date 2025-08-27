@@ -165,7 +165,7 @@ export class BigQueryToSupabaseSync {
           if (error) {
             errors.push({
               batch: Math.floor(i / this.batchSize) + 1,
-              error: error.message,
+              error: error instanceof Error ? error.message : String(error),
               details: error,
             });
             failedRecords += batch.length;
@@ -176,7 +176,7 @@ export class BigQueryToSupabaseSync {
         } catch (batchError) {
           errors.push({
             batch: Math.floor(i / this.batchSize) + 1,
-            error: batchError.message,
+            error: batchError instanceof Error ? batchError.message : String(batchError),
           });
           failedRecords += batch.length;
         }
@@ -237,7 +237,7 @@ export class BigQueryToSupabaseSync {
       return {
         success: false,
         recordsSynced: 0,
-        errors: [{ error: error.message, type: 'general' }],
+        errors: [{ error: error instanceof Error ? error.message : String(error), type: 'general' }],
       };
     }
   }
@@ -492,7 +492,7 @@ export class BigQueryToSupabaseSync {
     const client = await this.pool.acquire();
     
     try {
-      const [rows] = await client.query({ query });
+      const rows = await client.query(query);
       return rows;
     } finally {
       this.pool.release(client);
@@ -521,7 +521,7 @@ export class BigQueryToSupabaseSync {
       .lte('period_start', dateEnd);
       
     if (error) {
-      throw new Error(`Failed to get ${periodType} data: ${error.message}`);
+      throw new Error(`Failed to get ${periodType} data: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     return data || [];

@@ -1,7 +1,8 @@
 import { BigQueryClient } from './client';
+import { BigQueryConnectionPool } from './connection-pool';
 import { DataExtractor } from './data-extractor';
 import { DataTransformer } from './data-transformer';
-import { BigQueryToSupabaseSync } from './bigquery-to-supabase-sync';
+import { BigQueryToSupabaseSync } from '../supabase/sync/bigquery-to-supabase';
 import { PipelineStateManager } from './state-manager';
 import { PipelineMonitor } from './monitor';
 import { 
@@ -11,7 +12,7 @@ import {
   StepResult,
   Alert
 } from './types/pipeline';
-import { parseExpression } from 'cron-parser';
+const cronParser = require('cron-parser');
 
 export interface ExecuteOptions {
   resumeFromFailure?: boolean;
@@ -35,7 +36,16 @@ export class PipelineOrchestrator {
     this.client = new BigQueryClient();
     this.extractor = new DataExtractor(this.client);
     this.transformer = new DataTransformer();
-    this.sync = new BigQueryToSupabaseSync();
+    
+    // Create connection pool for sync operations  
+    const pool = new BigQueryConnectionPool(this.client['config']);
+    
+    this.sync = new BigQueryToSupabaseSync({
+      supabaseUrl: process.env.SUPABASE_URL!,
+      supabaseKey: process.env.SUPABASE_ANON_KEY!,
+      bigqueryPool: pool,
+      batchSize: 1000
+    });
     this.stateManager = new PipelineStateManager(config.name);
     this.monitor = new PipelineMonitor({
       pipelineId: config.name,
@@ -346,7 +356,7 @@ export class PipelineOrchestrator {
   }
 
   getSchedule() {
-    const interval = parseExpression(this.config.schedule);
+    const interval = cronParser.parseExpression(this.config.schedule);
     return {
       expression: this.config.schedule,
       nextRun: interval.next().toDate()
@@ -354,7 +364,7 @@ export class PipelineOrchestrator {
   }
 
   calculateNextRun(from: Date = new Date()): Date {
-    const interval = parseExpression(this.config.schedule, { currentDate: from });
+    const interval = cronParser.parseExpression(this.config.schedule, { currentDate: from });
     return interval.next().toDate();
   }
 

@@ -12,8 +12,8 @@ import {
   QueryOptions,
   DateRange,
   ProgressInfo,
-  CostEstimate,
 } from '../types';
+import { CostEstimate } from '../client';
 import { getBigQueryConfig, getTableNames, getFullTableName } from '@/config/bigquery.config';
 import { BigQueryError } from '../errors';
 

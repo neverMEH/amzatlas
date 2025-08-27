@@ -264,7 +264,7 @@ export interface AggregatedMetrics extends SQPMetrics {
   purchasesPerImpression: number;
   impressionShare?: number;
   clickShare?: number;
-  purchaseShare?: number;
+  purchaseShare: number;
 }
 
 export interface WeeklyTrend {

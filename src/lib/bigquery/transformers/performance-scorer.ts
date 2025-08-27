@@ -59,20 +59,18 @@ export class PerformanceScorer {
       scores.push({
         query: keyword.query,
         performanceScore,
-        volumeScore,
-        engagementScore,
-        conversionScore,
-        efficiencyScore,
-        opportunityScore,
         tier,
+        components: {
+          volumeScore,
+          efficiencyScore,
+          valueScore: keyword.revenue ? this.normalizeScore(keyword.revenue, stats.revenue?.max || 1) : 0,
+          consistencyScore: opportunityScore, // Using opportunity score as consistency placeholder
+        },
         metrics: {
-          impressions: keyword.impressions,
-          clicks: keyword.clicks,
-          purchases: keyword.purchases,
-          revenue: keyword.revenue || 0,
           ctr,
           cvr,
-          purchasesPerImpression: efficiency,
+          aov: keyword.purchases > 0 ? (keyword.revenue || 0) / keyword.purchases : 0, // Average order value
+          rpi: keyword.impressions > 0 ? (keyword.revenue || 0) / keyword.impressions : 0, // Revenue per impression
         },
       });
     }
@@ -189,16 +187,16 @@ export class PerformanceScorer {
     for (const score of scores) {
       const { metrics } = score;
       
-      // High volume, low conversion
+      // High volume, low conversion (using volume score as proxy for impressions)
       if (
-        metrics.impressions >= criteria.minImpressions &&
+        score.components.volumeScore >= 60 && // High volume score indicates high impressions
         metrics.cvr < criteria.maxCurrentCVR &&
-        score.opportunityScore >= criteria.minOpportunityScore
+        score.components.efficiencyScore >= criteria.minOpportunityScore
       ) {
         opportunities.push({
           query: score.query,
           reason: 'High volume with low conversion rate',
-          potentialImprovement: score.opportunityScore,
+          potentialImprovement: score.components.consistencyScore,
           recommendedAction: 'Optimize product listing and images for this keyword',
         });
       }
@@ -207,12 +205,12 @@ export class PerformanceScorer {
       if (
         metrics.ctr > 0.02 &&
         metrics.cvr < 0.05 &&
-        metrics.impressions >= criteria.minImpressions / 2
+        score.components.volumeScore >= 30 // Moderate volume
       ) {
         opportunities.push({
           query: score.query,
           reason: 'Good engagement but poor conversion',
-          potentialImprovement: (0.1 - metrics.cvr) * metrics.clicks,
+          potentialImprovement: (0.1 - metrics.cvr) * 100, // Normalized improvement score
           recommendedAction: 'Review pricing and product page for this traffic',
         });
       }
@@ -220,7 +218,7 @@ export class PerformanceScorer {
       // Underperforming compared to similar keywords
       if (
         score.performanceScore < 30 &&
-        metrics.impressions >= criteria.minImpressions
+        score.components.volumeScore >= 70 // High volume
       ) {
         opportunities.push({
           query: score.query,
@@ -251,13 +249,13 @@ export class PerformanceScorer {
     for (const score of scores) {
       if (score.performanceScore >= 80) {
         patterns.highPerformers.push(score);
-      } else if (score.performanceScore >= 60 && score.opportunityScore >= 70) {
+      } else if (score.performanceScore >= 60 && score.components.consistencyScore >= 70) {
         patterns.risingStars.push(score);
       } else if (score.performanceScore >= 50 && score.performanceScore < 60) {
         patterns.steadyPerformers.push(score);
       } else if (score.performanceScore < 30) {
         patterns.underperformers.push(score);
-      } else if (score.opportunityScore >= 80) {
+      } else if (score.components.consistencyScore >= 80) {
         patterns.highPotential.push(score);
       }
     }
@@ -325,11 +323,10 @@ export class PerformanceScorer {
   }
 
   private determineTier(performanceScore: number): KeywordPerformanceScore['tier'] {
-    if (performanceScore >= 80) return 'top';
-    if (performanceScore >= 60) return 'high';
-    if (performanceScore >= 40) return 'medium';
-    if (performanceScore >= 20) return 'low';
-    return 'bottom';
+    if (performanceScore >= 80) return 'A';
+    if (performanceScore >= 60) return 'B';
+    if (performanceScore >= 40) return 'C';
+    return 'D';
   }
 
   private average(values: number[]): number {
