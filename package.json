@@ -8,7 +8,7 @@
     "build": "next build",
     "build:debug": "node debug-build.js && next build",
     "build:cli": "tsc",
-    "start": "node .next/standalone/server.js",
+    "start": "next start",
     "lint": "next lint",
     "test": "vitest",
     "test:ui": "vitest --ui",
