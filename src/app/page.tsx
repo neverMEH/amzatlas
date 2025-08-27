@@ -8,6 +8,15 @@ export default function Home() {
           <span className="text-sm">Version 1.0.1 - BigQuery Pipeline Ready</span>
         </p>
         
+        <div className="mb-8">
+          <a 
+            href="/dashboard" 
+            className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors shadow-lg"
+          >
+            Open SQP Dashboard →
+          </a>
+        </div>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <div className="border rounded-lg p-6">
             <h2 className="text-2xl font-semibold mb-4">Pipeline Monitoring</h2>
