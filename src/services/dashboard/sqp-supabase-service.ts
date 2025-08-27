@@ -3,13 +3,20 @@ import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { PurchaseMetrics, KeywordPerformance, PurchaseTrend } from '@/types/dashboard';
 
 class SQPSupabaseService {
-  private supabase;
+  private supabase: any;
   
   constructor() {
-    this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    // Initialize lazily to avoid build-time errors
+  }
+  
+  private getClient() {
+    if (!this.supabase) {
+      this.supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+    }
+    return this.supabase;
   }
   
   async getPurchaseMetrics(dateRange: { start: Date; end: Date }): Promise<PurchaseMetrics> {
@@ -18,7 +25,7 @@ class SQPSupabaseService {
     
     try {
       // Get current period metrics
-      const { data: currentData, error: currentError } = await this.supabase
+      const { data: currentData, error: currentError } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('total_purchases, total_clicks, purchase_share')
         .gte('period_start', startDate)
@@ -31,7 +38,7 @@ class SQPSupabaseService {
       const prevStart = format(subDays(dateRange.start, daysDiff), 'yyyy-MM-dd');
       const prevEnd = format(subDays(dateRange.end, daysDiff), 'yyyy-MM-dd');
       
-      const { data: previousData, error: previousError } = await this.supabase
+      const { data: previousData, error: previousError } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('total_purchases, total_clicks, purchase_share')
         .gte('period_start', prevStart)
@@ -44,7 +51,7 @@ class SQPSupabaseService {
       const previous = this.aggregateMetrics(previousData || []);
       
       // Get zero purchase keywords count
-      const { count: zeroCount } = await this.supabase
+      const { count: zeroCount } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('query', { count: 'exact', head: true })
         .gte('period_start', startDate)
@@ -52,7 +59,7 @@ class SQPSupabaseService {
         .gt('total_clicks', 0)
         .eq('total_purchases', 0);
       
-      const { count: prevZeroCount } = await this.supabase
+      const { count: prevZeroCount } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('query', { count: 'exact', head: true })
         .gte('period_start', prevStart)
@@ -80,7 +87,7 @@ class SQPSupabaseService {
   
   async getTopKeywords(limit: number = 10): Promise<KeywordPerformance[]> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('query, total_purchases, total_impressions, total_clicks, purchase_share, avg_cvr')
         .order('total_purchases', { ascending: false })
@@ -88,7 +95,7 @@ class SQPSupabaseService {
       
       if (error) throw error;
       
-      return (data || []).map(row => ({
+      return (data || []).map((row: any) => ({
         keyword: row.query,
         purchases: row.total_purchases,
         marketPurchases: Math.round(row.total_purchases / (row.purchase_share || 0.01)),
@@ -109,7 +116,7 @@ class SQPSupabaseService {
       const endDate = new Date();
       const startDate = subDays(endDate, weeks * 7);
       
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('period_start, total_purchases, total_impressions')
         .gte('period_start', format(startDate, 'yyyy-MM-dd'))
@@ -121,7 +128,7 @@ class SQPSupabaseService {
       // Group by week
       const weeklyData = new Map<string, { purchases: number; market: number }>();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         const weekStart = startOfWeek(new Date(row.period_start));
         const weekKey = format(weekStart, 'yyyy-MM-dd');
         
@@ -147,7 +154,7 @@ class SQPSupabaseService {
   
   async getZeroPurchaseKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('query, total_clicks, total_impressions')
         .eq('total_purchases', 0)
@@ -157,7 +164,7 @@ class SQPSupabaseService {
       
       if (error) throw error;
       
-      return (data || []).map(row => ({
+      return (data || []).map((row: any) => ({
         keyword: row.query,
         purchases: 0,
         marketPurchases: Math.round(row.total_impressions * 0.04), // Estimate market purchases
@@ -176,7 +183,7 @@ class SQPSupabaseService {
   async getRisingKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
       // Compare last week to previous week
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('period_comparisons')
         .select('query, current_purchases, previous_purchases, current_clicks, purchases_change_pct')
         .eq('period_type', 'weekly')
@@ -186,7 +193,7 @@ class SQPSupabaseService {
       
       if (error) throw error;
       
-      return (data || []).map(row => ({
+      return (data || []).map((row: any) => ({
         keyword: row.query,
         purchases: row.current_purchases,
         marketPurchases: Math.round(row.current_purchases / 0.2),
@@ -204,7 +211,7 @@ class SQPSupabaseService {
   
   async getNegativeROIKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
-      const { data, error } = await this.supabase
+      const { data, error } = await this.getClient()
         .from('sqp.weekly_summary')
         .select('query, total_purchases, total_clicks, total_impressions, purchase_share')
         .gt('total_clicks', 10) // Minimum clicks threshold
@@ -214,7 +221,7 @@ class SQPSupabaseService {
       
       if (error) throw error;
       
-      return (data || []).map(row => {
+      return (data || []).map((row: any) => {
         const spend = this.estimateSpend(row.total_clicks);
         const revenue = row.total_purchases * 50; // Assume $50 average order value
         const roi = ((revenue - spend) / spend) * 100;

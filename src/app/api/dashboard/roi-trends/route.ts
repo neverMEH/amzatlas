@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     
     // Group by week and calculate ROI
     const weeklyROI: any[] = []
-    const weekMap = new Map<string, { purchases: number, clicks: number }>()
+    const weekMap = new Map() as Map<string, { purchases: number, clicks: number }>
     
     (data || []).forEach(row => {
       const week = format(new Date(row.period_start), "'W'w")
