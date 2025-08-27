@@ -5,7 +5,7 @@ import { TrendingUp, BarChart3, Activity, Zap } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
-import { usePurchaseMetrics } from '@/hooks/use-sqp-data'
+import { usePurchaseMetrics, useRisingKeywords } from '@/hooks/use-sqp-data'
 
 const growthReports = [
   {
@@ -37,6 +37,7 @@ const growthReports = [
 export default function GrowthReports() {
   const [selectedReport, setSelectedReport] = useState('market-share-progression')
   const { data: metrics, isLoading } = usePurchaseMetrics()
+  const { data: risingKeywords, isLoading: isLoadingRising } = useRisingKeywords(10)
 
   const renderReportContent = () => {
     switch (selectedReport) {

@@ -5,7 +5,7 @@ import { DollarSign, PiggyBank, Calculator, TrendingDown } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
-import { usePurchaseMetrics } from '@/hooks/use-sqp-data'
+import { usePurchaseMetrics, useNegativeROIKeywords } from '@/hooks/use-sqp-data'
 
 const roiReports = [
   {
@@ -37,6 +37,7 @@ const roiReports = [
 export default function ROIReports() {
   const [selectedReport, setSelectedReport] = useState('purchase-roi-summary')
   const { data: metrics, isLoading } = usePurchaseMetrics()
+  const { data: negativeROIKeywords, isLoading: isLoadingNegativeROI } = useNegativeROIKeywords(15)
 
   const renderReportContent = () => {
     switch (selectedReport) {

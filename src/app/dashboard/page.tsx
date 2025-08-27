@@ -53,21 +53,13 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-8 flex justify-between items-start">
-        <div>
-          <h1 className="text-display-xs font-semibold text-gray-900 dark:text-gray-50">
-            SQP Purchase Dashboard
-          </h1>
-          <p className="mt-1 text-md text-gray-600 dark:text-gray-400">
-            Monitor your keyword purchase performance and market insights
-          </p>
-        </div>
-        <a
-          href="/dashboard/reports"
-          className="inline-flex items-center gap-x-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 px-3.5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-        >
-          View All Reports →
-        </a>
+      <div className="mb-8">
+        <h1 className="text-display-xs font-semibold text-gray-900 dark:text-gray-50">
+          SQP Purchase Dashboard
+        </h1>
+        <p className="mt-1 text-md text-gray-600 dark:text-gray-400">
+          Monitor your keyword purchase performance and market insights
+        </p>
       </div>
 
       <div className="mb-4 flex justify-end">

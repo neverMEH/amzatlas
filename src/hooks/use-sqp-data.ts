@@ -72,3 +72,60 @@ export function usePurchaseTrends(weeks: number = 12) {
     staleTime: 5 * 60 * 1000,
   })
 }
+
+// Hook for zero-purchase keywords (keywords with clicks but no purchases)
+export function useZeroPurchaseKeywords(limit: number = 20) {
+  const { refreshInterval } = useDashboard()
+  
+  return useQuery<KeywordPerformance[]>({
+    queryKey: ['zero-purchase-keywords', limit],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: limit.toString(), type: 'zero-purchase' })
+      const response = await fetch(`/api/dashboard/keywords?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch zero-purchase keywords')
+      }
+      return response.json()
+    },
+    refetchInterval: refreshInterval,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Hook for rising keywords (fast-growing purchase keywords)
+export function useRisingKeywords(limit: number = 20) {
+  const { refreshInterval } = useDashboard()
+  
+  return useQuery<KeywordPerformance[]>({
+    queryKey: ['rising-keywords', limit],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: limit.toString(), type: 'rising' })
+      const response = await fetch(`/api/dashboard/keywords?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch rising keywords')
+      }
+      return response.json()
+    },
+    refetchInterval: refreshInterval,
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+// Hook for negative ROI keywords
+export function useNegativeROIKeywords(limit: number = 20) {
+  const { refreshInterval } = useDashboard()
+  
+  return useQuery<KeywordPerformance[]>({
+    queryKey: ['negative-roi-keywords', limit],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: limit.toString(), type: 'negative-roi' })
+      const response = await fetch(`/api/dashboard/keywords?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch negative ROI keywords')
+      }
+      return response.json()
+    },
+    refetchInterval: refreshInterval,
+    staleTime: 5 * 60 * 1000,
+  })
+}

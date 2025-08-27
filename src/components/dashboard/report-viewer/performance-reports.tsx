@@ -5,7 +5,7 @@ import { BarChart2, TrendingUp, ShoppingCart, Target } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
-import { usePurchaseMetrics } from '@/hooks/use-sqp-data'
+import { usePurchaseMetrics, useZeroPurchaseKeywords } from '@/hooks/use-sqp-data'
 
 const performanceReports = [
   {
@@ -37,6 +37,7 @@ const performanceReports = [
 export default function PerformanceReports() {
   const [selectedReport, setSelectedReport] = useState('daily-purchase-summary')
   const { data: metrics, isLoading } = usePurchaseMetrics()
+  const { data: zeroPurchaseKeywords, isLoading: isLoadingZero } = useZeroPurchaseKeywords(10)
 
   const renderReportContent = () => {
     switch (selectedReport) {
@@ -99,6 +100,7 @@ export default function PerformanceReports() {
         )
       
       case 'zero-purchase-keywords':
+        const totalWastedSpend = zeroPurchaseKeywords?.reduce((sum, kw) => sum + kw.spend, 0) || 0
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,17 +114,59 @@ export default function PerformanceReports() {
               />
               <MetricsWidget
                 title="Wasted Ad Spend"
-                metric="$2,458"
-                change="-$342"
-                trend="up"
+                metric={`$${totalWastedSpend.toLocaleString()}`}
+                change={totalWastedSpend > 0 ? 'Critical issue' : 'No waste detected'}
+                trend={totalWastedSpend > 0 ? 'down' : 'up'}
                 description="On zero purchase keywords"
-                isLoading={isLoading}
+                isLoading={isLoadingZero}
               />
             </div>
-            <TableWidget
-              title="Zero Purchase Keywords Detail"
-              description="Keywords with clicks but no purchases - opportunity for optimization"
-            />
+            
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+              <div className="mb-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-50">Zero Purchase Keywords Detail</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Keywords with clicks but no purchases - opportunity for optimization</p>
+              </div>
+
+              {isLoadingZero ? (
+                <div className="h-64 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
+                    <thead>
+                      <tr>
+                        <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Keyword</th>
+                        <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Ad Spend</th>
+                        <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Market Purchases</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
+                      {(zeroPurchaseKeywords || []).map((keyword) => (
+                        <tr key={keyword.keyword} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {keyword.keyword}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-error-600 dark:text-error-400">
+                            ${keyword.spend.toLocaleString()}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-right text-gray-900 dark:text-gray-100">
+                            {keyword.marketPurchases.toLocaleString()}
+                          </td>
+                          <td className="px-3 py-4 whitespace-nowrap text-sm text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-error-100 text-error-800 dark:bg-error-900/20 dark:text-error-400">
+                              Pause recommended
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )
       

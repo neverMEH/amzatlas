@@ -229,6 +229,143 @@ class SQPDataService {
     ];
   }
   
+  async getZeroPurchaseKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
+    const query = `
+      SELECT
+        keyword,
+        0 as purchases,
+        SUM(market_purchase_count) as marketPurchases,
+        0 as share,
+        0 as cvr,
+        SUM(ad_spend) as spend,
+        -100 as roi,
+        'down' as trend
+      FROM sqp_daily
+      WHERE purchase_count = 0 AND click_count > 0
+        AND date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+      GROUP BY keyword
+      ORDER BY spend DESC
+      LIMIT @limit
+    `;
+    
+    try {
+      if (!this.client) {
+        return this.getMockZeroPurchaseKeywords();
+      }
+      
+      const results = await this.client.query(query, { limit });
+      
+      return results.map((row: any) => ({
+        keyword: row.keyword,
+        purchases: row.purchases || 0,
+        marketPurchases: row.marketPurchases || 0,
+        share: row.share || 0,
+        cvr: row.cvr || 0,
+        spend: row.spend || 0,
+        roi: row.roi || 0,
+        trend: row.trend || 'down',
+      }));
+    } catch (error) {
+      console.error('Error fetching zero purchase keywords:', error);
+      return this.getMockZeroPurchaseKeywords();
+    }
+  }
+
+  async getRisingKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
+    const query = `
+      WITH keyword_growth AS (
+        SELECT
+          keyword,
+          SUM(CASE WHEN date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN purchase_count ELSE 0 END) as recent_purchases,
+          SUM(CASE WHEN date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY) AND date < DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN purchase_count ELSE 0 END) as previous_purchases,
+          SUM(CASE WHEN date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN market_purchase_count ELSE 0 END) as marketPurchases,
+          SUM(CASE WHEN date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN ad_spend ELSE 0 END) as spend,
+          SUM(CASE WHEN date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN revenue ELSE 0 END) as revenue
+        FROM sqp_daily
+        WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+        GROUP BY keyword
+        HAVING recent_purchases > 0 AND previous_purchases > 0
+      )
+      SELECT
+        keyword,
+        recent_purchases as purchases,
+        marketPurchases,
+        SAFE_DIVIDE(recent_purchases, marketPurchases) * 100 as share,
+        SAFE_DIVIDE(recent_purchases, NULLIF(spend, 0)) * 100 as cvr,
+        spend,
+        SAFE_DIVIDE(revenue, NULLIF(spend, 0)) * 100 as roi,
+        'up' as trend
+      FROM keyword_growth
+      WHERE SAFE_DIVIDE((recent_purchases - previous_purchases), NULLIF(previous_purchases, 0)) > 0.2
+      ORDER BY SAFE_DIVIDE((recent_purchases - previous_purchases), NULLIF(previous_purchases, 0)) DESC
+      LIMIT @limit
+    `;
+    
+    try {
+      if (!this.client) {
+        return this.getMockRisingKeywords();
+      }
+      
+      const results = await this.client.query(query, { limit });
+      
+      return results.map((row: any) => ({
+        keyword: row.keyword,
+        purchases: row.purchases || 0,
+        marketPurchases: row.marketPurchases || 0,
+        share: row.share || 0,
+        cvr: row.cvr || 0,
+        spend: row.spend || 0,
+        roi: row.roi || 0,
+        trend: row.trend || 'up',
+      }));
+    } catch (error) {
+      console.error('Error fetching rising keywords:', error);
+      return this.getMockRisingKeywords();
+    }
+  }
+
+  async getNegativeROIKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
+    const query = `
+      SELECT
+        keyword,
+        SUM(purchase_count) as purchases,
+        SUM(market_purchase_count) as marketPurchases,
+        SUM(purchase_count) / NULLIF(SUM(market_purchase_count), 0) * 100 as share,
+        SUM(purchase_count) / NULLIF(SUM(click_count), 0) * 100 as cvr,
+        SUM(ad_spend) as spend,
+        SUM(revenue) / NULLIF(SUM(ad_spend), 0) * 100 as roi,
+        'down' as trend
+      FROM sqp_daily
+      WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
+      GROUP BY keyword
+      HAVING SUM(revenue) / NULLIF(SUM(ad_spend), 0) < 1
+      ORDER BY roi ASC
+      LIMIT @limit
+    `;
+    
+    try {
+      if (!this.client) {
+        return this.getMockNegativeROIKeywords();
+      }
+      
+      const results = await this.client.query(query, { limit });
+      
+      return results.map((row: any) => ({
+        keyword: row.keyword,
+        purchases: row.purchases || 0,
+        marketPurchases: row.marketPurchases || 0,
+        share: row.share || 0,
+        cvr: row.cvr || 0,
+        spend: row.spend || 0,
+        roi: row.roi || 0,
+        trend: row.trend || 'down',
+      }));
+    } catch (error) {
+      console.error('Error fetching negative ROI keywords:', error);
+      return this.getMockNegativeROIKeywords();
+    }
+  }
+
   private getMockTrends(): PurchaseTrend[] {
     const weeks = 12;
     const trends: PurchaseTrend[] = [];
@@ -243,6 +380,81 @@ class SQPDataService {
     }
     
     return trends;
+  }
+
+  private getMockZeroPurchaseKeywords(): KeywordPerformance[] {
+    return [
+      {
+        keyword: 'expensive bluetooth headphones',
+        purchases: 0,
+        marketPurchases: 45,
+        share: 0,
+        cvr: 0,
+        spend: 234,
+        roi: -100,
+        trend: 'down',
+      },
+      {
+        keyword: 'premium wireless earbuds',
+        purchases: 0,
+        marketPurchases: 78,
+        share: 0,
+        cvr: 0,
+        spend: 189,
+        roi: -100,
+        trend: 'down',
+      },
+    ];
+  }
+
+  private getMockRisingKeywords(): KeywordPerformance[] {
+    return [
+      {
+        keyword: 'wireless earbuds noise cancelling',
+        purchases: 89,
+        marketPurchases: 234,
+        share: 38.0,
+        cvr: 6.7,
+        spend: 456,
+        roi: 420,
+        trend: 'up',
+      },
+      {
+        keyword: 'bluetooth headphones gym',
+        purchases: 67,
+        marketPurchases: 189,
+        share: 35.4,
+        cvr: 5.9,
+        spend: 345,
+        roi: 380,
+        trend: 'up',
+      },
+    ];
+  }
+
+  private getMockNegativeROIKeywords(): KeywordPerformance[] {
+    return [
+      {
+        keyword: 'cheap bluetooth headphones',
+        purchases: 12,
+        marketPurchases: 456,
+        share: 2.6,
+        cvr: 1.2,
+        spend: 567,
+        roi: 45,
+        trend: 'down',
+      },
+      {
+        keyword: 'discount wireless earbuds',
+        purchases: 8,
+        marketPurchases: 234,
+        share: 3.4,
+        cvr: 0.9,
+        spend: 345,
+        roi: 32,
+        trend: 'down',
+      },
+    ];
   }
 }
 

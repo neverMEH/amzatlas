@@ -5,7 +5,7 @@ import { Target, Lightbulb, Shield, Compass } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
-import { usePurchaseMetrics } from '@/hooks/use-sqp-data'
+import { usePurchaseMetrics, useTopKeywords } from '@/hooks/use-sqp-data'
 
 const strategicReports = [
   {
