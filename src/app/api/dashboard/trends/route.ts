@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sqpDataService } from '@/services/dashboard/sqp-data-service'
+import { sqpSupabaseService } from '@/services/dashboard/sqp-supabase-service'
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const weeks = parseInt(searchParams.get('weeks') || '12', 10)
     
-    const trends = await sqpDataService.getPurchaseTrends(weeks)
+    const trends = await sqpSupabaseService.getPurchaseTrends(weeks)
     
     return NextResponse.json(trends)
   } catch (error) {

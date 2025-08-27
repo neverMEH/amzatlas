@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sqpDataService } from '@/services/dashboard/sqp-data-service'
+import { sqpSupabaseService } from '@/services/dashboard/sqp-supabase-service'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,17 +10,17 @@ export async function GET(request: NextRequest) {
     let keywords
     switch (type) {
       case 'zero-purchase':
-        keywords = await sqpDataService.getZeroPurchaseKeywords(limit)
+        keywords = await sqpSupabaseService.getZeroPurchaseKeywords(limit)
         break
       case 'rising':
-        keywords = await sqpDataService.getRisingKeywords(limit)
+        keywords = await sqpSupabaseService.getRisingKeywords(limit)
         break
       case 'negative-roi':
-        keywords = await sqpDataService.getNegativeROIKeywords(limit)
+        keywords = await sqpSupabaseService.getNegativeROIKeywords(limit)
         break
       case 'top':
       default:
-        keywords = await sqpDataService.getTopKeywords(limit)
+        keywords = await sqpSupabaseService.getTopKeywords(limit)
         break
     }
     

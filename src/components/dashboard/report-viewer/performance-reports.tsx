@@ -5,7 +5,6 @@ import { BarChart2, TrendingUp, ShoppingCart, Target } from 'lucide-react'
 import MetricsWidget from '@/components/dashboard/widgets/metrics-widget'
 import TableWidget from '@/components/dashboard/widgets/table-widget'
 import ChartWidget from '@/components/dashboard/widgets/chart-widget'
-import HourlyPerformanceChart from '@/components/dashboard/widgets/hourly-performance-chart'
 import { usePurchaseMetrics, useZeroPurchaseKeywords } from '@/hooks/use-sqp-data'
 
 const performanceReports = [
@@ -73,7 +72,11 @@ export default function PerformanceReports() {
                 />
               </div>
             </div>
-            <HourlyPerformanceChart />
+            <ChartWidget
+              title="Purchase Trend (Last 12 Weeks)"
+              description="Weekly purchase volume comparison"
+              type="line"
+            />
             <TableWidget
               title="Top Performing Keywords Today"
               description="Keywords with highest purchase counts"

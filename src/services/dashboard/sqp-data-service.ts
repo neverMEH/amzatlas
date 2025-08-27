@@ -1,16 +1,21 @@
 import { BigQueryClient } from '@/lib/bigquery/client';
 import { format, subDays } from 'date-fns';
+import { getFullTableName } from '@/config/bigquery.config';
 
 import { PurchaseMetrics, KeywordPerformance, PurchaseTrend } from '@/types/dashboard'
 
 class SQPDataService {
   private client: BigQueryClient | null = null;
+  private tableName: string = '';
   
   constructor() {
     try {
       // Only initialize BigQuery client if credentials are available
       if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
         this.client = new BigQueryClient();
+        // Use the raw SQP table for now
+        this.tableName = getFullTableName('sqpRaw');
+        console.log('Using BigQuery table:', this.tableName);
       }
     } catch (error) {
       console.log('BigQuery client initialization failed, using mock data', error);
@@ -197,7 +202,7 @@ class SQPDataService {
   private getMockKeywords(): KeywordPerformance[] {
     return [
       {
-        keyword: 'wireless earbuds',
+        keyword: 'best coffee maker',
         purchases: 342,
         marketPurchases: 1456,
         share: 23.5,
@@ -207,7 +212,7 @@ class SQPDataService {
         trend: 'up',
       },
       {
-        keyword: 'bluetooth headphones',
+        keyword: 'espresso machine',
         purchases: 287,
         marketPurchases: 1823,
         share: 15.7,
@@ -217,7 +222,7 @@ class SQPDataService {
         trend: 'up',
       },
       {
-        keyword: 'noise cancelling earbuds',
+        keyword: 'coffee grinder electric',
         purchases: 198,
         marketPurchases: 921,
         share: 21.5,
