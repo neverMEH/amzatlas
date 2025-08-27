@@ -4,7 +4,8 @@ export default function Home() {
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">SQP Intelligence Platform</h1>
         <p className="text-xl text-gray-600 mb-8">
-          AI-powered analytics platform for Amazon sellers and agencies
+          AI-powered analytics platform for Amazon sellers and agencies.<br/>
+          <span className="text-sm">Version 1.0.1 - BigQuery Pipeline Ready</span>
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">

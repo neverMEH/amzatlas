@@ -4,9 +4,11 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('=== Preparing build environment ===');
+console.log('Build timestamp:', new Date().toISOString());
 
 const currentDir = process.cwd();
 console.log('Current directory:', currentDir);
+console.log('Node version:', process.version);
 
 // Check if we're in the right directory structure
 const srcAppPath = path.join(currentDir, 'src', 'app');
