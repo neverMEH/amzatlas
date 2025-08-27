@@ -1,11 +1,21 @@
 import { BigQueryClient } from '@/lib/bigquery/client';
-import { getFullTableName } from '@/config/bigquery.config';
-import { format, subDays, subWeeks, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 import { PurchaseMetrics, KeywordPerformance, PurchaseTrend } from '@/types/dashboard'
 
 class SQPDataService {
-  private client = new BigQueryClient();
+  private client: BigQueryClient | null = null;
+  
+  constructor() {
+    try {
+      // Only initialize BigQuery client if credentials are available
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+        this.client = new BigQueryClient();
+      }
+    } catch (error) {
+      console.log('BigQuery client initialization failed, using mock data', error);
+    }
+  }
   
   async getPurchaseMetrics(dateRange: { start: Date; end: Date }): Promise<PurchaseMetrics> {
     const startDate = format(dateRange.start, 'yyyy-MM-dd');
@@ -19,7 +29,7 @@ class SQPDataService {
         SUM(purchase_count) / NULLIF(SUM(click_count), 0) * 100 as purchaseCVR,
         SUM(revenue) / NULLIF(SUM(ad_spend), 0) * 100 as purchaseROI,
         COUNTIF(purchase_count = 0 AND click_count > 0) as zeroPurchaseKeywords
-      FROM ${getFullTableName('sqpDaily')}
+      FROM sqp_daily
       WHERE date BETWEEN @startDate AND @endDate
     `;
     
@@ -35,11 +45,16 @@ class SQPDataService {
         SUM(purchase_count) / NULLIF(SUM(click_count), 0) * 100 as purchaseCVR,
         SUM(revenue) / NULLIF(SUM(ad_spend), 0) * 100 as purchaseROI,
         COUNTIF(purchase_count = 0 AND click_count > 0) as zeroPurchaseKeywords
-      FROM ${getFullTableName('sqpDaily')}
+      FROM sqp_daily
       WHERE date BETWEEN @prevStart AND @prevEnd
     `;
     
     try {
+      // Return mock data if BigQuery client is not available
+      if (!this.client) {
+        return this.getMockMetrics();
+      }
+      
       const currentResults = await this.client.query(
         currentMetricsQuery,
         { startDate, endDate }
@@ -90,7 +105,7 @@ class SQPDataService {
           WHEN SUM(purchase_count) < LAG(SUM(purchase_count)) OVER (PARTITION BY keyword ORDER BY MAX(date)) THEN 'down'
           ELSE 'stable'
         END as trend
-      FROM ${getFullTableName('sqpDaily')}
+      FROM sqp_daily
       WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)
       GROUP BY keyword
       ORDER BY purchases DESC
@@ -98,6 +113,11 @@ class SQPDataService {
     `;
     
     try {
+      // Return mock data if BigQuery client is not available
+      if (!this.client) {
+        return this.getMockKeywords();
+      }
+      
       const results = await this.client.query(
         query,
         { limit }
@@ -125,13 +145,18 @@ class SQPDataService {
         FORMAT_DATE('W%V', date) as week,
         SUM(purchase_count) as purchases,
         SUM(market_purchase_count) as market
-      FROM ${getFullTableName('sqpDaily')}
+      FROM sqp_daily
       WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL @weeks WEEK)
       GROUP BY week
       ORDER BY MIN(date)
     `;
     
     try {
+      // Return mock data if BigQuery client is not available
+      if (!this.client) {
+        return this.getMockTrends();
+      }
+      
       const results = await this.client.query(
         query,
         { weeks }

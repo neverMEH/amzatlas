@@ -34,13 +34,15 @@ const getEnvironment = (): Environment => {
 const getCredentials = () => {
   const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (!credentialsJson) {
-    throw new Error('GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable is not set');
+    // Return null to indicate no credentials available
+    return null;
   }
   
   try {
     return JSON.parse(credentialsJson);
   } catch (error) {
-    throw new Error('Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    console.error('Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON');
+    return null;
   }
 };
 

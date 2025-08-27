@@ -39,18 +39,13 @@ export class BigQueryClient {
   private loadConfiguration(config?: Partial<BigQueryConfig>): BigQueryConfig {
     // Load from environment variables
     const envCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-    if (!envCredentials && !config?.credentials) {
-      throw new BigQueryAuthError(
-        'Missing BigQuery credentials. Please set GOOGLE_APPLICATION_CREDENTIALS_JSON environment variable.'
-      );
-    }
-
+    
     let credentials: object | undefined;
     if (envCredentials) {
       try {
         credentials = JSON.parse(envCredentials);
       } catch (error) {
-        throw new BigQueryAuthError('Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON');
+        console.error('Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_JSON');
       }
     }
 
