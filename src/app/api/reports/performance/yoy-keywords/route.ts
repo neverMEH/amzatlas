@@ -85,9 +85,9 @@ export async function GET(request: NextRequest) {
       avg_impression_change: calculateAverage(processedData, 'yoy_impressions_change'),
       avg_click_change: calculateAverage(processedData, 'yoy_clicks_change'),
       avg_purchase_change: calculateAverage(processedData, 'yoy_purchases_change'),
-      improving_keywords: processedData.filter(d => (d.yoy_purchases_change || 0) > 0).length,
-      declining_keywords: processedData.filter(d => (d.yoy_purchases_change || 0) < 0).length,
-      stable_keywords: processedData.filter(d => Math.abs(d.yoy_purchases_change || 0) <= 5).length,
+      improving_keywords: processedData.filter((d: any) => (d.yoy_purchases_change || 0) > 0).length,
+      declining_keywords: processedData.filter((d: any) => (d.yoy_purchases_change || 0) < 0).length,
+      stable_keywords: processedData.filter((d: any) => Math.abs(d.yoy_purchases_change || 0) <= 5).length,
     };
 
     return NextResponse.json({

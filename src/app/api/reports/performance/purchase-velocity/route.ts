@@ -161,7 +161,7 @@ function calculateVelocityMetrics(data: any[]): any[] {
   const results = [];
 
   for (const [key, rows] of Object.entries(grouped)) {
-    const sortedRows = rows.sort((a, b) => 
+    const sortedRows = (rows as any[]).sort((a, b) => 
       new Date(b.period_end).getTime() - new Date(a.period_end).getTime()
     );
 

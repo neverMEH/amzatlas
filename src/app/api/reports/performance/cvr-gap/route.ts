@@ -261,10 +261,10 @@ function analyzeGapType(
 function generatePriorityMatrix(data: any[]): any {
   // Create 2x2 matrix: Impact vs Effort
   const matrix = {
-    high_impact_low_effort: [], // Quick wins
-    high_impact_high_effort: [], // Major projects
-    low_impact_low_effort: [], // Fill-ins
-    low_impact_high_effort: [], // Avoid
+    high_impact_low_effort: [] as any[], // Quick wins
+    high_impact_high_effort: [] as any[], // Major projects
+    low_impact_low_effort: [] as any[], // Fill-ins
+    low_impact_high_effort: [] as any[], // Avoid
   };
 
   data.forEach(item => {
