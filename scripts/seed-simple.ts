@@ -16,15 +16,10 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-// Initialize Supabase client with sqp schema
+// Initialize Supabase client (using default public schema)
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    db: {
-      schema: 'sqp'
-    }
-  }
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 // Test data configuration
