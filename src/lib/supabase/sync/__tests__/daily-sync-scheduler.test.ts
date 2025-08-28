@@ -15,15 +15,12 @@ const mockCronJob = {
 vi.mock('node-cron', () => ({
   schedule: vi.fn(() => mockCronJob),
   validate: vi.fn(() => true),
-  parseExpression: vi.fn(() => ({
-    next: () => ({ toDate: () => new Date() })
-  })),
 }));
 vi.mock('@/lib/bigquery/connection-pool', () => ({
-  BigQueryConnectionPool: vi.fn(() => ({
+  BigQueryConnectionPool: vi.fn((config, options) => ({
     acquire: vi.fn(),
     release: vi.fn(),
-    drain: vi.fn(),
+    close: vi.fn(),
   })),
 }));
 

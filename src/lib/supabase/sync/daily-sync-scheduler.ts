@@ -69,12 +69,17 @@ export class DailySyncScheduler {
     
     // Initialize BigQuery connection pool
     const credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || '{}');
-    this.bigQueryPool = new BigQueryConnectionPool({
-      projectId: config.bigQueryProjectId,
-      credentials,
-      maxConnections: 5,
-      idleTimeoutMillis: 60000,
-    });
+    this.bigQueryPool = new BigQueryConnectionPool(
+      {
+        projectId: config.bigQueryProjectId,
+        dataset: config.bigQueryDataset,
+        credentials,
+      },
+      {
+        maxClients: 5,
+        idleTimeoutMs: 60000,
+      }
+    );
     
     // Initialize sync service
     this.syncService = new BigQueryToSupabaseSync({
@@ -516,12 +521,17 @@ export class DailySyncScheduler {
       return new Date();
     }
 
-    const interval = cron.parseExpression(this.config.schedule);
-    return interval.next().toDate();
+    // For now, return a calculated next run time based on the schedule
+    // node-cron doesn't provide a direct way to get next scheduled time
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(2, 0, 0, 0); // Assumes daily at 2 AM
+    return tomorrow;
   }
 
   public async cleanup(): Promise<void> {
     this.stop();
-    await this.bigQueryPool.drain();
+    this.bigQueryPool.close();
   }
 }

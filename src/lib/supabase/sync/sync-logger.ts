@@ -9,7 +9,7 @@ import {
   AlertConfig,
 } from './types';
 
-export { SyncLogEntry, DataQualityCheck } from './types';
+export type { SyncLogEntry, DataQualityCheck } from './types';
 
 export class SyncLogger {
   private supabase: SupabaseClient;
@@ -348,8 +348,10 @@ export class SyncLogger {
       return {
         alert: true,
         reason: 'consecutive_failures',
-        count: consecutiveFailures.length,
-        details: consecutiveFailures.map(s => s.error_message),
+        details: {
+          count: consecutiveFailures.length,
+          errors: consecutiveFailures.map(s => s.error_message),
+        },
         severity: 'critical',
       };
     }
@@ -380,10 +382,13 @@ export class SyncLogger {
       return {
         alert: true,
         reason: 'long_running',
-        duration: duration.minutes,
-        threshold: this.defaultAlertConfig.longRunningSyncThresholdMinutes,
         severity: 'high',
-        details: { syncId: runningSync.id, startedAt: runningSync.started_at },
+        details: { 
+          syncId: runningSync.id, 
+          startedAt: runningSync.started_at,
+          duration: duration.minutes,
+          threshold: this.defaultAlertConfig.longRunningSyncThresholdMinutes,
+        },
       };
     }
 
