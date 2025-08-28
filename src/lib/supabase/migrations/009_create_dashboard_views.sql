@@ -1,9 +1,20 @@
 -- Create views specifically for dashboard APIs
 
 -- Drop existing object if it exists
-DROP VIEW IF EXISTS sqp.period_comparisons CASCADE;
-DROP MATERIALIZED VIEW IF EXISTS sqp.period_comparisons CASCADE;
-DROP TABLE IF EXISTS sqp.period_comparisons CASCADE;
+-- Using a DO block to handle any object type without errors
+DO $$ 
+BEGIN
+    -- Try to drop as table first (most likely case based on error)
+    DROP TABLE IF EXISTS sqp.period_comparisons CASCADE;
+    -- Try to drop as materialized view
+    DROP MATERIALIZED VIEW IF EXISTS sqp.period_comparisons CASCADE;
+    -- Try to drop as regular view
+    DROP VIEW IF EXISTS sqp.period_comparisons CASCADE;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Ignore any errors and continue
+        NULL;
+END $$;
 
 -- Period comparisons view for rising keywords
 CREATE VIEW sqp.period_comparisons AS
