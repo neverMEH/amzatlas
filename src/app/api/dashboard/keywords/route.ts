@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sqpSupabaseService } from '@/services/dashboard/sqp-supabase-service'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams

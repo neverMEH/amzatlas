@@ -24,222 +24,191 @@ class SQPSupabaseService {
     const endDate = format(dateRange.end, 'yyyy-MM-dd');
     
     try {
-      // Get current period metrics
-      const { data: currentData, error: currentError } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('total_purchases, total_clicks, purchase_share')
-        .gte('period_start', startDate)
-        .lte('period_end', endDate);
+      // Use the RPC function to get metrics with comparison
+      const { data, error } = await this.getClient()
+        .rpc('get_dashboard_metrics_comparison', {
+          p_start_date: startDate,
+          p_end_date: endDate
+        });
       
-      if (currentError) throw currentError;
+      if (error) throw error;
       
-      // Get previous period for comparison
-      const daysDiff = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-      const prevStart = format(subDays(dateRange.start, daysDiff), 'yyyy-MM-dd');
-      const prevEnd = format(subDays(dateRange.end, daysDiff), 'yyyy-MM-dd');
+      if (data && data.length > 0) {
+        const metrics = data[0];
+        return {
+          totalPurchases: metrics.total_purchases || 0,
+          weekOverWeekChange: metrics.week_over_week_change || 0,
+          marketShare: metrics.market_share || 0,
+          marketShareChange: metrics.market_share_change || 0,
+          purchaseCVR: metrics.purchase_cvr || 0,
+          cvrChange: metrics.cvr_change || 0,
+          zeroPurchaseKeywords: metrics.zero_purchase_keywords || 0,
+          zeroPurchaseChange: metrics.zero_purchase_change || 0,
+          purchaseROI: metrics.purchase_roi || 0,
+          roiChange: metrics.roi_change || 0,
+        };
+      }
       
-      const { data: previousData, error: previousError } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('total_purchases, total_clicks, purchase_share')
-        .gte('period_start', prevStart)
-        .lte('period_end', prevEnd);
-      
-      if (previousError) throw previousError;
-      
-      // Calculate aggregates
-      const current = this.aggregateMetrics(currentData || []);
-      const previous = this.aggregateMetrics(previousData || []);
-      
-      // Get zero purchase keywords count
-      const { count: zeroCount } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('query', { count: 'exact', head: true })
-        .gte('period_start', startDate)
-        .lte('period_end', endDate)
-        .gt('total_clicks', 0)
-        .eq('total_purchases', 0);
-      
-      const { count: prevZeroCount } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('query', { count: 'exact', head: true })
-        .gte('period_start', prevStart)
-        .lte('period_end', prevEnd)
-        .gt('total_clicks', 0)
-        .eq('total_purchases', 0);
-      
+      // Return zeros if no data
       return {
-        totalPurchases: current.totalPurchases,
-        weekOverWeekChange: this.calculatePercentChange(current.totalPurchases, previous.totalPurchases),
-        marketShare: current.avgShare,
-        marketShareChange: current.avgShare - previous.avgShare,
-        purchaseCVR: current.cvr,
-        cvrChange: current.cvr - previous.cvr,
-        zeroPurchaseKeywords: zeroCount || 0,
-        zeroPurchaseChange: (zeroCount || 0) - (prevZeroCount || 0),
-        purchaseROI: current.roi,
-        roiChange: current.roi - previous.roi,
+        totalPurchases: 0,
+        weekOverWeekChange: 0,
+        marketShare: 0,
+        marketShareChange: 0,
+        purchaseCVR: 0,
+        cvrChange: 0,
+        zeroPurchaseKeywords: 0,
+        zeroPurchaseChange: 0,
+        purchaseROI: 0,
+        roiChange: 0,
       };
     } catch (error) {
       console.error('Error fetching purchase metrics from Supabase:', error);
-      return this.getMockMetrics();
+      // Only return mock data in development
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockMetrics();
+      }
+      throw error;
     }
   }
   
   async getTopKeywords(limit: number = 10): Promise<KeywordPerformance[]> {
     try {
+      // Use the RPC function to get top keywords
       const { data, error } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('query, total_purchases, total_impressions, total_clicks, purchase_share, avg_cvr')
-        .order('total_purchases', { ascending: false })
-        .limit(limit);
+        .rpc('get_dashboard_keywords', {
+          p_limit: limit,
+          p_type: 'top'
+        });
       
       if (error) throw error;
       
       return (data || []).map((row: any) => ({
-        keyword: row.query,
-        purchases: row.total_purchases,
-        marketPurchases: Math.round(row.total_purchases / (row.purchase_share || 0.01)),
-        share: row.purchase_share * 100,
-        cvr: row.avg_cvr * 100,
-        spend: this.estimateSpend(row.total_clicks),
-        roi: this.estimateROI(row.total_purchases, row.total_clicks),
-        trend: 'stable' as const,
+        keyword: row.keyword,
+        purchases: row.purchases,
+        marketPurchases: row.market_purchases,
+        share: row.share,
+        cvr: row.cvr,
+        spend: row.spend,
+        roi: row.roi,
+        trend: row.trend as 'up' | 'down' | 'stable',
       }));
     } catch (error) {
       console.error('Error fetching top keywords:', error);
-      return this.getMockKeywords();
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockKeywords();
+      }
+      return [];
     }
   }
   
   async getPurchaseTrends(weeks: number = 12): Promise<PurchaseTrend[]> {
     try {
-      const endDate = new Date();
-      const startDate = subDays(endDate, weeks * 7);
-      
+      // Use the RPC function to get trends
       const { data, error } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('period_start, total_purchases, total_impressions')
-        .gte('period_start', format(startDate, 'yyyy-MM-dd'))
-        .lte('period_start', format(endDate, 'yyyy-MM-dd'))
-        .order('period_start', { ascending: true });
+        .rpc('get_dashboard_trends', {
+          p_weeks: weeks
+        });
       
       if (error) throw error;
       
-      // Group by week
-      const weeklyData = new Map<string, { purchases: number; market: number }>();
-      
-      (data || []).forEach((row: any) => {
-        const weekStart = startOfWeek(new Date(row.period_start));
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        
-        if (!weeklyData.has(weekKey)) {
-          weeklyData.set(weekKey, { purchases: 0, market: 0 });
-        }
-        
-        const week = weeklyData.get(weekKey)!;
-        week.purchases += row.total_purchases;
-        week.market += Math.round(row.total_purchases / 0.2); // Assume 20% market share
-      });
-      
-      return Array.from(weeklyData.entries()).map(([weekStart, data], index) => ({
-        week: `W${index + 1}`,
-        purchases: data.purchases,
-        market: data.market,
-      }));
+      return data || [];
     } catch (error) {
       console.error('Error fetching purchase trends:', error);
-      return this.getMockTrends();
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockTrends();
+      }
+      return [];
     }
   }
   
   async getZeroPurchaseKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
+      // Use the RPC function to get zero purchase keywords
       const { data, error } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('query, total_clicks, total_impressions')
-        .eq('total_purchases', 0)
-        .gt('total_clicks', 0)
-        .order('total_clicks', { ascending: false })
-        .limit(limit);
+        .rpc('get_dashboard_keywords', {
+          p_limit: limit,
+          p_type: 'zero-purchase'
+        });
       
       if (error) throw error;
       
       return (data || []).map((row: any) => ({
-        keyword: row.query,
-        purchases: 0,
-        marketPurchases: Math.round(row.total_impressions * 0.04), // Estimate market purchases
-        share: 0,
-        cvr: 0,
-        spend: this.estimateSpend(row.total_clicks),
-        roi: -100,
-        trend: 'down' as const,
+        keyword: row.keyword,
+        purchases: row.purchases,
+        marketPurchases: row.market_purchases,
+        share: row.share,
+        cvr: row.cvr,
+        spend: row.spend,
+        roi: row.roi,
+        trend: row.trend as 'up' | 'down' | 'stable',
       }));
     } catch (error) {
       console.error('Error fetching zero purchase keywords:', error);
-      return this.getMockZeroPurchaseKeywords();
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockZeroPurchaseKeywords();
+      }
+      return [];
     }
   }
   
   async getRisingKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
-      // Compare last week to previous week
+      // Use the RPC function to get rising keywords
       const { data, error } = await this.getClient()
-        .from('period_comparisons')
-        .select('query, current_purchases, previous_purchases, current_clicks, purchases_change_pct')
-        .eq('period_type', 'weekly')
-        .gt('purchases_change_pct', 20)
-        .order('purchases_change_pct', { ascending: false })
-        .limit(limit);
+        .rpc('get_dashboard_keywords', {
+          p_limit: limit,
+          p_type: 'rising'
+        });
       
       if (error) throw error;
       
       return (data || []).map((row: any) => ({
-        keyword: row.query,
-        purchases: row.current_purchases,
-        marketPurchases: Math.round(row.current_purchases / 0.2),
-        share: 20,
-        cvr: row.current_clicks > 0 ? (row.current_purchases / row.current_clicks) * 100 : 0,
-        spend: this.estimateSpend(row.current_clicks),
-        roi: this.estimateROI(row.current_purchases, row.current_clicks),
-        trend: 'up' as const,
+        keyword: row.keyword,
+        purchases: row.purchases,
+        marketPurchases: row.market_purchases,
+        share: row.share,
+        cvr: row.cvr,
+        spend: row.spend,
+        roi: row.roi,
+        trend: row.trend as 'up' | 'down' | 'stable',
       }));
     } catch (error) {
       console.error('Error fetching rising keywords:', error);
-      return this.getMockRisingKeywords();
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockRisingKeywords();
+      }
+      return [];
     }
   }
   
   async getNegativeROIKeywords(limit: number = 20): Promise<KeywordPerformance[]> {
     try {
+      // Use the RPC function to get negative ROI keywords
       const { data, error } = await this.getClient()
-        .from('sqp.weekly_summary')
-        .select('query, total_purchases, total_clicks, total_impressions, purchase_share')
-        .gt('total_clicks', 10) // Minimum clicks threshold
-        .lt('avg_cvr', 0.02) // Low conversion rate
-        .order('total_clicks', { ascending: false })
-        .limit(limit);
+        .rpc('get_dashboard_keywords', {
+          p_limit: limit,
+          p_type: 'negative-roi'
+        });
       
       if (error) throw error;
       
-      return (data || []).map((row: any) => {
-        const spend = this.estimateSpend(row.total_clicks);
-        const revenue = row.total_purchases * 50; // Assume $50 average order value
-        const roi = ((revenue - spend) / spend) * 100;
-        
-        return {
-          keyword: row.query,
-          purchases: row.total_purchases,
-          marketPurchases: Math.round(row.total_purchases / (row.purchase_share || 0.01)),
-          share: row.purchase_share * 100,
-          cvr: (row.total_purchases / row.total_clicks) * 100,
-          spend,
-          roi,
-          trend: 'down' as const,
-        };
-      });
+      return (data || []).map((row: any) => ({
+        keyword: row.keyword,
+        purchases: row.purchases,
+        marketPurchases: row.market_purchases,
+        share: row.share,
+        cvr: row.cvr,
+        spend: row.spend,
+        roi: row.roi,
+        trend: row.trend as 'up' | 'down' | 'stable',
+      }));
     } catch (error) {
       console.error('Error fetching negative ROI keywords:', error);
-      return this.getMockNegativeROIKeywords();
+      if (process.env.NODE_ENV === 'development') {
+        return this.getMockNegativeROIKeywords();
+      }
+      return [];
     }
   }
   
