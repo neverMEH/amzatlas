@@ -35,7 +35,7 @@ export class SyncLogger {
    */
   public async startSync(entry: Omit<SyncLogEntry, 'id' | 'created_at'>): Promise<number> {
     const { data, error } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .insert({
         ...entry,
         started_at: entry.started_at || new Date(),
@@ -64,7 +64,7 @@ export class SyncLogger {
     }
   ): Promise<void> {
     const { error } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .update({
         sync_status: 'completed',
         completed_at: new Date(),
@@ -90,7 +90,7 @@ export class SyncLogger {
     }
   ): Promise<void> {
     const { error: updateError } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .update({
         sync_status: 'failed',
         completed_at: new Date(),
@@ -116,7 +116,7 @@ export class SyncLogger {
     check: Omit<DataQualityCheck, 'id' | 'sync_log_id' | 'created_at'>
   ): Promise<void> {
     const { error } = await this.supabase
-      .from('sqp.data_quality_checks')
+      .from('data_quality_checks')
       .insert({
         sync_log_id: syncLogId,
         ...check,
@@ -140,7 +140,7 @@ export class SyncLogger {
     }));
 
     const { error } = await this.supabase
-      .from('sqp.data_quality_checks')
+      .from('data_quality_checks')
       .insert(checksWithSyncId);
 
     if (error) {
@@ -154,7 +154,7 @@ export class SyncLogger {
   public async logRecordErrors(syncLogId: number, errors: ErrorDetail[]): Promise<void> {
     // Get existing sync log
     const { data: syncLog, error: fetchError } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('error_details')
       .eq('id', syncLogId)
       .single();
@@ -168,7 +168,7 @@ export class SyncLogger {
     const updatedErrors = [...existingErrors, ...errors];
 
     const { error: updateError } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .update({
         error_details: {
           ...syncLog?.error_details,
@@ -234,7 +234,7 @@ export class SyncLogger {
     metrics: PerformanceMetrics
   ): Promise<void> {
     const { data: syncLog, error: fetchError } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('sync_metadata')
       .eq('id', syncLogId)
       .single();
@@ -245,7 +245,7 @@ export class SyncLogger {
     }
 
     const { error: updateError } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .update({
         sync_metadata: {
           ...syncLog?.sync_metadata,
@@ -268,7 +268,7 @@ export class SyncLogger {
     status?: string;
   } = {}): Promise<SyncLogEntry[]> {
     let query = this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('*')
       .order('started_at', { ascending: false });
 
@@ -305,7 +305,7 @@ export class SyncLogger {
     percentage: number;
   }> {
     let query = this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('sync_status');
 
     if (options.days) {
@@ -364,7 +364,7 @@ export class SyncLogger {
    */
   public async checkForLongRunningSync(): Promise<Alert> {
     const { data: runningSync, error } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('*')
       .eq('sync_status', 'started')
       .order('started_at', { ascending: false })
@@ -403,7 +403,7 @@ export class SyncLogger {
     cutoffDate.setDate(cutoffDate.getDate() - options.retentionDays);
 
     const { data, error } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .delete()
       .lt('started_at', cutoffDate.toISOString())
       .select('id');
@@ -427,7 +427,7 @@ export class SyncLogger {
     since.setDate(since.getDate() - options.days);
 
     const { data: syncs, error } = await this.supabase
-      .from('sqp.sync_log')
+      .from('sync_log')
       .select('*')
       .gte('started_at', since.toISOString())
       .order('started_at', { ascending: false });

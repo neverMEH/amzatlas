@@ -1,4 +1,4 @@
-// BigQuery data types
+// BigQuery data types - Legacy flat structure (deprecated)
 export interface BigQuerySQPData {
   search_query: string;
   asin: string;
@@ -17,7 +17,121 @@ export interface BigQuerySQPData {
   purchase_rank?: number;
 }
 
+// New BigQuery nested structure
+export interface BigQueryNestedResponse {
+  dataByAsin: BigQueryASINData[];
+}
+
+export interface BigQueryASINData {
+  startDate: string;
+  endDate: string;
+  asin: string;
+  searchQueryData: BigQuerySearchQueryData[];
+}
+
+export interface BigQuerySearchQueryData {
+  searchQuery: string;
+  searchQueryScore?: number;
+  searchQueryVolume?: number;
+  impressionData: {
+    totalQueryImpressionCount: number;
+    asinImpressionCount: number;
+    asinImpressionShare: number;
+  };
+  clickData: {
+    totalClickCount: number;
+    totalClickRate: number;
+    asinClickCount: number;
+    asinClickShare: number;
+    totalMedianClickPrice?: number;
+    asinMedianClickPrice?: number;
+    totalSameDayShippingClickCount?: number;
+    totalOneDayShippingClickCount?: number;
+    totalTwoDayShippingClickCount?: number;
+  };
+  cartAddData: {
+    totalCartAddCount: number;
+    totalCartAddRate: number;
+    asinCartAddCount: number;
+    asinCartAddShare: number;
+    totalMedianCartAddPrice?: number;
+    asinMedianCartAddPrice?: number;
+    totalSameDayShippingCartAddCount?: number;
+    totalOneDayShippingCartAddCount?: number;
+    totalTwoDayShippingCartAddCount?: number;
+  };
+  purchaseData: {
+    totalPurchaseCount: number;
+    totalPurchaseRate: number;
+    asinPurchaseCount: number;
+    asinPurchaseShare: number;
+    totalMedianPurchasePrice?: number;
+    asinMedianPurchasePrice?: number;
+    totalSameDayShippingPurchaseCount?: number;
+    totalOneDayShippingPurchaseCount?: number;
+    totalTwoDayShippingPurchaseCount?: number;
+  };
+}
+
 // Supabase table types
+export interface SupabaseASINPerformance {
+  id?: number;
+  start_date: string;
+  end_date: string;
+  asin: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SupabaseSearchQueryPerformance {
+  id?: number;
+  asin_performance_id: number;
+  search_query: string;
+  search_query_score?: number;
+  search_query_volume?: number;
+  
+  // Impression metrics
+  total_query_impression_count: number;
+  asin_impression_count: number;
+  asin_impression_share: number;
+  
+  // Click metrics
+  total_click_count: number;
+  total_click_rate: number;
+  asin_click_count: number;
+  asin_click_share: number;
+  total_median_click_price?: number;
+  asin_median_click_price?: number;
+  total_same_day_shipping_click_count?: number;
+  total_one_day_shipping_click_count?: number;
+  total_two_day_shipping_click_count?: number;
+  
+  // Cart add metrics
+  total_cart_add_count: number;
+  total_cart_add_rate: number;
+  asin_cart_add_count: number;
+  asin_cart_add_share: number;
+  total_median_cart_add_price?: number;
+  asin_median_cart_add_price?: number;
+  total_same_day_shipping_cart_add_count?: number;
+  total_one_day_shipping_cart_add_count?: number;
+  total_two_day_shipping_cart_add_count?: number;
+  
+  // Purchase metrics
+  total_purchase_count: number;
+  total_purchase_rate: number;
+  asin_purchase_count: number;
+  asin_purchase_share: number;
+  total_median_purchase_price?: number;
+  asin_median_purchase_price?: number;
+  total_same_day_shipping_purchase_count?: number;
+  total_one_day_shipping_purchase_count?: number;
+  total_two_day_shipping_purchase_count?: number;
+  
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface SupabaseWeeklySummary {
   id?: number;
   period_start: string;
@@ -37,6 +151,24 @@ export interface SupabaseWeeklySummary {
   max_impressions?: number;
   avg_impressions?: number;
   stddev_impressions?: number;
+  
+  // New fields from BigQuery schema
+  search_query_score?: number;
+  search_query_volume?: number;
+  total_query_impression_count?: number;
+  total_click_count?: number;
+  total_cart_add_count?: number;
+  total_purchase_count?: number;
+  total_median_click_price?: number;
+  asin_median_click_price?: number;
+  total_median_cart_add_price?: number;
+  asin_median_cart_add_price?: number;
+  total_median_purchase_price?: number;
+  asin_median_purchase_price?: number;
+  cart_adds?: number;
+  cart_add_rate?: number;
+  cart_add_share?: number;
+  
   created_at?: string;
   updated_at?: string;
   bigquery_sync_id?: string;
