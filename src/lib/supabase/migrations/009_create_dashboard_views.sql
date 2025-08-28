@@ -1,7 +1,12 @@
 -- Create views specifically for dashboard APIs
 
+-- Drop existing object if it exists
+DROP VIEW IF EXISTS sqp.period_comparisons CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS sqp.period_comparisons CASCADE;
+DROP TABLE IF EXISTS sqp.period_comparisons CASCADE;
+
 -- Period comparisons view for rising keywords
-CREATE OR REPLACE VIEW sqp.period_comparisons AS
+CREATE VIEW sqp.period_comparisons AS
 WITH current_period AS (
   SELECT 
     query,
