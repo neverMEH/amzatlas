@@ -1,9 +1,16 @@
 -- Create views in public schema that reference sqp schema tables
 -- This allows the Supabase client to access sqp data through the public schema
 
--- Create view for daily_sqp_data
-CREATE OR REPLACE VIEW public.daily_sqp_data AS
-SELECT * FROM sqp.daily_sqp_data;
+-- Note: Run migration 011 first to create daily_sqp_data table if it doesn't exist
+
+-- Create view for daily_sqp_data (only if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'sqp' AND table_name = 'daily_sqp_data') THEN
+        CREATE OR REPLACE VIEW public.daily_sqp_data AS
+        SELECT * FROM sqp.daily_sqp_data;
+    END IF;
+END $$;
 
 -- Create view for weekly_summary
 CREATE OR REPLACE VIEW public.weekly_summary AS
