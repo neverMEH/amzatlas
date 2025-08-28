@@ -260,6 +260,27 @@ export class SyncLogger {
   }
 
   /**
+   * Get a single sync log entry by ID
+   */
+  public async getSyncLog(id: number): Promise<SyncLogEntry | null> {
+    const { data, error } = await this.supabase
+      .from('sync_log')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      throw new Error(`Failed to get sync log: ${error.message}`);
+    }
+
+    return data;
+  }
+
+  /**
    * Get sync history
    */
   public async getSyncHistory(options: {

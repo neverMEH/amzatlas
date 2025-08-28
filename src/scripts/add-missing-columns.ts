@@ -32,7 +32,7 @@ async function addMissingColumns() {
     }
     
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error:', error instanceof Error ? error.message : String(error));
     console.log('\nAlternative: Please run this SQL manually in your Supabase SQL editor:');
     
     const sql = `

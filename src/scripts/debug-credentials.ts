@@ -28,7 +28,7 @@ const getCredentials = () => {
     console.log('- client_email:', parsed.client_email);
     return parsed;
   } catch (error) {
-    console.error('❌ JSON parsing failed:', error.message);
+    console.error('❌ JSON parsing failed:', error instanceof Error ? error.message : String(error));
     return null;
   }
 };

@@ -60,7 +60,12 @@ export class NestedBigQueryToSupabaseSync {
       const [rows] = await job.getQueryResults();
 
       if (!rows || rows.length === 0) {
-        await this.logger.completeSync(syncLogId, 0, 0, 0, 0);
+        await this.logger.completeSync(syncLogId, {
+          records_processed: 0,
+          records_inserted: 0,
+          records_updated: 0,
+          records_failed: 0
+        });
         return {
           success: true,
           recordsProcessed: 0,
@@ -84,7 +89,7 @@ export class NestedBigQueryToSupabaseSync {
             (sum, asin) => sum + asin.searchQueryData.length, 0
           )
         });
-        await this.logger.failSync(syncLogId, 'Dry run completed');
+        await this.logger.failSync(syncLogId, new Error('Dry run completed'));
         return {
           success: true,
           recordsProcessed: 0,
@@ -103,13 +108,12 @@ export class NestedBigQueryToSupabaseSync {
       await this.performDataQualityChecks(syncLogId, nestedResponse, results);
 
       // Complete sync log
-      await this.logger.completeSync(
-        syncLogId,
-        results.asinRecords + results.queryRecords + results.summaryRecords,
-        results.asinRecords + results.queryRecords + results.summaryRecords,
-        0,
-        results.errors.length
-      );
+      await this.logger.completeSync(syncLogId, {
+        records_processed: results.asinRecords + results.queryRecords + results.summaryRecords,
+        records_inserted: results.asinRecords + results.queryRecords + results.summaryRecords,
+        records_updated: 0,
+        records_failed: results.errors.length
+      });
 
       return {
         success: results.errors.length === 0,
@@ -119,7 +123,7 @@ export class NestedBigQueryToSupabaseSync {
       };
 
     } catch (error) {
-      await this.logger.failSync(syncLogId, error);
+      await this.logger.failSync(syncLogId, error instanceof Error ? error : new Error(String(error)));
       return {
         success: false,
         recordsProcessed: 0,
@@ -256,8 +260,7 @@ export class NestedBigQueryToSupabaseSync {
       (sum, asin) => sum + asin.searchQueryData.length, 0
     );
     
-    await this.logger.logDataQualityCheck({
-      sync_log_id: syncLogId,
+    await this.logger.logDataQualityCheck(syncLogId, {
       check_type: 'row_count',
       check_status: results.queryRecords === expectedRows ? 'passed' : 'warning',
       source_value: expectedRows,
@@ -276,8 +279,7 @@ export class NestedBigQueryToSupabaseSync {
           queryData.purchaseData.asinPurchaseShare <= 1;
 
         if (!shareValid) {
-          await this.logger.logDataQualityCheck({
-            sync_log_id: syncLogId,
+          await this.logger.logDataQualityCheck(syncLogId, {
             check_type: 'sum_validation',
             check_status: 'warning',
             check_message: `Share values exceed 100% for ASIN ${asinData.asin}, query ${queryData.searchQuery}`,
@@ -306,8 +308,7 @@ export class NestedBigQueryToSupabaseSync {
           queryData.cartAddData.asinCartAddCount >= queryData.purchaseData.asinPurchaseCount;
 
         if (!funnelValid) {
-          await this.logger.logDataQualityCheck({
-            sync_log_id: syncLogId,
+          await this.logger.logDataQualityCheck(syncLogId, {
             check_type: 'sum_validation',
             check_status: 'failed',
             check_message: `Funnel consistency check failed for ASIN ${asinData.asin}, query ${queryData.searchQuery}`,

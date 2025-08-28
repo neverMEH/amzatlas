@@ -19,9 +19,10 @@ try {
   console.log('- Has credentials:', !!bigqueryConfig.credentials);
   
   if (bigqueryConfig.credentials) {
-    console.log('- Credentials type:', bigqueryConfig.credentials.type);
-    console.log('- Credentials project_id:', bigqueryConfig.credentials.project_id);
-    console.log('- Credentials client_email:', bigqueryConfig.credentials.client_email);
+    const creds = bigqueryConfig.credentials as any;
+    console.log('- Credentials type:', creds.type);
+    console.log('- Credentials project_id:', creds.project_id);
+    console.log('- Credentials client_email:', creds.client_email);
   }
 
   console.log('\nTable Names:');

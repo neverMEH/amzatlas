@@ -273,9 +273,10 @@ export class SQPNestedService {
 
     // Aggregate shipping counts
     const totals = (data || []).reduce((acc, row) => {
-      acc.sameDay += row[`total_same_day_shipping_${metric}_count`] || 0;
-      acc.oneDay += row[`total_one_day_shipping_${metric}_count`] || 0;
-      acc.twoDay += row[`total_two_day_shipping_${metric}_count`] || 0;
+      const rowData = row as any;
+      acc.sameDay += rowData[`total_same_day_shipping_${metric}_count`] || 0;
+      acc.oneDay += rowData[`total_one_day_shipping_${metric}_count`] || 0;
+      acc.twoDay += rowData[`total_two_day_shipping_${metric}_count`] || 0;
       return acc;
     }, { sameDay: 0, oneDay: 0, twoDay: 0 });
 
@@ -304,7 +305,7 @@ export class SQPNestedService {
     totalPurchases: number;
   }>> {
     let orderColumn: string;
-    let orderDirection: 'asc' | 'desc' = 'desc';
+    const orderDirection: 'asc' | 'desc' = 'desc';
 
     switch (metric) {
       case 'volume':
@@ -335,7 +336,7 @@ export class SQPNestedService {
       `)
       .gte('start_date', startDate)
       .lte('end_date', endDate)
-      .order(orderColumn, { ascending: orderDirection === 'asc' })
+      .order(orderColumn, { ascending: (orderDirection as string) === 'asc' })
       .limit(limit);
 
     if (error) {

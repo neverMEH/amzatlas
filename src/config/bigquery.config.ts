@@ -52,7 +52,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       projectId: process.env.BIGQUERY_PROJECT_ID || 'amazon-sp-report-loader',
       dataset: process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85',
       location: process.env.BIGQUERY_LOCATION || 'US',
-      credentials: null, // Will be loaded lazily
+      credentials: undefined, // Will be loaded lazily
     },
     pool: {
       maxClients: 5,
@@ -74,7 +74,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       projectId: process.env.BIGQUERY_PROJECT_ID || 'amazon-sp-report-loader',
       dataset: process.env.BIGQUERY_DATASET_STAGING || 'sqp_data_staging',
       location: process.env.BIGQUERY_LOCATION || 'US',
-      credentials: null, // Will be loaded lazily
+      credentials: undefined, // Will be loaded lazily
     },
     pool: {
       maxClients: 10,
@@ -96,7 +96,7 @@ const configs: Record<Environment, EnvironmentConfig> = {
       projectId: process.env.BIGQUERY_PROJECT_ID || 'amazon-sp-report-loader',
       dataset: process.env.BIGQUERY_DATASET || 'sqp_data',
       location: process.env.BIGQUERY_LOCATION || 'US',
-      credentials: null, // Will be loaded lazily
+      credentials: undefined, // Will be loaded lazily
     },
     pool: {
       maxClients: 20,

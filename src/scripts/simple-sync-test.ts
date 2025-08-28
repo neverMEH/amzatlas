@@ -10,10 +10,11 @@ config();
 async function testBigQueryConnection() {
   console.log('Testing BigQuery connection and query...\n');
 
+  // Get configuration
+  const bigqueryConfig = getBigQueryConfig();
+  const tables = getTableNames();
+
   try {
-    // Get configuration
-    const bigqueryConfig = getBigQueryConfig();
-    const tables = getTableNames();
 
     console.log('BigQuery Config:', {
       projectId: bigqueryConfig.projectId,
@@ -90,23 +91,24 @@ async function testBigQueryConnection() {
             break;
           }
         } catch (error) {
-          console.log(`❌ Failed with ${dateCol}:`, error.message);
+          console.log(`❌ Failed with ${dateCol}:`, error instanceof Error ? error.message : String(error));
         }
       }
     }
 
 
   } catch (error) {
-    console.error('❌ BigQuery connection failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ BigQuery connection failed:', errorMessage);
     
-    if (error.message.includes('credentials')) {
+    if (errorMessage.includes('credentials')) {
       console.log('\nTroubleshooting:');
       console.log('1. Check that GOOGLE_APPLICATION_CREDENTIALS_JSON is set in .env');
       console.log('2. Verify the service account has BigQuery permissions');
       console.log('3. Ensure the project ID and dataset are correct');
     }
     
-    if (error.message.includes('not found')) {
+    if (errorMessage.includes('not found')) {
       console.log('\nTable not found. Check:');
       console.log('1. Project ID:', bigqueryConfig.projectId);
       console.log('2. Dataset:', bigqueryConfig.dataset);  

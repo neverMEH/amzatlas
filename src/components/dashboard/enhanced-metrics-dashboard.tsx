@@ -155,7 +155,11 @@ export function EnhancedMetricsDashboard({
                 <LabelList 
                   position="center" 
                   fill="#fff" 
-                  formatter={(value: number) => `${value.toLocaleString()} (${funnelData.find(d => d.count === value)?.rate.toFixed(1)}%)`}
+                  formatter={(value: any) => {
+                    const numValue = typeof value === 'number' ? value : parseFloat(value);
+                    if (isNaN(numValue)) return '';
+                    return `${numValue.toLocaleString()} (${funnelData.find(d => d.count === numValue)?.rate.toFixed(1)}%)`;
+                  }}
                 />
               </Funnel>
             </FunnelChart>

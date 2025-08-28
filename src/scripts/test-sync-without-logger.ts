@@ -95,9 +95,10 @@ async function testSyncQuery() {
     }
 
   } catch (error) {
-    console.error('❌ Sync test failed:', error.message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('❌ Sync test failed:', errorMessage);
     
-    if (error.message.includes('Unrecognized name')) {
+    if (errorMessage.includes('Unrecognized name')) {
       console.log('Column name issue. Available columns might be different.');
     }
   }

@@ -53,17 +53,19 @@ async function testAPIs() {
       
       if (response.ok) {
         console.log('✅ Success!');
+        const responseData = data as any;
         console.log(`Response summary:`, {
           status: response.status,
-          dataCount: Array.isArray(data.data) ? data.data.length : 'N/A',
-          hasSummary: !!data.summary,
-          hasFilters: !!data.filters
+          dataCount: Array.isArray(responseData.data) ? responseData.data.length : 'N/A',
+          hasSummary: !!responseData.summary,
+          hasFilters: !!responseData.filters
         });
       } else {
-        console.log('❌ Error:', data.error || response.statusText);
+        const responseData = data as any;
+        console.log('❌ Error:', responseData.error || response.statusText);
       }
     } catch (error) {
-      console.log('❌ Request failed:', error.message);
+      console.log('❌ Request failed:', error instanceof Error ? error.message : String(error));
     }
   }
   

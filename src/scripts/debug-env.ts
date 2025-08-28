@@ -21,7 +21,7 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
     console.log('- Project ID:', parsed.project_id);
     console.log('- Client email:', parsed.client_email);
   } catch (error) {
-    console.log('- JSON parsing: failed -', error.message);
+    console.log('- JSON parsing: failed -', error instanceof Error ? error.message : String(error));
   }
 }
 
