@@ -19,7 +19,10 @@
     "pipeline:status": "tsx src/scripts/pipeline-status.ts",
     "sync:run": "tsx src/scripts/sync-bigquery-to-supabase.ts run",
     "sync:status": "tsx src/scripts/sync-bigquery-to-supabase.ts status",
-    "sync:schedule": "tsx src/scripts/sync-bigquery-to-supabase.ts schedule"
+    "sync:schedule": "tsx src/scripts/sync-bigquery-to-supabase.ts schedule",
+    "migrate:up": "tsx src/scripts/run-migrations.ts up",
+    "migrate:status": "tsx src/scripts/run-migrations.ts status",
+    "migrate:run": "tsx src/scripts/run-migrations.ts run"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
