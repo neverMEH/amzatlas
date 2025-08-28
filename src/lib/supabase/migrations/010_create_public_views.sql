@@ -121,14 +121,14 @@ BEGIN
         ) VALUES (
             v_date, 'alexa devices', 'B08N5WRWNW',
             v_impressions, v_clicks, v_purchases,
-            ROUND(v_clicks * (0.4 + RANDOM() * 0.6), 2),
-            ROUND(v_purchases * (40 + RANDOM() * 60), 2),
+            ROUND((v_clicks * (0.4 + RANDOM() * 0.6))::NUMERIC, 2),
+            ROUND((v_purchases * (40 + RANDOM() * 60))::NUMERIC, 2),
             FLOOR(5 + RANDOM() * 20)::INTEGER,
             FLOOR(1 + RANDOM() * 10)::INTEGER,
             ROUND(v_clicks::NUMERIC / NULLIF(v_impressions, 0), 4),
             ROUND(v_purchases::NUMERIC / NULLIF(v_clicks, 0), 4),
-            ROUND((0.4 + RANDOM() * 0.6), 2),
-            ROUND((10 + RANDOM() * 20), 2)
+            ROUND((0.4 + RANDOM() * 0.6)::NUMERIC, 2),
+            ROUND((10 + RANDOM() * 20)::NUMERIC, 2)
         );
         
         v_count := v_count + 1;
@@ -145,14 +145,14 @@ BEGIN
         ) VALUES (
             v_date, 'echo dot', 'B08N5WRWNW',
             v_impressions, v_clicks, v_purchases,
-            ROUND(v_clicks * (0.35 + RANDOM() * 0.45), 2),
-            ROUND(v_purchases * (40 + RANDOM() * 60), 2),
+            ROUND((v_clicks * (0.35 + RANDOM() * 0.45))::NUMERIC, 2),
+            ROUND((v_purchases * (40 + RANDOM() * 60))::NUMERIC, 2),
             FLOOR(3 + RANDOM() * 10)::INTEGER,
             FLOOR(1 + RANDOM() * 5)::INTEGER,
             ROUND(v_clicks::NUMERIC / NULLIF(v_impressions, 0), 4),
             ROUND(v_purchases::NUMERIC / NULLIF(v_clicks, 0), 4),
-            ROUND((0.35 + RANDOM() * 0.45), 2),
-            ROUND((8 + RANDOM() * 25), 2)
+            ROUND((0.35 + RANDOM() * 0.45)::NUMERIC, 2),
+            ROUND((8 + RANDOM() * 25)::NUMERIC, 2)
         );
         
         v_count := v_count + 1;
@@ -169,14 +169,14 @@ BEGIN
         ) VALUES (
             v_date, 'streaming device', 'B08KJN3333',
             v_impressions, v_clicks, v_purchases,
-            ROUND(v_clicks * (0.45 + RANDOM() * 0.55), 2),
-            ROUND(v_purchases * (50 + RANDOM() * 50), 2),
+            ROUND((v_clicks * (0.45 + RANDOM() * 0.55))::NUMERIC, 2),
+            ROUND((v_purchases * (50 + RANDOM() * 50))::NUMERIC, 2),
             FLOOR(8 + RANDOM() * 25)::INTEGER,
             FLOOR(2 + RANDOM() * 12)::INTEGER,
             ROUND(v_clicks::NUMERIC / NULLIF(v_impressions, 0), 4),
             ROUND(v_purchases::NUMERIC / NULLIF(v_clicks, 0), 4),
-            ROUND((0.45 + RANDOM() * 0.55), 2),
-            ROUND((12 + RANDOM() * 28), 2)
+            ROUND((0.45 + RANDOM() * 0.55)::NUMERIC, 2),
+            ROUND((12 + RANDOM() * 28)::NUMERIC, 2)
         );
         
         v_count := v_count + 1;
