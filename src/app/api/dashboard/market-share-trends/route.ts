@@ -26,17 +26,17 @@ export async function GET(request: NextRequest) {
     
     // Group by week and calculate average share
     const weeklyShares: any[] = []
-    const weekMap = new Map<string, number[]>()
+    const weekMap = {} as Record<string, number[]>
     
     (data || []).forEach(row => {
       const week = format(new Date(row.period_start), "'W'w")
-      if (!weekMap.has(week)) {
-        weekMap.set(week, [])
+      if (!weekMap[week]) {
+        weekMap[week] = []
       }
-      weekMap.get(week)!.push(row.purchase_share)
+      weekMap[week].push(row.purchase_share)
     })
     
-    weekMap.forEach((shares, week) => {
+    Object.entries(weekMap).forEach(([week, shares]) => {
       const avgShare = shares.reduce((sum, share) => sum + share, 0) / shares.length * 100
       const yourShare = Math.min(avgShare, 40) // Cap at 40% for realistic display
       const topCompetitor = Math.max(0, 35 - (yourShare * 0.3))
