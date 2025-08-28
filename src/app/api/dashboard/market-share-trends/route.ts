@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     
     // Group by week and calculate average share
     const weeklyShares: any[] = []
-    const weekMap = new Map() as Map<string, number[]>
+    const weekMap = new Map<string, number[]>()
     
     (data || []).forEach(row => {
       const week = format(new Date(row.period_start), "'W'w")
