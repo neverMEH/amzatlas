@@ -116,8 +116,8 @@ $$;
 
 -- 2. CVR Gap Analysis Function
 CREATE OR REPLACE FUNCTION sqp.calculate_cvr_gaps(
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_keywords TEXT[] DEFAULT NULL,
     p_asin TEXT DEFAULT NULL,
     p_min_clicks INTEGER DEFAULT 50,
@@ -236,8 +236,8 @@ $$;
 
 -- 3. Purchase Velocity Heatmap Function
 CREATE OR REPLACE FUNCTION sqp.get_purchase_velocity_heatmap(
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_keywords TEXT[] DEFAULT NULL,
     p_asins TEXT[] DEFAULT NULL,
     p_min_purchases INTEGER DEFAULT 10
@@ -308,8 +308,8 @@ $$;
 
 -- 4. Share of Voice Calculation Function
 CREATE OR REPLACE FUNCTION sqp.calculate_share_of_voice(
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_keywords TEXT[] DEFAULT NULL,
     p_asins TEXT[] DEFAULT NULL
 )
@@ -399,8 +399,8 @@ $$;
 CREATE OR REPLACE FUNCTION sqp.analyze_competitors(
     p_target_asin TEXT,
     p_keyword TEXT DEFAULT NULL,
-    p_start_date DATE,
-    p_end_date DATE
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE
 )
 RETURNS TABLE (
     query TEXT,
@@ -476,8 +476,8 @@ $$;
 -- 6. Market Statistics Function
 CREATE OR REPLACE FUNCTION sqp.calculate_market_stats(
     p_keywords TEXT[] DEFAULT NULL,
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_table_name TEXT DEFAULT 'sqp.weekly_summary'
 )
 RETURNS TABLE (
@@ -559,8 +559,8 @@ $$;
 
 -- 7. Market Share CSV Export Function
 CREATE OR REPLACE FUNCTION sqp.get_market_share_csv(
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_keywords TEXT[] DEFAULT NULL,
     p_asins TEXT[] DEFAULT NULL,
     p_aggregate TEXT DEFAULT 'weekly'
@@ -621,8 +621,8 @@ $$;
 
 -- 8. Ranking Correlation Data Function
 CREATE OR REPLACE FUNCTION sqp.get_ranking_correlation_data(
-    p_start_date DATE,
-    p_end_date DATE,
+    p_start_date DATE DEFAULT CURRENT_DATE - INTERVAL '30 days',
+    p_end_date DATE DEFAULT CURRENT_DATE,
     p_keywords TEXT[] DEFAULT NULL,
     p_asin TEXT DEFAULT NULL,
     p_correlation_metric TEXT DEFAULT 'purchases'
