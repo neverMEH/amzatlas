@@ -22,7 +22,10 @@
     "sync:schedule": "tsx src/scripts/sync-bigquery-to-supabase.ts schedule",
     "migrate:up": "tsx src/scripts/run-migrations.ts up",
     "migrate:status": "tsx src/scripts/run-migrations.ts status",
-    "migrate:run": "tsx src/scripts/run-migrations.ts run"
+    "migrate:run": "tsx src/scripts/run-migrations.ts run",
+    "seed:db": "tsx scripts/seed-database.ts",
+    "seed:db:typescript": "tsx scripts/seed-database.ts --typescript",
+    "seed:simple": "tsx scripts/seed-simple.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
