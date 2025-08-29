@@ -41,11 +41,8 @@ export function createClient() {
       auth: {
         autoRefreshToken: false,
         persistSession: false
-      },
-      db: {
-        schema: 'sqp'
       }
-    } as any)
+    })
 
     return clientCache
   } catch (error) {
