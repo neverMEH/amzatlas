@@ -26,6 +26,7 @@ export {
   type InputProps,
   type BadgeProps,
   type SheetProps,
+  type SheetTriggerProps,
   type SelectProps,
   type TextProps,
   type AvatarProps,

@@ -185,10 +185,18 @@ export const Sheet: React.FC<SheetProps> = ({ children, open, onOpenChange }) =>
   )
 }
 
-export const SheetTrigger = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  (props, ref) => (
-    <button ref={ref} {...props} />
-  )
+export interface SheetTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean
+}
+
+export const SheetTrigger = React.forwardRef<HTMLButtonElement, SheetTriggerProps>(
+  ({ asChild, children, ...props }, ref) => {
+    if (asChild) {
+      // When asChild is true, render children directly (they become the trigger)
+      return <>{children}</>
+    }
+    return <button ref={ref} {...props}>{children}</button>
+  }
 )
 SheetTrigger.displayName = 'SheetTrigger'
 

@@ -52,4 +52,4 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
 }))
 
 // Set up global vi
-globalThis.vi = vi
+;(globalThis as any).vi = vi
