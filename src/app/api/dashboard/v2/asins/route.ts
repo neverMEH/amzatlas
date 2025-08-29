@@ -5,10 +5,10 @@ export async function GET() {
   try {
     const supabase = createClient()
     
-    // Fetch distinct ASINs with their product titles and brands
+    // Fetch distinct ASINs with their product titles
     const { data, error } = await supabase
       .from('asin_performance_data')
-      .select('asin, product_title, brand')
+      .select('asin, product_title')
       .order('product_title', { ascending: true })
       
     if (error) {
@@ -25,7 +25,7 @@ export async function GET() {
         acc.push({
           asin: item.asin,
           productTitle: item.product_title || `ASIN: ${item.asin}`,
-          brand: item.brand || 'Unknown Brand'
+          brand: 'Work Sharp' // Hardcoded for now based on CLAUDE.md info
         })
       }
       return acc
