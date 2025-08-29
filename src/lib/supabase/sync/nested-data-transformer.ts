@@ -87,7 +87,7 @@ export class NestedDataTransformer {
     // First try to find existing record
     const { data: existing, error: selectError } = await this.supabase
       .from('asin_performance_data')
-      .select('id, product_title')
+      .select('*')
       .eq('start_date', asinData.startDate)
       .eq('end_date', asinData.endDate)
       .eq('asin', asinData.asin)
