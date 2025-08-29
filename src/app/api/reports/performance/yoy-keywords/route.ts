@@ -121,6 +121,6 @@ function calculateAverage(data: any[], field: string): number | null {
     .filter(v => v !== null && v !== undefined && !isNaN(v));
   
   return validValues.length > 0 
-    ? validValues.reduce((sum, val) => sum + val, 0) / validValues.length
+    ? validValues.reduce((sum: number, val) => sum + val, 0) / validValues.length
     : null;
 }

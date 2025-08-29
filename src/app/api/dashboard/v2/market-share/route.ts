@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         totalMarketPurchases: totalMarket,
         topAsinShare,
         competitorCount,
-        marketConcentration: data.slice(0, 3).reduce((sum, item) => sum + item.marketShare, 0),
+        marketConcentration: data.slice(0, 3).reduce((sum: number, item) => sum + item.marketShare, 0),
       },
       filters: {
         searchQuery,

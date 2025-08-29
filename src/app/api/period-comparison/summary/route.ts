@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     // Fetch data from all period comparison views
     const periods = ['week', 'month', 'quarter', 'year']
     const summaries = await Promise.all(
-      periods.map(async (period) => {
+      periods.map(async (period: any) => {
         const viewName = `${period}_over_${period}_comparison`
         
         let query = supabase
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Calculate summary metrics
-        const validData = (data || []).filter(d => d.impressions_change_pct !== null)
+        const validData = (data || []).filter((d: any) => d.impressions_change_pct !== null)
         
         if (validData.length === 0) {
           return {
@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
         }
 
         // Group by positive/negative changes
-        const improved = validData.filter(d => d.impressions_change_pct > 0)
-        const declined = validData.filter(d => d.impressions_change_pct < 0)
+        const improved = validData.filter((d: any) => d.impressions_change_pct > 0)
+        const declined = validData.filter((d: any) => d.impressions_change_pct < 0)
         
         // Calculate top movers
         const topGainers = validData
-          .filter(d => d.impressions_change_pct > 0)
-          .sort((a, b) => b.impressions_change_pct - a.impressions_change_pct)
+          .filter((d: any) => d.impressions_change_pct > 0)
+          .sort((a: any, b: any) => b.impressions_change_pct - a.impressions_change_pct)
           .slice(0, 5)
           .map(d => ({
             asin: d.asin,
@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
           }))
 
         const topDecliners = validData
-          .filter(d => d.impressions_change_pct < 0)
-          .sort((a, b) => a.impressions_change_pct - b.impressions_change_pct)
+          .filter((d: any) => d.impressions_change_pct < 0)
+          .sort((a: any, b: any) => a.impressions_change_pct - b.impressions_change_pct)
           .slice(0, 5)
           .map(d => ({
             asin: d.asin,
@@ -76,13 +76,13 @@ export async function GET(request: NextRequest) {
             improvedCount: improved.length,
             declinedCount: declined.length,
             stableCount: validData.length - improved.length - declined.length,
-            avgImpressionChange: validData.reduce((sum, d) => sum + d.impressions_change_pct, 0) / validData.length,
-            avgCvrChange: validData.reduce((sum, d) => sum + (d.cvr_change_pct || 0), 0) / validData.length,
-            avgRevenueChange: validData.reduce((sum, d) => sum + (d.revenue_change_pct || 0), 0) / validData.length,
-            totalCurrentImpressions: validData.reduce((sum, d) => sum + (d.current_impressions || 0), 0),
-            totalPreviousImpressions: validData.reduce((sum, d) => sum + (d.previous_impressions || 0), 0),
-            totalCurrentRevenue: validData.reduce((sum, d) => sum + (d.current_revenue || 0), 0),
-            totalPreviousRevenue: validData.reduce((sum, d) => sum + (d.previous_revenue || 0), 0),
+            avgImpressionChange: validData.reduce((sum: number, d: any) => sum + d.impressions_change_pct, 0) / validData.length,
+            avgCvrChange: validData.reduce((sum: number, d: any) => sum + (d.cvr_change_pct || 0), 0) / validData.length,
+            avgRevenueChange: validData.reduce((sum: number, d: any) => sum + (d.revenue_change_pct || 0), 0) / validData.length,
+            totalCurrentImpressions: validData.reduce((sum: number, d: any) => sum + (d.current_impressions || 0), 0),
+            totalPreviousImpressions: validData.reduce((sum: number, d: any) => sum + (d.previous_impressions || 0), 0),
+            totalCurrentRevenue: validData.reduce((sum: number, d: any) => sum + (d.current_revenue || 0), 0),
+            totalPreviousRevenue: validData.reduce((sum: number, d: any) => sum + (d.previous_revenue || 0), 0),
           },
           topGainers,
           topDecliners
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Filter out null results and create response
-    const validSummaries = summaries.filter(s => s !== null)
+    const validSummaries = summaries.filter((s: any) => s !== null)
     
     // Calculate overall metrics across all periods
     const overall = {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     validSummaries.forEach(summary => {
       if (summary?.hasData && summary.metrics) {
-        const avgChange = summary.metrics.avgImpressionChange
+        const avgChange = summary.metrics.avgImpressionChange || 0
         overall.avgChangeByPeriod[summary.period] = avgChange
 
         if (avgChange > bestChange) {
@@ -121,7 +121,10 @@ export async function GET(request: NextRequest) {
         }
 
         // Calculate volatility as the spread between improved and declined
-        const volatility = Math.abs(summary.metrics.improvedCount - summary.metrics.declinedCount) / summary.metrics.totalKeywords
+        const improvedCount = summary.metrics.improvedCount || 0
+        const declinedCount = summary.metrics.declinedCount || 0
+        const totalKeywords = summary.metrics.totalKeywords || 1
+        const volatility = Math.abs(improvedCount - declinedCount) / totalKeywords
         if (volatility > highestVolatility) {
           highestVolatility = volatility
           overall.mostVolatilePeriod = summary.period

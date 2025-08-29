@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Calculate metric totals
-    const totals = data.reduce((acc, item) => {
+    const totals = data.reduce((acc: any, item: any) => {
       acc.totalValue += item.value;
       acc.totalImpressions += item.totalImpressions;
       acc.totalPurchases += item.totalPurchases;
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }, { totalValue: 0, totalImpressions: 0, totalPurchases: 0 });
 
     // Add percentage of total for each query
-    const enrichedData = data.map(item => ({
+    const enrichedData = data.map((item: any) => ({
       ...item,
       percentageOfTotal: totals.totalValue > 0 ? (item.value / totals.totalValue) * 100 : 0,
       conversionRate: item.totalImpressions > 0 
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         totalImpressions: totals.totalImpressions,
         totalPurchases: totals.totalPurchases,
         averageValue: data.length > 0 ? totals.totalValue / data.length : 0,
-        top3Concentration: enrichedData.slice(0, 3).reduce((sum, item) => sum + item.percentageOfTotal, 0)
+        top3Concentration: enrichedData.slice(0, 3).reduce((sum: number, item) => sum + item.percentageOfTotal, 0)
       },
       filters: {
         metric,

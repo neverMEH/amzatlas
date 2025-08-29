@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const weeklyROI: any[] = []
     const weekMap = new Map() as Map<string, { purchases: number, clicks: number }>
     
-    (data || []).forEach(row => {
+    (data || []).forEach((row: any) => {
       const week = format(new Date(row.period_start), "'W'w")
       if (!weekMap.has(week)) {
         weekMap.set(week, { purchases: 0, clicks: 0 })

@@ -167,7 +167,7 @@ function calculateCVRGaps(data: CVRData[]): any[] {
       traffic_quality_score: row.total_clicks > 0 ? (row.total_purchases / row.total_clicks) * 100 : 0,
       conversion_efficiency: row.avg_cvr / (row.category_avg_cvr || 0.01), // Relative to category
     };
-  }).sort((a, b) => b.priority_score - a.priority_score);
+  }).sort((a: any, b: any) => b.priority_score - a.priority_score);
 }
 
 function calculatePriorityScore(row: CVRData, marketGap: number, competitorGap: number): number {
@@ -269,7 +269,7 @@ function generatePriorityMatrix(data: any[]): any {
     low_impact_high_effort: [] as any[], // Avoid
   };
 
-  data.forEach(item => {
+  data.forEach((item: any) => {
     // Estimate effort based on gap size and type
     const effort = estimateEffort(item);
     const impact = item.missed_conversions_estimate;
@@ -315,13 +315,13 @@ function estimateEffort(item: any): string {
 }
 
 function calculateCVRGapSummary(data: any[]): any {
-  const criticalCount = data.filter(d => d.priority_level === 'critical').length;
-  const highCount = data.filter(d => d.priority_level === 'high').length;
-  const underperformingCount = data.filter(d => d.gap_type === 'underperforming').length;
+  const criticalCount = data.filter((d: any) => d.priority_level === 'critical').length;
+  const highCount = data.filter((d: any) => d.priority_level === 'high').length;
+  const underperformingCount = data.filter((d: any) => d.gap_type === 'underperforming').length;
   
-  const totalMissedConversions = data.reduce((sum, d) => sum + (d.missed_conversions_estimate || 0), 0);
+  const totalMissedConversions = data.reduce((sum: number, d: any) => sum + (d.missed_conversions_estimate || 0), 0);
   const avgMarketGap = data.length > 0 
-    ? data.reduce((sum, d) => sum + d.market_gap, 0) / data.length 
+    ? data.reduce((sum: number, d: any) => sum + d.market_gap, 0) / data.length 
     : 0;
 
   return {
@@ -332,7 +332,7 @@ function calculateCVRGapSummary(data: any[]): any {
     total_missed_conversions_estimate: totalMissedConversions,
     avg_market_gap_percentage: avgMarketGap * 100,
     improvement_opportunities: criticalCount + highCount,
-    quick_wins_available: data.filter(d => 
+    quick_wins_available: data.filter((d: any) => 
       d.priority_level === 'high' && d.confidence_level === 'high'
     ).length,
   };

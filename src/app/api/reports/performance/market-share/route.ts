@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     // Parse ASINs
     const asins = asinsParam 
-      ? asinsParam.split(',').map(a => a.trim()).filter(a => a.length > 0)
+      ? asinsParam.split(',').map(a => a.trim()).filter((a: any) => a.length > 0)
       : asinParam 
         ? [asinParam] 
         : null;
@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
 
 function calculateMarketShareMetrics(data: any[]): any[] {
   // Group by query to calculate market totals
-  const marketTotals = data.reduce((acc, row) => {
+  const marketTotals = data.reduce((acc: any, row: any) => {
     const key = `${row.query}:${row.period_end}`;
     if (!acc[key]) {
       acc[key] = {
@@ -237,7 +237,7 @@ function calculateMarketShareMetrics(data: any[]): any[] {
 
 function addTrendAnalysis(data: any[]): any[] {
   // Group by query and ASIN to calculate trends
-  const grouped = data.reduce((acc, row) => {
+  const grouped = data.reduce((acc: any, row: any) => {
     const key = `${row.query}:${row.asin}`;
     if (!acc[key]) {
       acc[key] = [];
@@ -249,7 +249,7 @@ function addTrendAnalysis(data: any[]): any[] {
   const results = [];
 
   for (const [key, rows] of Object.entries(grouped)) {
-    const sortedRows = (rows as any[]).sort((a, b) => 
+    const sortedRows = (rows as any[]).sort((a: any, b: any) => 
       new Date(b.period_end).getTime() - new Date(a.period_end).getTime()
     );
 
@@ -293,7 +293,7 @@ function addTrendAnalysis(data: any[]): any[] {
     }
   }
 
-  return results.sort((a, b) => 
+  return results.sort((a: any, b: any) => 
     new Date(b.period_end).getTime() - new Date(a.period_end).getTime()
   );
 }

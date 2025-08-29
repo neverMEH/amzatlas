@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     // Group data by week
     const weeklyData = new Map()
     
-    data?.forEach(row => {
+    data?.forEach((row: any) => {
       const weekStart = new Date(row.start_date)
       weekStart.setDate(weekStart.getDate() - weekStart.getDay()) // Start of week
       const weekKey = weekStart.toISOString().split('T')[0]
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     // Convert to array and sort
     const sortedWeeks = Array.from(weeklyData.values())
-      .sort((a, b) => a.week.localeCompare(b.week))
+      .sort((a: any, b: any) => a.week.localeCompare(b.week))
       .slice(-periods)
 
     // Calculate period-over-period changes
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       const ctr = week.impressions > 0 ? (week.clicks / week.impressions) * 100 : 0
       const cvr = week.clicks > 0 ? (week.purchases / week.clicks) * 100 : 0
       
-      const metricValues = {
+      const metricValues: Record<string, number> = {
         impressions: week.impressions,
         clicks: week.clicks,
         purchases: week.purchases,
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         const prevCtr = prevWeek.impressions > 0 ? (prevWeek.clicks / prevWeek.impressions) * 100 : 0
         const prevCvr = prevWeek.clicks > 0 ? (prevWeek.purchases / prevWeek.clicks) * 100 : 0
         
-        const prevMetricValues = {
+        const prevMetricValues: Record<string, number> = {
           impressions: prevWeek.impressions,
           clicks: prevWeek.clicks,
           purchases: prevWeek.purchases,
@@ -147,9 +147,9 @@ export async function GET(request: NextRequest) {
       
       const windowValues = trends
         .slice(index - movingAvgWindow + 1, index + 1)
-        .map(t => t.value)
+        .map((t: any) => t.value)
       
-      const movingAverage = windowValues.reduce((sum, val) => sum + val, 0) / windowValues.length
+      const movingAverage = windowValues.reduce((sum: number, val) => sum + val, 0) / windowValues.length
       
       return { ...trend, movingAverage }
     })
@@ -157,8 +157,8 @@ export async function GET(request: NextRequest) {
     // Calculate overall trend direction
     const recentTrends = trends.slice(-6)
     const avgRecentChange = recentTrends
-      .filter(t => t.changePercent !== null)
-      .reduce((sum, t) => sum + t.changePercent!, 0) / recentTrends.length
+      .filter((t: any) => t.changePercent !== null)
+      .reduce((sum: number, t: any) => sum + t.changePercent!, 0) / recentTrends.length
 
     const trendDirection = 
       avgRecentChange > 5 ? 'growing' :

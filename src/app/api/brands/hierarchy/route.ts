@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     const rootBrands: BrandNode[] = []
 
     // First pass: create all nodes
-    data.forEach(brand => {
+    data.forEach((brand: any) => {
       brandMap.set(brand.id, {
         ...brand,
         children: []
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Second pass: build hierarchy
-    data.forEach(brand => {
+    data.forEach((brand: any) => {
       const node = brandMap.get(brand.id)!
       
       if (brand.parent_brand_id) {
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     // Sort children at each level
     const sortChildren = (node: BrandNode) => {
       if (node.children && node.children.length > 0) {
-        node.children.sort((a, b) => a.brand_name.localeCompare(b.brand_name))
+        node.children.sort((a: any, b: any) => a.brand_name.localeCompare(b.brand_name))
         node.children.forEach(sortChildren)
       }
     }
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
           node.children.forEach(calculateAggregates)
           
           // Add child metrics to parent
-          const childMetrics = node.children.reduce((acc, child) => ({
+          const childMetrics = node.children.reduce((acc: any, child: any) => ({
             asin_count: acc.asin_count + (child.asin_count || 0),
             total_revenue: acc.total_revenue + (child.total_revenue || 0),
             total_cvr: acc.total_cvr + ((child.avg_cvr || 0) * (child.asin_count || 0)),

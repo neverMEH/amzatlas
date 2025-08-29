@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Calculate weekly anomaly trends
     const weeklyTrends = new Map()
     
-    trendData?.forEach(item => {
+    trendData?.forEach((item: any) => {
       const weekKey = new Date(item.week_start).toISOString().split('T')[0]
       if (!weeklyTrends.has(weekKey)) {
         weeklyTrends.set(weekKey, {
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       week[item.anomaly_status.replace('_anomaly', '')]++
     })
 
-    const trends = Array.from(weeklyTrends.values()).sort((a, b) => a.week.localeCompare(b.week))
+    const trends = Array.from(weeklyTrends.values()).sort((a: any, b: any) => a.week.localeCompare(b.week))
 
     // Get top affected products
     const { data: affectedProducts } = await supabase.rpc('detect_keyword_anomalies', {
@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
     })
 
     const topAffected = (affectedProducts || [])
-      .sort((a, b) => Math.abs(b.o_impressions_z_score) - Math.abs(a.o_impressions_z_score))
+      .sort((a: any, b: any) => Math.abs(b.o_impressions_z_score) - Math.abs(a.o_impressions_z_score))
       .slice(0, 10)
-      .map(item => ({
+      .map((item: any) => ({
         asin: item.o_asin,
         searchQuery: item.o_search_query,
         metric: 'impressions',
@@ -173,7 +173,7 @@ function calculateOverallRiskScore(summary: any, topAffected: any[]): {
   }
   
   // Factor in severity of top affected
-  const criticalCount = topAffected.filter(a => a.impact.level === 'critical').length
+  const criticalCount = topAffected.filter((a: any) => a.impact.level === 'critical').length
   if (criticalCount > 0) {
     score += criticalCount * 10
     factors.push(`${criticalCount} critical impact items`)
@@ -215,7 +215,7 @@ function generateSummaryInsights(summary: any, trends: any[], topAffected: any[]
   }
   
   // Impact insights
-  const highImpactCount = topAffected.filter(a => 
+  const highImpactCount = topAffected.filter((a: any) => 
     a.impact.level === 'critical' || a.impact.level === 'high'
   ).length
   

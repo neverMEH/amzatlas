@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
 
 function calculateVelocityMetrics(data: any[]): any[] {
   // Group by query and asin
-  const grouped = data.reduce((acc, row) => {
+  const grouped = data.reduce((acc: any, row: any) => {
     const key = `${row.query}:${row.asin}`;
     if (!acc[key]) {
       acc[key] = [];
@@ -163,7 +163,7 @@ function calculateVelocityMetrics(data: any[]): any[] {
   const results = [];
 
   for (const [key, rows] of Object.entries(grouped)) {
-    const sortedRows = (rows as any[]).sort((a, b) => 
+    const sortedRows = (rows as any[]).sort((a: any, b: any) => 
       new Date(b.period_end).getTime() - new Date(a.period_end).getTime()
     );
 
@@ -201,7 +201,7 @@ function calculateVelocityMetrics(data: any[]): any[] {
           changes.push(change);
         }
 
-        const avgChange = changes.reduce((sum, c) => sum + c, 0) / changes.length;
+        const avgChange = changes.reduce((sum: number, c: any) => sum + c, 0) / changes.length;
         trendStrength = Math.abs(avgChange);
         
         if (avgChange > 0.05) {
@@ -223,7 +223,7 @@ function calculateVelocityMetrics(data: any[]): any[] {
     }
   }
 
-  return results.sort((a, b) => 
+  return results.sort((a: any, b: any) => 
     new Date(b.period_end).getTime() - new Date(a.period_end).getTime()
   );
 }
@@ -233,14 +233,14 @@ function calculateVelocityStatistics(data: any[]) {
     .map(d => d.velocity_change)
     .filter(v => v !== null && !isNaN(v));
 
-  const accelerating = data.filter(d => d.velocity_trend === 'accelerating').length;
-  const decelerating = data.filter(d => d.velocity_trend === 'decelerating').length;
-  const stable = data.filter(d => d.velocity_trend === 'stable').length;
+  const accelerating = data.filter((d: any) => d.velocity_trend === 'accelerating').length;
+  const decelerating = data.filter((d: any) => d.velocity_trend === 'decelerating').length;
+  const stable = data.filter((d: any) => d.velocity_trend === 'stable').length;
 
   return {
     total_items: data.length,
     avg_velocity_change: validChanges.length > 0 
-      ? validChanges.reduce((sum, v) => sum + v, 0) / validChanges.length 
+      ? validChanges.reduce((sum: number, v: any) => sum + v, 0) / validChanges.length 
       : null,
     max_velocity_change: validChanges.length > 0 ? Math.max(...validChanges) : null,
     min_velocity_change: validChanges.length > 0 ? Math.min(...validChanges) : null,

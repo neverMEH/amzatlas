@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Group by trend classification
-    const groupedData = (data || []).reduce((acc, item) => {
+    const groupedData = (data || []).reduce((acc: any, item: any) => {
       if (!acc[item.trend_classification]) {
         acc[item.trend_classification] = []
       }
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, any[]>)
 
     // Calculate insights for each keyword
-    const enrichedData = (data || []).map(item => ({
+    const enrichedData = (data || []).map((item: any) => ({
       ...item,
       insights: generateKeywordInsights(item),
       competitionLevel: calculateCompetitionLevel(item),
@@ -64,13 +64,16 @@ export async function GET(request: NextRequest) {
       },
       summary: {
         totalKeywords: data?.length || 0,
-        trendBreakdown: Object.entries(groupedData).map(([trend, items]) => ({
-          trend,
-          count: items.length,
-          avgImpressions: items.reduce((sum, item) => sum + item.impressions, 0) / items.length,
-          totalImpressions: items.reduce((sum, item) => sum + item.impressions, 0)
-        })),
-        topOpportunity: enrichedData.reduce((best, item) => 
+        trendBreakdown: Object.entries(groupedData).map(([trend, items]) => {
+          const itemsArray = items as any[]
+          return {
+            trend,
+            count: itemsArray.length,
+            avgImpressions: itemsArray.reduce((sum: number, item: any) => sum + item.impressions, 0) / itemsArray.length,
+            totalImpressions: itemsArray.reduce((sum: number, item: any) => sum + item.impressions, 0)
+          }
+        }),
+        topOpportunity: enrichedData.reduce((best: any, item) => 
           item.opportunityScore > best.opportunityScore ? item : best
         , enrichedData[0] || {})
       },
@@ -179,7 +182,7 @@ function findCrossAsinOpportunities(keywords: any[]): any[] {
   const queryGroups = new Map()
   
   // Group by search query
-  keywords.forEach(keyword => {
+  keywords.forEach((keyword: any) => {
     if (!queryGroups.has(keyword.search_query)) {
       queryGroups.set(keyword.search_query, [])
     }
@@ -187,15 +190,15 @@ function findCrossAsinOpportunities(keywords: any[]): any[] {
   })
   
   // Find queries with multiple ASINs where at least one is performing well
-  const opportunities = []
+  const opportunities: any[] = []
   
-  queryGroups.forEach((group, query) => {
+  queryGroups.forEach((group: any, query: any) => {
     if (group.length >= 2) {
-      const bestPerformer = group.reduce((best, item) => 
+      const bestPerformer = group.reduce((best: any, item: any) => 
         item.impressions > best.impressions ? item : best
       )
       
-      const worstPerformer = group.reduce((worst, item) => 
+      const worstPerformer = group.reduce((worst: any, item: any) => 
         item.impressions < worst.impressions ? item : worst
       )
       
@@ -209,21 +212,21 @@ function findCrossAsinOpportunities(keywords: any[]): any[] {
             trend: bestPerformer.trend_classification
           },
           opportunityAsins: group
-            .filter(item => item.impressions < bestPerformer.impressions * 0.5)
-            .map(item => ({
+            .filter((item: any) => item.impressions < bestPerformer.impressions * 0.5)
+            .map((item: any) => ({
               asin: item.asin,
               impressions: item.impressions,
               potential: bestPerformer.impressions - item.impressions
             })),
           totalPotential: group
-            .filter(item => item !== bestPerformer)
-            .reduce((sum, item) => sum + (bestPerformer.impressions - item.impressions), 0)
+            .filter((item: any) => item !== bestPerformer)
+            .reduce((sum: number, item: any) => sum + (bestPerformer.impressions - item.impressions), 0)
         })
       }
     }
   })
   
   return opportunities
-    .sort((a, b) => b.totalPotential - a.totalPotential)
+    .sort((a: any, b: any) => b.totalPotential - a.totalPotential)
     .slice(0, 10)
 }

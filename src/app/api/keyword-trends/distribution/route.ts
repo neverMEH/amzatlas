@@ -21,10 +21,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate percentages and additional insights
-    const totalKeywords = (data || []).reduce((sum, item) => sum + item.keyword_count, 0)
-    const totalImpressions = (data || []).reduce((sum, item) => sum + item.total_impressions, 0)
+    const totalKeywords = (data || []).reduce((sum: number, item: any) => sum + item.keyword_count, 0)
+    const totalImpressions = (data || []).reduce((sum: number, item: any) => sum + item.total_impressions, 0)
     
-    const enhancedData = (data || []).map(item => ({
+    const enhancedData = (data || []).map((item: any) => ({
       ...item,
       percentage: totalKeywords > 0 ? (item.keyword_count / totalKeywords) * 100 : 0,
       avgImpressionsPerKeyword: item.keyword_count > 0 ? item.avg_impressions : 0,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Create a visual distribution chart data
-    const chartData = enhancedData.map(item => ({
+    const chartData = enhancedData.map((item: any) => ({
       name: item.trend_type,
       value: item.keyword_count,
       percentage: item.percentage,
@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
     const healthScore = calculateHealthScore(enhancedData)
 
     // Identify opportunities and risks
-    const opportunities = []
-    const risks = []
+    const opportunities: any[] = []
+    const risks: any[] = []
 
-    enhancedData.forEach(item => {
+    enhancedData.forEach((item: any) => {
       if (['emerging', 'surging', 'growing'].includes(item.trend_type) && item.keyword_count > 0) {
         opportunities.push({
           type: item.trend_type,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
         totalKeywords,
         totalImpressions,
         healthScore,
-        dominantTrend: enhancedData.reduce((max, item) => 
+        dominantTrend: enhancedData.reduce((max: any, item: any) => 
           item.keyword_count > max.keyword_count ? item : max
         , { keyword_count: 0, trend_type: 'none' }).trend_type
       },
@@ -110,7 +110,7 @@ function getTrendColor(trendType: string): string {
 function calculateHealthScore(distribution: any[]): number {
   let score = 50 // Base score
 
-  distribution.forEach(item => {
+  distribution.forEach((item: any) => {
     const weight = item.percentage / 100
     
     switch (item.trend_type) {
@@ -190,7 +190,7 @@ function generateRecommendations(distribution: any[], healthScore: number): stri
     recommendations.push('Capitalize on emerging trends with increased investment')
   }
   
-  if (volatileCount > distribution.reduce((sum, d) => sum + d.keyword_count, 0) * 0.2) {
+  if (volatileCount > distribution.reduce((sum: number, d: any) => sum + d.keyword_count, 0) * 0.2) {
     recommendations.push('High volatility detected - implement stabilization strategies')
   }
 

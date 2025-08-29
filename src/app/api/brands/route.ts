@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       if (!statsError && stats) {
         // Merge stats with brands
         const statsMap = new Map(stats.map(s => [s.brand_id, s]))
-        brands.forEach(brand => {
+        brands.forEach((brand: any) => {
           const brandStats = statsMap.get(brand.id)
           if (brandStats) {
             Object.assign(brand, {

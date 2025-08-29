@@ -94,7 +94,7 @@ class SQPSupabaseService {
       if (perfError) throw perfError;
       
       // Calculate current period metrics
-      const currentMetrics = (performanceData || []).reduce((acc, row) => ({
+      const currentMetrics = (performanceData || []).reduce((acc: any, row: any) => ({
         totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
         totalClicks: acc.totalClicks + (row.clicks_sum || 0),
         totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
@@ -126,7 +126,7 @@ class SQPSupabaseService {
       
       if (prevError) throw prevError;
       
-      const prevMetrics = (prevData || []).reduce((acc, row) => ({
+      const prevMetrics = (prevData || []).reduce((acc: any, row: any) => ({
         totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
         totalClicks: acc.totalClicks + (row.clicks_sum || 0),
         totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
@@ -260,7 +260,7 @@ class SQPSupabaseService {
       // Aggregate by keyword
       const keywordMap = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         if (!keywordMap.has(row.search_query)) {
           keywordMap.set(row.search_query, {
             keyword: row.search_query,
@@ -290,7 +290,7 @@ class SQPSupabaseService {
           roi: kw.revenue > 0 && kw.clicks > 0 ? (kw.revenue / (kw.clicks * 0.5)) : 0,
           trend: 'stable' as 'up' | 'down' | 'stable', // Placeholder
         }))
-        .sort((a, b) => b.purchases - a.purchases)
+        .sort((a: any, b: any) => b.purchases - a.purchases)
         .slice(0, limit);
     } catch (error) {
       console.error('Error fetching brand top keywords:', error);
@@ -320,7 +320,7 @@ class SQPSupabaseService {
       // Aggregate by keyword
       const keywordMap = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         if (!keywordMap.has(row.search_query)) {
           keywordMap.set(row.search_query, {
             keyword: row.search_query,
@@ -337,6 +337,7 @@ class SQPSupabaseService {
       return Array.from(keywordMap.values())
         .map(kw => ({
           keyword: kw.keyword,
+          impressions: kw.impressions,
           purchases: 0,
           marketPurchases: 100, // Placeholder
           share: 0,
@@ -345,7 +346,7 @@ class SQPSupabaseService {
           roi: -(kw.clicks * 0.5), // Negative ROI
           trend: 'down' as 'up' | 'down' | 'stable',
         }))
-        .sort((a, b) => b.impressions - a.impressions)
+        .sort((a: any, b: any) => b.impressions - a.impressions)
         .slice(0, limit);
     } catch (error) {
       console.error('Error fetching brand zero purchase keywords:', error);
@@ -411,7 +412,7 @@ class SQPSupabaseService {
       // Aggregate by week
       const weeklyData = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         const weekStart = startOfWeek(new Date(row.start_date));
         const weekKey = format(weekStart, 'yyyy-MM-dd');
         
@@ -545,10 +546,10 @@ class SQPSupabaseService {
   
   // Helper methods
   private aggregateMetrics(data: any[]) {
-    const totalPurchases = data.reduce((sum, row) => sum + row.total_purchases, 0);
-    const totalClicks = data.reduce((sum, row) => sum + row.total_clicks, 0);
+    const totalPurchases = data.reduce((sum: number, row: any) => sum + row.total_purchases, 0);
+    const totalClicks = data.reduce((sum: number, row: any) => sum + row.total_clicks, 0);
     const avgShare = data.length > 0 
-      ? data.reduce((sum, row) => sum + row.purchase_share, 0) / data.length * 100
+      ? data.reduce((sum: number, row: any) => sum + row.purchase_share, 0) / data.length * 100
       : 0;
     const cvr = totalClicks > 0 ? (totalPurchases / totalClicks) * 100 : 0;
     const roi = this.estimateROI(totalPurchases, totalClicks);

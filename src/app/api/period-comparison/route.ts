@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Map comparison type to view name
-    const viewMap = {
+    const viewMap: Record<string, string> = {
       'week': 'week_over_week_comparison',
       'month': 'month_over_month_comparison',
       'quarter': 'quarter_over_quarter_comparison',
@@ -76,15 +76,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (data && data.length > 0) {
-      const validData = data.filter(d => d.impressions_change_pct !== null)
+      const validData = data.filter((d: any) => d.impressions_change_pct !== null)
       
-      summary.avgImpressionChange = validData.reduce((sum, d) => sum + (d.impressions_change_pct || 0), 0) / validData.length
-      summary.avgCvrChange = validData.reduce((sum, d) => sum + (d.cvr_change_pct || 0), 0) / validData.length
-      summary.avgRevenueChange = validData.reduce((sum, d) => sum + (d.revenue_change_pct || 0), 0) / validData.length
+      summary.avgImpressionChange = validData.reduce((sum: number, d: any) => sum + (d.impressions_change_pct || 0), 0) / validData.length
+      summary.avgCvrChange = validData.reduce((sum: number, d: any) => sum + (d.cvr_change_pct || 0), 0) / validData.length
+      summary.avgRevenueChange = validData.reduce((sum: number, d: any) => sum + (d.revenue_change_pct || 0), 0) / validData.length
       
-      summary.improvedCount = validData.filter(d => d.impressions_change_pct > 5).length
-      summary.declinedCount = validData.filter(d => d.impressions_change_pct < -5).length
-      summary.stableCount = validData.filter(d => Math.abs(d.impressions_change_pct) <= 5).length
+      summary.improvedCount = validData.filter((d: any) => d.impressions_change_pct > 5).length
+      summary.declinedCount = validData.filter((d: any) => d.impressions_change_pct < -5).length
+      summary.stableCount = validData.filter((d: any) => Math.abs(d.impressions_change_pct) <= 5).length
     }
 
     return NextResponse.json({

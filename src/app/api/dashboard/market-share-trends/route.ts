@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const weeklyShares: any[] = []
     const weekMap = {} as Record<string, number[]>
     
-    (data || []).forEach(row => {
+    (data || []).forEach((row: any) => {
       const week = format(new Date(row.period_start), "'W'w")
       if (!weekMap[week]) {
         weekMap[week] = []
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     })
     
     Object.entries(weekMap).forEach(([week, shares]) => {
-      const avgShare = shares.reduce((sum, share) => sum + share, 0) / shares.length * 100
+      const avgShare = shares.reduce((sum: number, share) => sum + share, 0) / shares.length * 100
       const yourShare = Math.min(avgShare, 40) // Cap at 40% for realistic display
       const topCompetitor = Math.max(0, 35 - (yourShare * 0.3))
       const marketAverage = Math.max(0, 100 - yourShare - topCompetitor)

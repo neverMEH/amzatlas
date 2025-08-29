@@ -120,7 +120,7 @@ interface CorrelationData {
 
 function calculateCorrelations(data: CorrelationData[], metric: string): any[] {
   // Group by query and ASIN
-  const grouped = data.reduce((acc, row) => {
+  const grouped = data.reduce((acc: any, row: any) => {
     const key = `${row.query}:${row.asin}`;
     if (!acc[key]) {
       acc[key] = [];
@@ -132,13 +132,14 @@ function calculateCorrelations(data: CorrelationData[], metric: string): any[] {
   const results = [];
 
   for (const [key, rows] of Object.entries(grouped)) {
-    if (rows.length < 4) continue; // Need at least 4 data points for meaningful correlation
+    const typedRows = rows as CorrelationData[];
+    if (typedRows.length < 4) continue; // Need at least 4 data points for meaningful correlation
 
     const [query, asin] = key.split(':');
     
     // Extract ranks and metric values
-    const ranks = rows.map(r => r.organic_rank).filter(r => r && r > 0);
-    const metricValues = rows.map(r => {
+    const ranks = typedRows.map(r => r.organic_rank).filter(r => r && r > 0);
+    const metricValues = typedRows.map(r => {
       switch (metric) {
         case 'clicks': return r.total_clicks;
         case 'impressions': return r.total_impressions;
@@ -152,8 +153,8 @@ function calculateCorrelations(data: CorrelationData[], metric: string): any[] {
     const correlation = calculatePearsonCorrelation(ranks, metricValues);
     
     // Calculate additional statistics
-    const avgRank = ranks.reduce((sum, r) => sum + r, 0) / ranks.length;
-    const avgMetric = metricValues.reduce((sum, v) => sum + v, 0) / metricValues.length;
+    const avgRank = ranks.reduce((sum: number, r) => sum + r, 0) / ranks.length;
+    const avgMetric = metricValues.reduce((sum: number, v: any) => sum + v, 0) / metricValues.length;
     const rankRange = Math.max(...ranks) - Math.min(...ranks);
     const metricRange = Math.max(...metricValues) - Math.min(...metricValues);
     
@@ -189,18 +190,18 @@ function calculateCorrelations(data: CorrelationData[], metric: string): any[] {
     });
   }
 
-  return results.sort((a, b) => Math.abs(b.correlation_coefficient) - Math.abs(a.correlation_coefficient));
+  return results.sort((a: any, b: any) => Math.abs(b.correlation_coefficient) - Math.abs(a.correlation_coefficient));
 }
 
 function calculatePearsonCorrelation(x: number[], y: number[]): number {
   const n = x.length;
   if (n === 0) return 0;
 
-  const sumX = x.reduce((sum, val) => sum + val, 0);
-  const sumY = y.reduce((sum, val) => sum + val, 0);
-  const sumXY = x.reduce((sum, val, i) => sum + val * y[i], 0);
-  const sumX2 = x.reduce((sum, val) => sum + val * val, 0);
-  const sumY2 = y.reduce((sum, val) => sum + val * val, 0);
+  const sumX = x.reduce((sum: number, val) => sum + val, 0);
+  const sumY = y.reduce((sum: number, val) => sum + val, 0);
+  const sumXY = x.reduce((sum: number, val, i) => sum + val * y[i], 0);
+  const sumX2 = x.reduce((sum: number, val) => sum + val * val, 0);
+  const sumY2 = y.reduce((sum: number, val) => sum + val * val, 0);
 
   const numerator = n * sumXY - sumX * sumY;
   const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
@@ -213,7 +214,7 @@ function calculateRegressionAnalysis(data: CorrelationData[], metric: string): a
   const allRanks: number[] = [];
   const allMetrics: number[] = [];
 
-  data.forEach(row => {
+  data.forEach((row: any) => {
     if (row.organic_rank && row.organic_rank > 0) {
       allRanks.push(row.organic_rank);
       
@@ -231,18 +232,18 @@ function calculateRegressionAnalysis(data: CorrelationData[], metric: string): a
 
   // Calculate linear regression (y = mx + b)
   const n = allRanks.length;
-  const sumX = allRanks.reduce((sum, x) => sum + x, 0);
-  const sumY = allMetrics.reduce((sum, y) => sum + y, 0);
-  const sumXY = allRanks.reduce((sum, x, i) => sum + x * allMetrics[i], 0);
-  const sumX2 = allRanks.reduce((sum, x) => sum + x * x, 0);
+  const sumX = allRanks.reduce((sum: number, x) => sum + x, 0);
+  const sumY = allMetrics.reduce((sum: number, y) => sum + y, 0);
+  const sumXY = allRanks.reduce((sum: number, x, i) => sum + x * allMetrics[i], 0);
+  const sumX2 = allRanks.reduce((sum: number, x) => sum + x * x, 0);
 
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
 
   // Calculate R-squared
   const yMean = sumY / n;
-  const totalSumSquares = allMetrics.reduce((sum, y) => sum + Math.pow(y - yMean, 2), 0);
-  const residualSumSquares = allRanks.reduce((sum, x, i) => {
+  const totalSumSquares = allMetrics.reduce((sum: number, y) => sum + Math.pow(y - yMean, 2), 0);
+  const residualSumSquares = allRanks.reduce((sum: number, x, i) => {
     const predicted = slope * x + intercept;
     return sum + Math.pow(allMetrics[i] - predicted, 2);
   }, 0);

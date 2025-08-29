@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Group data by search query for analysis
     const queryGroups = new Map()
     
-    data?.forEach(row => {
+    data?.forEach((row: any) => {
       const key = `${row.asin}::${row.search_query}`
       if (!queryGroups.has(key)) {
         queryGroups.set(key, {
@@ -80,12 +80,12 @@ export async function GET(request: NextRequest) {
     })
 
     // Analyze each query group
-    const analyzedData = Array.from(queryGroups.values()).map(group => {
+    const analyzedData = Array.from(queryGroups.values()).map((group: any) => {
       const recentData = group.dataPoints.slice(-4)
       const allData = group.dataPoints
       
       // Calculate recent performance vs rolling average
-      const recentPerformance = recentData.reduce((acc, point) => ({
+      const recentPerformance = recentData.reduce((acc: any, point: any) => ({
         avgImpressions: acc.avgImpressions + point.impressions / recentData.length,
         avgRollingImpressions: acc.avgRollingImpressions + point.rollingAvgImpressions / recentData.length,
         avgCvr: acc.avgCvr + point.cvr / recentData.length,
@@ -123,13 +123,13 @@ export async function GET(request: NextRequest) {
               : 0
           },
           latestMetrics: latestTrend,
-          volatility: calculateVolatility(allData.map(d => d.impressions))
+          volatility: calculateVolatility(allData.map((d: any) => d.impressions))
         }
       }
     })
 
     // Sort by absolute momentum (biggest movers)
-    analyzedData.sort((a, b) => Math.abs(b.analysis.momentum) - Math.abs(a.analysis.momentum))
+    analyzedData.sort((a: any, b: any) => Math.abs(b.analysis.momentum) - Math.abs(a.analysis.momentum))
 
     return NextResponse.json({
       filters: {
@@ -141,10 +141,10 @@ export async function GET(request: NextRequest) {
       },
       summary: {
         totalQueries: analyzedData.length,
-        increasing: analyzedData.filter(d => d.analysis.trendDirection === 'increasing').length,
-        decreasing: analyzedData.filter(d => d.analysis.trendDirection === 'decreasing').length,
-        stable: analyzedData.filter(d => d.analysis.trendDirection === 'stable').length,
-        highMomentum: analyzedData.filter(d => Math.abs(d.analysis.momentum) > 20).length
+        increasing: analyzedData.filter((d: any) => d.analysis.trendDirection === 'increasing').length,
+        decreasing: analyzedData.filter((d: any) => d.analysis.trendDirection === 'decreasing').length,
+        stable: analyzedData.filter((d: any) => d.analysis.trendDirection === 'stable').length,
+        highMomentum: analyzedData.filter((d: any) => Math.abs(d.analysis.momentum) > 20).length
       },
       data: analyzedData
     })
@@ -160,8 +160,8 @@ export async function GET(request: NextRequest) {
 function calculateVolatility(values: number[]): number {
   if (values.length < 2) return 0
   
-  const mean = values.reduce((sum, val) => sum + val, 0) / values.length
-  const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length
+  const mean = values.reduce((sum: number, val) => sum + val, 0) / values.length
+  const variance = values.reduce((sum: number, val) => sum + Math.pow(val - mean, 2), 0) / values.length
   const stdDev = Math.sqrt(variance)
   
   return mean > 0 ? (stdDev / mean) : 0

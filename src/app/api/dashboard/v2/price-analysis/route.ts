@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Calculate price summary statistics
-    const priceStats = data.reduce((acc, item) => {
+    const priceStats = data.reduce((acc: any, item: any) => {
       if (item.medianPurchasePrice) {
         acc.prices.push(item.medianPurchasePrice);
         if (item.priceCompetitiveness !== undefined) {
@@ -34,15 +34,15 @@ export async function GET(request: NextRequest) {
     }, { prices: [] as number[], competitiveness: [] as number[] });
 
     const avgPrice = priceStats.prices.length > 0
-      ? priceStats.prices.reduce((sum, p) => sum + p, 0) / priceStats.prices.length
+      ? priceStats.prices.reduce((sum: number, p: any) => sum + p, 0) / priceStats.prices.length
       : 0;
 
     const avgCompetitiveness = priceStats.competitiveness.length > 0
-      ? priceStats.competitiveness.reduce((sum, c) => sum + c, 0) / priceStats.competitiveness.length
+      ? priceStats.competitiveness.reduce((sum: number, c: any) => sum + c, 0) / priceStats.competitiveness.length
       : 0;
 
     // Group by ASIN for easier visualization
-    const byAsin = data.reduce((acc, item) => {
+    const byAsin = data.reduce((acc: any, item: any) => {
       if (!acc[item.asin]) {
         acc[item.asin] = {
           asin: item.asin,

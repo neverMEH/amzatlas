@@ -5,13 +5,12 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/types/database'
 import chalk from 'chalk'
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-const supabase = createClient<Database>(supabaseUrl, supabaseServiceKey)
+const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function testPeriodComparisons() {
   console.log(chalk.blue('\n=== Testing Period Comparison Functions ===\n'))

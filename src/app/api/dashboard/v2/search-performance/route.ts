@@ -34,15 +34,15 @@ export async function GET(request: NextRequest) {
     // Calculate summary statistics
     const summary = {
       totalQueries: data.length,
-      totalImpressions: data.reduce((sum, item) => sum + item.impressions, 0),
-      totalClicks: data.reduce((sum, item) => sum + item.clicks, 0),
-      totalCartAdds: data.reduce((sum, item) => sum + item.cartAdds, 0),
-      totalPurchases: data.reduce((sum, item) => sum + item.purchases, 0),
+      totalImpressions: data.reduce((sum: number, item) => sum + item.impressions, 0),
+      totalClicks: data.reduce((sum: number, item) => sum + item.clicks, 0),
+      totalCartAdds: data.reduce((sum: number, item) => sum + item.cartAdds, 0),
+      totalPurchases: data.reduce((sum: number, item) => sum + item.purchases, 0),
       averageCTR: data.length > 0 
-        ? data.reduce((sum, item) => sum + item.ctr, 0) / data.length 
+        ? data.reduce((sum: number, item) => sum + item.ctr, 0) / data.length 
         : 0,
       averageConversionRate: data.length > 0
-        ? data.reduce((sum, item) => sum + item.conversionRate, 0) / data.length
+        ? data.reduce((sum: number, item) => sum + item.conversionRate, 0) / data.length
         : 0,
     };
 

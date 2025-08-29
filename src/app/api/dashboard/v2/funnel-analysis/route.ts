@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     );
 
     // Aggregate funnel metrics across all queries
-    const aggregatedFunnel = data.reduce((acc, item) => {
+    const aggregatedFunnel = data.reduce((acc: any, item: any) => {
       acc.impressions += item.impressions;
       acc.clicks += item.clicks;
       acc.cartAdds += item.cartAdds;
@@ -75,13 +75,13 @@ export async function GET(request: NextRequest) {
           ? (aggregatedFunnel.purchases / aggregatedFunnel.impressions) * 100 
           : 0,
         averageCTR: data.length > 0
-          ? data.reduce((sum, item) => sum + item.impressionToClickRate, 0) / data.length * 100
+          ? data.reduce((sum: number, item) => sum + item.impressionToClickRate, 0) / data.length * 100
           : 0,
         averageCartAddRate: data.length > 0
-          ? data.reduce((sum, item) => sum + item.clickToCartRate, 0) / data.length * 100
+          ? data.reduce((sum: number, item) => sum + item.clickToCartRate, 0) / data.length * 100
           : 0,
         averagePurchaseRate: data.length > 0
-          ? data.reduce((sum, item) => sum + item.cartToPurchaseRate, 0) / data.length * 100
+          ? data.reduce((sum: number, item) => sum + item.cartToPurchaseRate, 0) / data.length * 100
           : 0,
       },
       filters: {
