@@ -5,6 +5,7 @@ import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
 import { PerformanceChart } from '@/components/asin-performance/PerformanceChart'
+import { FunnelChart } from '@/components/asin-performance/FunnelChart'
 import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
@@ -118,6 +119,16 @@ export default function Dashboard() {
                     purchases: Math.round(item.purchases * (1 - (data.comparison?.changes.purchases || 0))),
                   })) : undefined
                 }
+                isLoading={isLoading}
+                error={error as Error | null}
+              />
+            </section>
+
+            {/* Conversion funnel */}
+            <section>
+              <FunnelChart
+                data={data?.metrics?.totals || null}
+                comparisonData={compareRange.enabled && data?.comparison ? data.comparison.metrics.totals : null}
                 isLoading={isLoading}
                 error={error as Error | null}
               />
