@@ -3,12 +3,13 @@ import { getSupabaseClient } from '@/config/supabase.config';
 import { NestedDataTransformer } from './nested-data-transformer';
 import { BigQueryNestedResponse, SyncLogEntry } from './types';
 import { SyncLogger } from './sync-logger';
+import { SqpSyncLogger } from './sqp-sync-logger';
 
 export class NestedBigQueryToSupabaseSync {
   private bigquery: BigQuery;
   private supabase = getSupabaseClient();
   private transformer = new NestedDataTransformer();
-  private logger = new SyncLogger(this.supabase);
+  private logger = new SqpSyncLogger(this.supabase);
 
   constructor(
     private config: {
@@ -167,6 +168,8 @@ export class NestedBigQueryToSupabaseSync {
         Date as startDate,
         Date as endDate,
         \`Child ASIN\` as asin,
+        \`Product Name\` as productName,
+        \`Client Name\` as clientName,
         \`Search Query\` as searchQuery,
         \`Search Query Score\` as searchQueryScore,
         \`Search Query Volume\` as searchQueryVolume,
@@ -242,6 +245,8 @@ export class NestedBigQueryToSupabaseSync {
           startDate: startDate,
           endDate: endDate,
           asin: row.asin,
+          productName: row.productName,
+          clientName: row.clientName,
           searchQueryData: []
         });
       }

@@ -26,6 +26,8 @@ export interface BigQueryASINData {
   startDate: string;
   endDate: string;
   asin: string;
+  productName?: string;
+  clientName?: string;
   searchQueryData: BigQuerySearchQueryData[];
 }
 
@@ -79,6 +81,7 @@ export interface SupabaseASINPerformance {
   start_date: string;
   end_date: string;
   asin: string;
+  product_title?: string;
   created_at?: string;
   updated_at?: string;
 }

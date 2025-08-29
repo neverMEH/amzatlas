@@ -43,7 +43,7 @@ export const getSupabaseClient = (): SupabaseClient => {
         persistSession: false,
       },
       db: {
-        schema: 'public', // Default schema, we'll use sqp.table_name notation
+        schema: 'public', // Use public schema by default
       },
     });
   }
@@ -66,7 +66,7 @@ export const getSupabaseAdminClient = (): SupabaseClient => {
         persistSession: false,
       },
       db: {
-        schema: 'public', // Default schema, we'll use sqp.table_name notation
+        schema: 'public', // Use public schema by default
       },
     });
   }

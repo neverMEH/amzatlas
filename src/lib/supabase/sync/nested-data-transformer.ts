@@ -84,14 +84,48 @@ export class NestedDataTransformer {
   private async insertASINPerformance(
     asinData: BigQueryASINData
   ): Promise<SupabaseASINPerformance | null> {
+    // First try to find existing record
+    const { data: existing, error: selectError } = await this.supabase
+      .from('asin_performance_data')
+      .select('id, product_title')
+      .eq('start_date', asinData.startDate)
+      .eq('end_date', asinData.endDate)
+      .eq('asin', asinData.asin)
+      .single();
+
+    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = no rows
+      console.error('Error checking existing ASIN performance:', selectError);
+      return null;
+    }
+
+    // If exists, update it
+    if (existing) {
+      // Only update product_title if it's currently null and we have a value
+      if (!existing.product_title && asinData.productName) {
+        const { data: updated, error: updateError } = await this.supabase
+          .from('asin_performance_data')
+          .update({ product_title: asinData.productName })
+          .eq('id', existing.id)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating ASIN performance:', updateError);
+          return existing; // Return existing even if update failed
+        }
+        return updated;
+      }
+      return existing;
+    }
+
+    // If doesn't exist, insert new record
     const { data, error } = await this.supabase
       .from('asin_performance_data')
-      .upsert({
+      .insert({
         start_date: asinData.startDate,
         end_date: asinData.endDate,
-        asin: asinData.asin
-      }, {
-        onConflict: 'start_date,end_date,asin'
+        asin: asinData.asin,
+        product_title: asinData.productName || null
       })
       .select()
       .single();
