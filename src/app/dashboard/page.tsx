@@ -1,5 +1,5 @@
-import MainDashboard from '@/components/dashboard/main-dashboard'
+import ComprehensiveMetricsDashboard from '@/components/dashboard/comprehensive-metrics-dashboard'
 
 export default function DashboardPage() {
-  return <MainDashboard />
+  return <ComprehensiveMetricsDashboard />
 }
