@@ -8,8 +8,9 @@
   "scripts": {
     "dev": "next dev",
     "prebuild": "node prepare-build.js",
-    "build": "next build",
+    "build": "node build-with-env.js",
     "build:debug": "node debug-build.js && next build",
+    "build:standard": "next build",
     "build:cli": "tsc",
     "start": "next start",
     "lint": "next lint",
