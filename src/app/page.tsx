@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
+import { MetricsCards } from '@/components/asin-performance/MetricsCards'
+import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
   const [selectedASIN, setSelectedASIN] = useState<string>('')
@@ -15,6 +17,15 @@ export default function Dashboard() {
     endDate: '',
     enabled: false,
   })
+
+  // Fetch performance data
+  const { data, isLoading, error } = useASINPerformance(
+    selectedASIN,
+    dateRange.startDate,
+    dateRange.endDate,
+    compareRange.enabled ? compareRange.startDate : undefined,
+    compareRange.enabled ? compareRange.endDate : undefined
+  )
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,12 +92,15 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Placeholder for metrics cards */}
+            {/* Metrics cards */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Performance Indicators</h2>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-500">KPI metrics will be displayed here</p>
-              </div>
+              <MetricsCards
+                data={data?.metrics}
+                comparisonData={data?.comparison}
+                isLoading={isLoading}
+                error={error as Error | null}
+              />
             </section>
 
             {/* Placeholder for charts */}

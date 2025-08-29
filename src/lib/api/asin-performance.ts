@@ -39,7 +39,20 @@ export interface ASINPerformanceData {
     }
   }
   comparison?: {
-    metrics: any
+    metrics: {
+      totals: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+      rates: {
+        clickThroughRate: number
+        cartAddRate: number
+        purchaseRate: number
+        overallConversionRate: number
+      }
+    }
     changes: {
       impressions: number
       clicks: number
@@ -87,22 +100,33 @@ export function useASINPerformance(
   return useQuery<ASINPerformanceData>({
     queryKey: ['asin-performance', asin, startDate, endDate, compareStartDate, compareEndDate],
     queryFn: async () => {
+      if (!asin) {
+        throw new Error('ASIN is required')
+      }
+
       const params = new URLSearchParams({
         asin,
         startDate,
         endDate,
-        ...(compareStartDate && { compareStartDate }),
-        ...(compareEndDate && { compareEndDate }),
+        includeQueries: 'true',
       })
 
-      const response = await fetch(`/api/dashboard/v2/asin-overview?${params}`)
+      if (compareStartDate && compareEndDate) {
+        params.append('compareStartDate', compareStartDate)
+        params.append('compareEndDate', compareEndDate)
+      }
+
+      const response = await fetch(`/api/dashboard/v2/asin-overview?${params.toString()}`)
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch ASIN performance data')
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to fetch ASIN performance data')
       }
       return response.json()
     },
     enabled: !!asin && !!startDate && !!endDate,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
 
