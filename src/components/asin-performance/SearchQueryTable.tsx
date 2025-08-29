@@ -48,7 +48,6 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchTerm, setSearchTerm] = useState('')
   const [showShareMetrics, setShowShareMetrics] = useState(false)
-  const [showComparison, setShowComparison] = useState(!!comparisonData)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
 
@@ -189,18 +188,6 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
               />
               <span className="text-gray-600">Show share metrics</span>
             </label>
-            {comparisonData && (
-              <label className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showComparison}
-                  onChange={(e) => setShowComparison(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  aria-label="Show comparison"
-                />
-                <span className="text-gray-600">Show comparison</span>
-              </label>
-            )}
           </div>
           {onExport && (
             <button
@@ -317,7 +304,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {paginatedData.map((row, index) => {
-              const comparisonRow = showComparison ? comparisonMap.get(row.searchQuery) : null
+              const comparisonRow = comparisonData ? comparisonMap.get(row.searchQuery) : null
               return (
                 <tr 
                   key={`${row.searchQuery}-${index}`}

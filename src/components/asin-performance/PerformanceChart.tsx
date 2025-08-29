@@ -73,7 +73,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function PerformanceChart({ data, comparisonData, isLoading, error }: PerformanceChartProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('impressions')
-  const [showComparison, setShowComparison] = useState(!!comparisonData)
 
   if (isLoading) {
     return (
@@ -116,7 +115,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
 
   // Combine current and comparison data if showing comparison
   const chartData = data.map((item, index) => {
-    const compItem = showComparison && comparisonData?.[index]
+    const compItem = comparisonData?.[index]
     return {
       date: item.date,
       impressions: item.impressions,
@@ -162,7 +161,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
               yAxisId={config.yAxisId}
             />
           ))}
-          {showComparison && comparisonData && (
+          {comparisonData && (
             <>
               {Object.entries(metricConfig).map(([key, config]) => (
                 <Line
@@ -195,7 +194,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
           strokeWidth={2}
           dot={false}
         />
-        {showComparison && comparisonData && (
+        {comparisonData && (
           <Line
             type="monotone"
             dataKey={`${selectedMetric}Comp`}
@@ -218,18 +217,6 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
           <h3 className="text-lg font-semibold text-gray-900">Performance Trends</h3>
           <p className="text-sm text-gray-500">Weekly aggregated data</p>
         </div>
-        {comparisonData && (
-          <label className="flex items-center space-x-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showComparison}
-              onChange={(e) => setShowComparison(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              aria-label="Show comparison"
-            />
-            <span className="text-gray-600">Show comparison period</span>
-          </label>
-        )}
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">

@@ -42,7 +42,6 @@ function calculatePercentageChange(current: number, previous: number): number {
 }
 
 export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelChartProps) {
-  const [showComparison, setShowComparison] = useState(!!comparisonData)
 
   if (isLoading) {
     return (
@@ -137,18 +136,6 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
             Overall CVR: <span className="font-medium text-gray-900">{formatPercentage(overallCVR)}</span>
           </p>
         </div>
-        {comparisonData && (
-          <label className="flex items-center space-x-2 text-sm">
-            <input
-              type="checkbox"
-              checked={showComparison}
-              onChange={(e) => setShowComparison(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              aria-label="Show comparison"
-            />
-            <span className="text-gray-600">Show comparison period</span>
-          </label>
-        )}
       </div>
 
       <div className="space-y-6" data-testid="funnel-container">
@@ -159,7 +146,7 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
           
           const comparisonValue = comparisonData && 
             comparisonData[stage.label.toLowerCase().replace(' ', '') as keyof FunnelData]
-          const percentageChange = showComparison && comparisonValue !== undefined && typeof comparisonValue === 'number'
+          const percentageChange = comparisonData && comparisonValue !== undefined && typeof comparisonValue === 'number'
             ? calculatePercentageChange(stage.value, comparisonValue)
             : null
 
@@ -232,7 +219,7 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
         })}
       </div>
 
-      {showComparison && comparisonData && (
+      {comparisonData && (
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="grid grid-cols-3 gap-4 text-sm">
             {conversionRates.map((rate, index) => {
