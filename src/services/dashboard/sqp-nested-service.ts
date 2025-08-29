@@ -67,6 +67,22 @@ export interface ShippingPreferences {
 
 export class SQPNestedService {
   private supabase = getSupabaseClient();
+  
+  async getAsinsByBrand(brandId: string): Promise<string[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('asin_brand_mapping')
+        .select('asin')
+        .eq('brand_id', brandId);
+      
+      if (error) throw error;
+      
+      return (data || []).map(row => row.asin);
+    } catch (error) {
+      console.error('Error fetching ASINs by brand:', error);
+      return [];
+    }
+  }
 
   /**
    * Get search performance metrics for date range

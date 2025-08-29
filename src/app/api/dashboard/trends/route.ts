@@ -8,8 +8,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const weeks = parseInt(searchParams.get('weeks') || '12', 10)
+    const brandId = searchParams.get('brandId')
     
-    const trends = await sqpSupabaseService.getPurchaseTrends(weeks)
+    const trends = brandId 
+      ? await sqpSupabaseService.getBrandPurchaseTrends(weeks, brandId)
+      : await sqpSupabaseService.getPurchaseTrends(weeks)
     
     return NextResponse.json(trends)
   } catch (error) {

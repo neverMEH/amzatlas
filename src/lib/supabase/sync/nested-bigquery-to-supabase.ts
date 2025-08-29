@@ -18,8 +18,20 @@ export class NestedBigQueryToSupabaseSync {
       batchSize?: number;
     }
   ) {
+    // Get credentials from environment
+    const credentialsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+    let credentials;
+    if (credentialsJson) {
+      try {
+        credentials = JSON.parse(credentialsJson);
+      } catch (error) {
+        console.error('Failed to parse Google credentials:', error);
+      }
+    }
+
     this.bigquery = new BigQuery({
       projectId: config.projectId,
+      credentials: credentials,
     });
   }
 
@@ -149,25 +161,60 @@ export class NestedBigQueryToSupabaseSync {
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Since the actual structure may be flat, let's query the available columns
+    // Query the flat BigQuery table structure
     let query = `
       SELECT 
-        date as startDate,
-        date as endDate,
-        asin,
-        *
+        Date as startDate,
+        Date as endDate,
+        \`Child ASIN\` as asin,
+        \`Search Query\` as searchQuery,
+        \`Search Query Score\` as searchQueryScore,
+        \`Search Query Volume\` as searchQueryVolume,
+        -- Impression metrics
+        \`Total Query Impression Count\` as totalQueryImpressionCount,
+        \`ASIN Impression Count\` as asinImpressionCount,
+        \`ASIN Impression Share\` / 100 as asinImpressionShare,
+        -- Click metrics
+        \`Total Click Count\` as totalClickCount,
+        \`Total Click Rate\` / 100 as totalClickRate,
+        \`ASIN Click Count\` as asinClickCount,
+        \`ASIN Click Share\` / 100 as asinClickShare,
+        \`Total Median Click Price Amount\` as totalMedianClickPrice,
+        \`ASIN Median Click Price Amount\` as asinMedianClickPrice,
+        \`Total Same Day Shipping Click Count\` as totalSameDayShippingClickCount,
+        \`Total One Day Shipping Click Count\` as totalOneDayShippingClickCount,
+        \`Total Two Day Shipping Click Count\` as totalTwoDayShippingClickCount,
+        -- Cart Add metrics
+        \`Total Cart Add Count\` as totalCartAddCount,
+        \`Total Cart Add Rate\` / 100 as totalCartAddRate,
+        \`ASIN Cart Add Count\` as asinCartAddCount,
+        \`ASIN Cart Add Share\` / 100 as asinCartAddShare,
+        \`Total Median Cart Add Price Amount\` as totalMedianCartAddPrice,
+        \`ASIN Median Cart Add Price Amount\` as asinMedianCartAddPrice,
+        \`Total Same Day Shipping Cart Add Count\` as totalSameDayShippingCartAddCount,
+        \`Total One Day Shipping Cart Add Count\` as totalOneDayShippingCartAddCount,
+        \`Total Two Day Shipping Cart Add Count\` as totalTwoDayShippingCartAddCount,
+        -- Purchase metrics
+        \`Total Purchase Count\` as totalPurchaseCount,
+        \`Total Purchase Rate\` / 100 as totalPurchaseRate,
+        \`ASIN Purchase Count\` as asinPurchaseCount,
+        \`ASIN Purchase Share\` / 100 as asinPurchaseShare,
+        \`Total Median Purchase Price Amount\` as totalMedianPurchasePrice,
+        \`ASIN Median Purchase Price Amount\` as asinMedianPurchasePrice,
+        \`Total Same Day Shipping Purchase Count\` as totalSameDayShippingPurchaseCount,
+        \`Total One Day Shipping Purchase Count\` as totalOneDayShippingPurchaseCount,
+        \`Total Two Day Shipping Purchase Count\` as totalTwoDayShippingPurchaseCount
       FROM \`${this.config.projectId}.${this.config.dataset}.${this.config.table}\`
-      WHERE date >= '${startDateStr}'
-        AND date <= '${endDateStr}'`;
+      WHERE Date >= '${startDateStr}'
+        AND Date <= '${endDateStr}'`;
 
     if (options?.asins && options.asins.length > 0) {
       const asinList = options.asins.map(asin => `'${asin}'`).join(',');
-      query += ` AND asin IN (${asinList})`;
+      query += ` AND \`Child ASIN\` IN (${asinList})`;
     }
 
     query += `
-      ORDER BY date, asin
-      LIMIT 1000`; // Add limit for initial testing
+      ORDER BY Date, \`Child ASIN\``;
 
     return query;
   }
@@ -180,12 +227,20 @@ export class NestedBigQueryToSupabaseSync {
     const asinMap = new Map<string, any>();
 
     for (const row of rows) {
-      const key = `${row.startDate}_${row.endDate}_${row.asin}`;
+      // Handle BigQuery date format (may come as object with value property)
+      const startDate = typeof row.startDate === 'object' && row.startDate.value 
+        ? row.startDate.value.split('T')[0] 
+        : row.startDate;
+      const endDate = typeof row.endDate === 'object' && row.endDate.value 
+        ? row.endDate.value.split('T')[0] 
+        : row.endDate;
+
+      const key = `${startDate}_${endDate}_${row.asin}`;
       
       if (!asinMap.has(key)) {
         asinMap.set(key, {
-          startDate: row.startDate,
-          endDate: row.endDate,
+          startDate: startDate,
+          endDate: endDate,
           asin: row.asin,
           searchQueryData: []
         });

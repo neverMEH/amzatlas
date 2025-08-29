@@ -8,15 +8,23 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate') || new Date().toISOString().split('T')[0];
     const asins = searchParams.get('asins')?.split(',').filter(Boolean);
     const queries = searchParams.get('queries')?.split(',').filter(Boolean);
+    const brandId = searchParams.get('brandId');
     const minVolume = searchParams.get('minVolume') ? parseInt(searchParams.get('minVolume')!) : undefined;
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : 100;
 
     const service = new SQPNestedService();
+    
+    // If brandId is provided, get ASINs for that brand first
+    let brandAsins = asins;
+    if (brandId && !asins) {
+      brandAsins = await service.getAsinsByBrand(brandId);
+    }
+    
     const data = await service.getSearchPerformanceMetrics(
       startDate,
       endDate,
       {
-        asins,
+        asins: brandAsins,
         searchQueries: queries,
         minVolume,
         limit

@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createClient()
+    const searchParams = request.nextUrl.searchParams
+    const brandId = searchParams.get('brandId')
+
+    // Fetch data from all period comparison views
+    const periods = ['week', 'month', 'quarter', 'year']
+    const summaries = await Promise.all(
+      periods.map(async (period) => {
+        const viewName = `${period}_over_${period}_comparison`
+        
+        let query = supabase
+          .from(viewName)
+          .select('*')
+        
+        if (brandId) {
+          query = query.eq('brand_id', brandId)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          console.error(`Error fetching ${period} comparison:`, error)
+          return null
+        }
+
+        // Calculate summary metrics
+        const validData = (data || []).filter(d => d.impressions_change_pct !== null)
+        
+        if (validData.length === 0) {
+          return {
+            period,
+            hasData: false,
+            metrics: {}
+          }
+        }
+
+        // Group by positive/negative changes
+        const improved = validData.filter(d => d.impressions_change_pct > 0)
+        const declined = validData.filter(d => d.impressions_change_pct < 0)
+        
+        // Calculate top movers
+        const topGainers = validData
+          .filter(d => d.impressions_change_pct > 0)
+          .sort((a, b) => b.impressions_change_pct - a.impressions_change_pct)
+          .slice(0, 5)
+          .map(d => ({
+            asin: d.asin,
+            searchQuery: d.search_query,
+            changePercent: d.impressions_change_pct,
+            currentValue: d.current_impressions,
+            previousValue: d.previous_impressions
+          }))
+
+        const topDecliners = validData
+          .filter(d => d.impressions_change_pct < 0)
+          .sort((a, b) => a.impressions_change_pct - b.impressions_change_pct)
+          .slice(0, 5)
+          .map(d => ({
+            asin: d.asin,
+            searchQuery: d.search_query,
+            changePercent: d.impressions_change_pct,
+            currentValue: d.current_impressions,
+            previousValue: d.previous_impressions
+          }))
+
+        return {
+          period,
+          hasData: true,
+          metrics: {
+            totalKeywords: validData.length,
+            improvedCount: improved.length,
+            declinedCount: declined.length,
+            stableCount: validData.length - improved.length - declined.length,
+            avgImpressionChange: validData.reduce((sum, d) => sum + d.impressions_change_pct, 0) / validData.length,
+            avgCvrChange: validData.reduce((sum, d) => sum + (d.cvr_change_pct || 0), 0) / validData.length,
+            avgRevenueChange: validData.reduce((sum, d) => sum + (d.revenue_change_pct || 0), 0) / validData.length,
+            totalCurrentImpressions: validData.reduce((sum, d) => sum + (d.current_impressions || 0), 0),
+            totalPreviousImpressions: validData.reduce((sum, d) => sum + (d.previous_impressions || 0), 0),
+            totalCurrentRevenue: validData.reduce((sum, d) => sum + (d.current_revenue || 0), 0),
+            totalPreviousRevenue: validData.reduce((sum, d) => sum + (d.previous_revenue || 0), 0),
+          },
+          topGainers,
+          topDecliners
+        }
+      })
+    )
+
+    // Filter out null results and create response
+    const validSummaries = summaries.filter(s => s !== null)
+    
+    // Calculate overall metrics across all periods
+    const overall = {
+      bestPerformingPeriod: null as string | null,
+      worstPerformingPeriod: null as string | null,
+      mostVolatilePeriod: null as string | null,
+      avgChangeByPeriod: {} as Record<string, number>
+    }
+
+    let bestChange = -Infinity
+    let worstChange = Infinity
+    let highestVolatility = 0
+
+    validSummaries.forEach(summary => {
+      if (summary?.hasData && summary.metrics) {
+        const avgChange = summary.metrics.avgImpressionChange
+        overall.avgChangeByPeriod[summary.period] = avgChange
+
+        if (avgChange > bestChange) {
+          bestChange = avgChange
+          overall.bestPerformingPeriod = summary.period
+        }
+
+        if (avgChange < worstChange) {
+          worstChange = avgChange
+          overall.worstPerformingPeriod = summary.period
+        }
+
+        // Calculate volatility as the spread between improved and declined
+        const volatility = Math.abs(summary.metrics.improvedCount - summary.metrics.declinedCount) / summary.metrics.totalKeywords
+        if (volatility > highestVolatility) {
+          highestVolatility = volatility
+          overall.mostVolatilePeriod = summary.period
+        }
+      }
+    })
+
+    return NextResponse.json({
+      brandId,
+      summaries: validSummaries,
+      overall,
+      generatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('API Error:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

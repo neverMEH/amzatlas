@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const start = searchParams.get('start')
     const end = searchParams.get('end')
+    const brandId = searchParams.get('brandId')
     
     if (!start || !end) {
       return NextResponse.json(
@@ -22,6 +23,13 @@ export async function GET(request: NextRequest) {
       end: new Date(end),
     }
     
+    // If brandId is provided, use brand-filtered metrics
+    if (brandId) {
+      const metrics = await sqpSupabaseService.getBrandPurchaseMetrics(dateRange, brandId)
+      return NextResponse.json(metrics)
+    }
+    
+    // Otherwise use the existing overall metrics
     const metrics = await sqpSupabaseService.getPurchaseMetrics(dateRange)
     
     return NextResponse.json(metrics)

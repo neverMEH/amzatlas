@@ -43,7 +43,7 @@ class MigrationRunner {
 
     // Note: This requires a custom RPC function 'exec_sql' to be available
     // Alternatively, you can run migrations directly using Supabase CLI or dashboard
-    const { error } = await this.supabase.rpc('exec_sql', { sql: createTableSQL })
+    const { error } = await this.supabase.rpc('execute_sql', { sql: createTableSQL })
       .catch(async (err: any) => {
         // Fallback: try to check if table exists
         const { data } = await this.supabase
@@ -83,7 +83,7 @@ class MigrationRunner {
 
     try {
       // Execute the migration SQL
-      const { error } = await this.supabase.rpc('exec_sql', { sql });
+      const { error } = await this.supabase.rpc('execute_sql', { sql });
       if (error) {
         throw error;
       }

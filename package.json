@@ -35,7 +35,9 @@
     "test:sync-query": "tsx src/scripts/test-sync-without-logger.ts",
     "seed:db": "tsx scripts/seed-database.ts",
     "seed:db:typescript": "tsx scripts/seed-database.ts --typescript",
-    "seed:simple": "tsx scripts/seed-simple.ts"
+    "seed:simple": "tsx scripts/seed-simple.ts",
+    "test:brand-extraction": "tsx src/scripts/test-brand-extraction.ts",
+    "test:period-calculations": "tsx src/scripts/test-period-calculations.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",

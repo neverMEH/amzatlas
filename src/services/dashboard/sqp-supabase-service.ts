@@ -72,6 +72,140 @@ class SQPSupabaseService {
     }
   }
   
+  async getBrandPurchaseMetrics(dateRange: { start: Date; end: Date }, brandId: string): Promise<PurchaseMetrics> {
+    const startDate = format(dateRange.start, 'yyyy-MM-dd');
+    const endDate = format(dateRange.end, 'yyyy-MM-dd');
+    
+    try {
+      // Get brand-filtered data
+      const { data: performanceData, error: perfError } = await this.getClient()
+        .from('search_query_performance')
+        .select(`
+          impressions_sum,
+          clicks_sum,
+          purchases_sum,
+          median_price_purchase,
+          asin_brand_mapping!inner(brand_id)
+        `)
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .gte('start_date', startDate)
+        .lte('end_date', endDate);
+      
+      if (perfError) throw perfError;
+      
+      // Calculate current period metrics
+      const currentMetrics = (performanceData || []).reduce((acc, row) => ({
+        totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
+        totalClicks: acc.totalClicks + (row.clicks_sum || 0),
+        totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
+        totalImpressions: acc.totalImpressions + (row.impressions_sum || 0),
+      }), {
+        totalPurchases: 0,
+        totalClicks: 0,
+        totalRevenue: 0,
+        totalImpressions: 0
+      });
+      
+      // Calculate previous period for comparison
+      const daysDiff = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+      const prevStartDate = format(subDays(new Date(startDate), daysDiff), 'yyyy-MM-dd');
+      const prevEndDate = format(subDays(new Date(endDate), daysDiff), 'yyyy-MM-dd');
+      
+      const { data: prevData, error: prevError } = await this.getClient()
+        .from('search_query_performance')
+        .select(`
+          impressions_sum,
+          clicks_sum,
+          purchases_sum,
+          median_price_purchase,
+          asin_brand_mapping!inner(brand_id)
+        `)
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .gte('start_date', prevStartDate)
+        .lte('end_date', prevEndDate);
+      
+      if (prevError) throw prevError;
+      
+      const prevMetrics = (prevData || []).reduce((acc, row) => ({
+        totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
+        totalClicks: acc.totalClicks + (row.clicks_sum || 0),
+        totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
+      }), {
+        totalPurchases: 0,
+        totalClicks: 0,
+        totalRevenue: 0
+      });
+      
+      // Calculate changes
+      const weekOverWeekChange = prevMetrics.totalPurchases > 0 
+        ? ((currentMetrics.totalPurchases - prevMetrics.totalPurchases) / prevMetrics.totalPurchases) * 100 
+        : 0;
+      
+      const purchaseCVR = currentMetrics.totalClicks > 0 
+        ? (currentMetrics.totalPurchases / currentMetrics.totalClicks) * 100 
+        : 0;
+      
+      const prevCVR = prevMetrics.totalClicks > 0 
+        ? (prevMetrics.totalPurchases / prevMetrics.totalClicks) * 100 
+        : 0;
+      
+      const cvrChange = prevCVR > 0 
+        ? ((purchaseCVR - prevCVR) / prevCVR) * 100 
+        : 0;
+      
+      const purchaseROI = currentMetrics.totalRevenue > 0 && currentMetrics.totalClicks > 0
+        ? (currentMetrics.totalRevenue / currentMetrics.totalClicks)
+        : 0;
+      
+      const prevROI = prevMetrics.totalRevenue > 0 && prevMetrics.totalClicks > 0
+        ? (prevMetrics.totalRevenue / prevMetrics.totalClicks)
+        : 0;
+      
+      const roiChange = prevROI > 0 
+        ? ((purchaseROI - prevROI) / prevROI) * 100 
+        : 0;
+      
+      // Count zero purchase keywords
+      const { count: zeroCount } = await this.getClient()
+        .from('search_query_performance')
+        .select('*', { count: 'exact', head: true })
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .eq('purchases_sum', 0)
+        .gt('impressions_sum', 100)
+        .gte('start_date', startDate)
+        .lte('end_date', endDate);
+      
+      const { count: prevZeroCount } = await this.getClient()
+        .from('search_query_performance')
+        .select('*', { count: 'exact', head: true })
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .eq('purchases_sum', 0)
+        .gt('impressions_sum', 100)
+        .gte('start_date', prevStartDate)
+        .lte('end_date', prevEndDate);
+      
+      // Estimate market share (simplified - in production would use market data)
+      const marketShare = currentMetrics.totalImpressions > 0 ? 20 : 0; // Placeholder
+      const marketShareChange = 0; // Placeholder
+      
+      return {
+        totalPurchases: currentMetrics.totalPurchases,
+        weekOverWeekChange,
+        marketShare,
+        marketShareChange,
+        purchaseCVR,
+        cvrChange,
+        zeroPurchaseKeywords: zeroCount || 0,
+        zeroPurchaseChange: (zeroCount || 0) - (prevZeroCount || 0),
+        purchaseROI,
+        roiChange,
+      };
+    } catch (error) {
+      console.error('Error fetching brand purchase metrics:', error);
+      throw error;
+    }
+  }
+  
   async getTopKeywords(limit: number = 10): Promise<KeywordPerformance[]> {
     try {
       // Use the RPC function to get top keywords
@@ -102,6 +236,134 @@ class SQPSupabaseService {
     }
   }
   
+  async getBrandTopKeywords(limit: number = 10, brandId: string): Promise<KeywordPerformance[]> {
+    try {
+      // Get brand-filtered top keywords
+      const { data, error } = await this.getClient()
+        .from('search_query_performance')
+        .select(`
+          search_query,
+          impressions_sum,
+          clicks_sum,
+          purchases_sum,
+          median_price_purchase,
+          asin_brand_mapping!inner(brand_id)
+        `)
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .gte('start_date', format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+        .gt('purchases_sum', 0)
+        .order('purchases_sum', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      
+      // Aggregate by keyword
+      const keywordMap = new Map();
+      
+      (data || []).forEach(row => {
+        if (!keywordMap.has(row.search_query)) {
+          keywordMap.set(row.search_query, {
+            keyword: row.search_query,
+            purchases: 0,
+            clicks: 0,
+            impressions: 0,
+            revenue: 0
+          });
+        }
+        
+        const kw = keywordMap.get(row.search_query);
+        kw.purchases += row.purchases_sum || 0;
+        kw.clicks += row.clicks_sum || 0;
+        kw.impressions += row.impressions_sum || 0;
+        kw.revenue += (row.purchases_sum || 0) * (row.median_price_purchase || 0);
+      });
+      
+      // Convert to array and calculate metrics
+      return Array.from(keywordMap.values())
+        .map(kw => ({
+          keyword: kw.keyword,
+          purchases: kw.purchases,
+          marketPurchases: kw.purchases * 5, // Placeholder
+          share: 20, // Placeholder
+          cvr: kw.clicks > 0 ? (kw.purchases / kw.clicks) * 100 : 0,
+          spend: kw.clicks * 0.5, // Placeholder CPC
+          roi: kw.revenue > 0 && kw.clicks > 0 ? (kw.revenue / (kw.clicks * 0.5)) : 0,
+          trend: 'stable' as 'up' | 'down' | 'stable', // Placeholder
+        }))
+        .sort((a, b) => b.purchases - a.purchases)
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error fetching brand top keywords:', error);
+      return [];
+    }
+  }
+  
+  async getBrandZeroPurchaseKeywords(limit: number = 20, brandId: string): Promise<KeywordPerformance[]> {
+    try {
+      const { data, error } = await this.getClient()
+        .from('search_query_performance')
+        .select(`
+          search_query,
+          impressions_sum,
+          clicks_sum,
+          asin_brand_mapping!inner(brand_id)
+        `)
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .eq('purchases_sum', 0)
+        .gt('impressions_sum', 100)
+        .gte('start_date', format(subDays(new Date(), 30), 'yyyy-MM-dd'))
+        .order('impressions_sum', { ascending: false })
+        .limit(limit);
+      
+      if (error) throw error;
+      
+      // Aggregate by keyword
+      const keywordMap = new Map();
+      
+      (data || []).forEach(row => {
+        if (!keywordMap.has(row.search_query)) {
+          keywordMap.set(row.search_query, {
+            keyword: row.search_query,
+            clicks: 0,
+            impressions: 0
+          });
+        }
+        
+        const kw = keywordMap.get(row.search_query);
+        kw.clicks += row.clicks_sum || 0;
+        kw.impressions += row.impressions_sum || 0;
+      });
+      
+      return Array.from(keywordMap.values())
+        .map(kw => ({
+          keyword: kw.keyword,
+          purchases: 0,
+          marketPurchases: 100, // Placeholder
+          share: 0,
+          cvr: 0,
+          spend: kw.clicks * 0.5, // Placeholder CPC
+          roi: -(kw.clicks * 0.5), // Negative ROI
+          trend: 'down' as 'up' | 'down' | 'stable',
+        }))
+        .sort((a, b) => b.impressions - a.impressions)
+        .slice(0, limit);
+    } catch (error) {
+      console.error('Error fetching brand zero purchase keywords:', error);
+      return [];
+    }
+  }
+  
+  // Stub methods for other brand keyword types - implement similarly
+  async getBrandRisingKeywords(limit: number = 10, brandId: string): Promise<KeywordPerformance[]> {
+    // Implementation would analyze week-over-week growth
+    return this.getBrandTopKeywords(limit, brandId); // Placeholder
+  }
+  
+  async getBrandNegativeROIKeywords(limit: number = 10, brandId: string): Promise<KeywordPerformance[]> {
+    // Implementation would filter for negative ROI
+    return this.getBrandTopKeywords(limit, brandId); // Placeholder
+  }
+  
   async getPurchaseTrends(weeks: number = 12): Promise<PurchaseTrend[]> {
     try {
       // Use the RPC function to get trends
@@ -118,6 +380,75 @@ class SQPSupabaseService {
       if (process.env.NODE_ENV === 'development') {
         return this.getMockTrends();
       }
+      return [];
+    }
+  }
+  
+  async getBrandPurchaseTrends(weeks: number = 12, brandId: string): Promise<PurchaseTrend[]> {
+    try {
+      // Calculate the date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - (weeks * 7));
+      
+      // Get weekly aggregated data for the brand
+      const { data, error } = await this.getClient()
+        .from('search_query_performance')
+        .select(`
+          start_date,
+          impressions_sum,
+          clicks_sum,
+          purchases_sum,
+          median_price_purchase,
+          asin_brand_mapping!inner(brand_id)
+        `)
+        .eq('asin_brand_mapping.brand_id', brandId)
+        .gte('start_date', format(startDate, 'yyyy-MM-dd'))
+        .order('start_date', { ascending: true });
+      
+      if (error) throw error;
+      
+      // Aggregate by week
+      const weeklyData = new Map();
+      
+      (data || []).forEach(row => {
+        const weekStart = startOfWeek(new Date(row.start_date));
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        
+        if (!weeklyData.has(weekKey)) {
+          weeklyData.set(weekKey, {
+            week: `W${format(weekStart, 'w')}`,
+            purchases: 0,
+            market: 0 // Placeholder - would need market data
+          });
+        }
+        
+        const week = weeklyData.get(weekKey);
+        week.purchases += row.purchases_sum || 0;
+        week.market += (row.purchases_sum || 0) * 5; // Placeholder multiplier
+      });
+      
+      // Convert to array and fill missing weeks
+      const trends: PurchaseTrend[] = [];
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        const weekStart = startOfWeek(currentDate);
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        const weekData = weeklyData.get(weekKey);
+        
+        trends.push({
+          week: `W${format(weekStart, 'w')}`,
+          purchases: weekData?.purchases || 0,
+          market: weekData?.market || 0
+        });
+        
+        currentDate.setDate(currentDate.getDate() + 7);
+      }
+      
+      return trends.slice(-weeks);
+    } catch (error) {
+      console.error('Error fetching brand purchase trends:', error);
       return [];
     }
   }

@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Completely redesign the SQP Intelligence dashboard to provide comprehensive period-over-period reporting (WoW, MoM, QoQ, YoY) and advanced keyword trend analysis with 6-week rolling averages for Amazon Search Query Performance data. Built on existing BigQuery-synced tables (`search_query_performance` and `asin_performance_data`), the system will automatically extract brands and product types from product titles, provide statistical anomaly detection (Z-scores), and enable multi-level analysis (Brand → Product Type → ASIN). The dashboard features trend band visualizations, heat maps for deviation tracking, emerging/declining keyword alerts, and automated weekly updates to transform raw SQP data into actionable intelligence with predictive insights.
