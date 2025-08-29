@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { QueryProvider } from '@/providers/query-provider'
-import Navigation from '@/components/layout/navigation'
 
 export const metadata: Metadata = {
-  title: 'SQP Intelligence Platform',
-  description: 'AI-powered analytics platform for Amazon sellers',
+  title: 'SQP Intelligence - ASIN Performance Dashboard',
+  description: 'Amazon Search Query Performance analytics for data-driven decisions',
 }
 
 export default function RootLayout({
@@ -17,10 +16,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <QueryProvider>
-          <Navigation />
-          <main className="min-h-screen bg-gray-50">
+          <div className="min-h-screen bg-gray-50">
             {children}
-          </main>
+          </div>
         </QueryProvider>
       </body>
     </html>
