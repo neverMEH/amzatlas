@@ -1,3 +1,0 @@
-# Spec Summary (Lite)
-
-Implement automated data synchronization from BigQuery to Supabase tables with daily scheduled triggers, and update all dashboards to display real SQP data through 13 comprehensive reports. The system will check daily for new weekly data, transform it to match Supabase schemas, and power performance reports (YoY analysis, purchase velocity, market share), diagnostic reports (zero purchases, cart abandonment, bleeding keywords), and actionable dashboards (4-quadrant prioritization, anomaly detection). This enables sellers and agencies to monitor keyword performance with production-ready analytics instead of mock data.
