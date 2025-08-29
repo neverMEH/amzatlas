@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
 
     // If stats are requested, fetch brand performance data
     if (includeStats && brands && brands.length > 0) {
-      const brandIds = brands.map(b => b.id)
+      const brandIds = brands.map((b: any) => b.id)
       
       const { data: stats, error: statsError } = await supabase
         .from('brand_performance_summary')
@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
 
       if (!statsError && stats) {
         // Merge stats with brands
-        const statsMap = new Map(stats.map(s => [s.brand_id, s]))
+        const statsMap = new Map(stats.map((s: any) => [s.brand_id, s]))
         brands.forEach((brand: any) => {
-          const brandStats = statsMap.get(brand.id)
+          const brandStats: any = statsMap.get(brand.id)
           if (brandStats) {
             Object.assign(brand, {
               asin_count: brandStats.asin_count,

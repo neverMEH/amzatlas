@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
           .filter((d: any) => d.impressions_change_pct > 0)
           .sort((a: any, b: any) => b.impressions_change_pct - a.impressions_change_pct)
           .slice(0, 5)
-          .map(d => ({
+          .map((d: any) => ({
             asin: d.asin,
             searchQuery: d.search_query,
             changePercent: d.impressions_change_pct,
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
           .filter((d: any) => d.impressions_change_pct < 0)
           .sort((a: any, b: any) => a.impressions_change_pct - b.impressions_change_pct)
           .slice(0, 5)
-          .map(d => ({
+          .map((d: any) => ({
             asin: d.asin,
             searchQuery: d.search_query,
             changePercent: d.impressions_change_pct,

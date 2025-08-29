@@ -45,7 +45,7 @@ export function createClient() {
       db: {
         schema: 'sqp'
       }
-    })
+    } as any)
 
     return clientCache
   } catch (error) {
