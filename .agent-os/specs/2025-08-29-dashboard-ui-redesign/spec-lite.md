@@ -1,0 +1,3 @@
+# Dashboard UI Redesign - Lite Summary
+
+Modernize the SQP Intelligence Dashboard by migrating from header navigation to a collapsible sidebar layout and replacing all UI components with Untitled UI React components. This redesign will maximize vertical screen space for data visualization while maintaining all existing functionality and implementing a consistent, professional design system throughout the dashboard interface.

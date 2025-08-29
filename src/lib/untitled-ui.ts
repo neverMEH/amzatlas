@@ -1,0 +1,107 @@
+// Untitled UI Mock Library - Entry Point
+// This file provides the main import point for our mock Untitled UI components
+
+// Re-export all UI components
+export {
+  Button,
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  Input,
+  Badge,
+  Sheet,
+  SheetTrigger,
+  SheetContent,
+  Select,
+  Separator,
+  Text,
+  Avatar,
+  BreadcrumbItem,
+  BreadcrumbSeparator,
+  type ButtonProps,
+  type CardProps,
+  type InputProps,
+  type BadgeProps,
+  type SheetProps,
+  type SelectProps,
+  type TextProps,
+  type AvatarProps,
+  type BreadcrumbItemProps,
+  type BreadcrumbSeparatorProps,
+} from '@/components/ui/untitled-ui'
+
+// Re-export all icons
+export {
+  HomeIcon,
+  ChartBarIcon,
+  CogIcon,
+  SearchIcon,
+  BellIcon,
+  UserIcon,
+  FileTextIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FilterIcon,
+  MenuIcon,
+  XIcon,
+  CalendarIcon,
+  DownloadIcon,
+  RefreshIcon,
+  TrendingUpIcon,
+  DollarSignIcon,
+  TargetIcon,
+  AlertCircleIcon,
+  CheckCircleIcon,
+  InfoIcon,
+  HelpCircleIcon,
+  Icons,
+} from '@/components/ui/untitled-ui/icons'
+
+// Create alias imports to match Untitled UI API
+import * as UIComponents from '@/components/ui/untitled-ui'
+import * as UIIcons from '@/components/ui/untitled-ui/icons'
+
+export const UntitledUI = {
+  Button: UIComponents.Button,
+  Card: UIComponents.Card,
+  CardHeader: UIComponents.CardHeader,
+  CardContent: UIComponents.CardContent,
+  CardFooter: UIComponents.CardFooter,
+  Input: UIComponents.Input,
+  Badge: UIComponents.Badge,
+  Sheet: UIComponents.Sheet,
+  SheetTrigger: UIComponents.SheetTrigger,
+  SheetContent: UIComponents.SheetContent,
+  Select: UIComponents.Select,
+  Separator: UIComponents.Separator,
+  Text: UIComponents.Text,
+  Avatar: UIComponents.Avatar,
+}
+
+export const UntitledIcons = {
+  Home: UIIcons.HomeIcon,
+  ChartBar: UIIcons.ChartBarIcon,
+  Cog: UIIcons.CogIcon,
+  Search: UIIcons.SearchIcon,
+  Bell: UIIcons.BellIcon,
+  User: UIIcons.UserIcon,
+  FileText: UIIcons.FileTextIcon,
+  ChevronLeft: UIIcons.ChevronLeftIcon,
+  ChevronRight: UIIcons.ChevronRightIcon,
+  Filter: UIIcons.FilterIcon,
+  Menu: UIIcons.MenuIcon,
+  X: UIIcons.XIcon,
+  Calendar: UIIcons.CalendarIcon,
+  Download: UIIcons.DownloadIcon,
+  Refresh: UIIcons.RefreshIcon,
+  TrendingUp: UIIcons.TrendingUpIcon,
+  DollarSign: UIIcons.DollarSignIcon,
+  Target: UIIcons.TargetIcon,
+  AlertCircle: UIIcons.AlertCircleIcon,
+  CheckCircle: UIIcons.CheckCircleIcon,
+  Info: UIIcons.InfoIcon,
+  HelpCircle: UIIcons.HelpCircleIcon,
+}

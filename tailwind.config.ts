@@ -5,6 +5,7 @@ const config: Config = {
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/contexts/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   darkMode: 'class',
   theme: {
@@ -119,6 +120,26 @@ const config: Config = {
         '3xl': '20px',
         '4xl': '24px',
         'full': '9999px',
+      },
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '112': '28rem',
+        '128': '32rem',
+      },
+      animation: {
+        'slide-in': 'slideIn 0.2s ease-out',
+        'slide-out': 'slideOut 0.2s ease-in',
+      },
+      keyframes: {
+        slideIn: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(0)' },
+        },
+        slideOut: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-100%)' },
+        },
       },
     },
   },
