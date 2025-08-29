@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch current period data
     const { data: currentData, error: currentError } = await supabase
-      .from('sqp.search_performance_summary')
+      .from('search_performance_summary')
       .select('*')
       .eq('asin', asin)
       .gte('start_date', startDate)
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     // Get ASIN details
     const { data: asinData } = await supabase
-      .from('sqp.asin_performance_data')
+      .from('asin_performance_data')
       .select('asin, product_title')
       .eq('asin', asin)
       .limit(1)
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     let comparison = null
     if (compareStartDate && compareEndDate) {
       const { data: compareData } = await supabase
-        .from('sqp.search_performance_summary')
+        .from('search_performance_summary')
         .select('*')
         .eq('asin', asin)
         .gte('start_date', compareStartDate)
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
     let topQueries = []
     if (includeQueries) {
       const { data: queryData } = await supabase
-        .from('sqp.search_query_performance')
+        .from('search_query_performance')
         .select('search_query, impressions, clicks, purchases')
         .eq('asin', asin)
         .gte('start_date', startDate)

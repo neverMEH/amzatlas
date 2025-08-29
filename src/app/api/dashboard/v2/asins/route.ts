@@ -7,7 +7,7 @@ export async function GET() {
     
     // Fetch distinct ASINs with their product titles
     const { data, error } = await supabase
-      .from('sqp.asin_performance_data')
+      .from('asin_performance_data')
       .select('asin, product_title')
       .order('product_title', { ascending: true })
       
