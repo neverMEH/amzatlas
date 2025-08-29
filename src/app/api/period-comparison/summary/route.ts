@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
 
     validSummaries.forEach(summary => {
       if (summary?.hasData && summary.metrics) {
-        const avgChange = summary.metrics.avgImpressionChange
+        const avgChange = summary.metrics.avgImpressionChange || 0
         overall.avgChangeByPeriod[summary.period] = avgChange
 
         if (avgChange > bestChange) {
@@ -121,7 +121,10 @@ export async function GET(request: NextRequest) {
         }
 
         // Calculate volatility as the spread between improved and declined
-        const volatility = Math.abs(summary.metrics.improvedCount - summary.metrics.declinedCount) / summary.metrics.totalKeywords
+        const improvedCount = summary.metrics.improvedCount || 0
+        const declinedCount = summary.metrics.declinedCount || 0
+        const totalKeywords = summary.metrics.totalKeywords || 1
+        const volatility = Math.abs(improvedCount - declinedCount) / totalKeywords
         if (volatility > highestVolatility) {
           highestVolatility = volatility
           overall.mostVolatilePeriod = summary.period

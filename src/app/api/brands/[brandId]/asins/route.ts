@@ -39,7 +39,7 @@ export async function GET(
 
     // If performance data is requested, fetch additional metrics
     if (includePerformance && asins.length > 0) {
-      const asinList = asins.map(item => item.asin)
+      const asinList = asins.map((item: any) => item.asin)
       
       const { data: performanceData, error: perfError } = await supabase
         .from('search_query_performance')
@@ -76,7 +76,7 @@ export async function GET(
         })
 
         // Merge performance data with ASINs
-        asins = asins.map(item => ({
+        asins = asins.map((item: any) => ({
           ...item,
           ...(performanceMap.get(item.asin) || {})
         }))
@@ -91,7 +91,7 @@ export async function GET(
       'revenue': 'total_revenue'
     }[sortBy] || 'asin'
 
-    asins.sort((a, b) => {
+    asins.sort((a: any, b: any) => {
       const aVal = a[sortField] || 0
       const bVal = b[sortField] || 0
       

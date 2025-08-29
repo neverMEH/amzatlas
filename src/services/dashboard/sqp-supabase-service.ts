@@ -94,7 +94,7 @@ class SQPSupabaseService {
       if (perfError) throw perfError;
       
       // Calculate current period metrics
-      const currentMetrics = (performanceData || []).reduce((acc, row) => ({
+      const currentMetrics = (performanceData || []).reduce((acc: any, row: any) => ({
         totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
         totalClicks: acc.totalClicks + (row.clicks_sum || 0),
         totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
@@ -126,7 +126,7 @@ class SQPSupabaseService {
       
       if (prevError) throw prevError;
       
-      const prevMetrics = (prevData || []).reduce((acc, row) => ({
+      const prevMetrics = (prevData || []).reduce((acc: any, row: any) => ({
         totalPurchases: acc.totalPurchases + (row.purchases_sum || 0),
         totalClicks: acc.totalClicks + (row.clicks_sum || 0),
         totalRevenue: acc.totalRevenue + ((row.purchases_sum || 0) * (row.median_price_purchase || 0)),
@@ -260,7 +260,7 @@ class SQPSupabaseService {
       // Aggregate by keyword
       const keywordMap = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         if (!keywordMap.has(row.search_query)) {
           keywordMap.set(row.search_query, {
             keyword: row.search_query,
@@ -280,7 +280,7 @@ class SQPSupabaseService {
       
       // Convert to array and calculate metrics
       return Array.from(keywordMap.values())
-        .map(kw => ({
+        .map((kw: any) => ({
           keyword: kw.keyword,
           purchases: kw.purchases,
           marketPurchases: kw.purchases * 5, // Placeholder
@@ -320,7 +320,7 @@ class SQPSupabaseService {
       // Aggregate by keyword
       const keywordMap = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         if (!keywordMap.has(row.search_query)) {
           keywordMap.set(row.search_query, {
             keyword: row.search_query,
@@ -335,7 +335,7 @@ class SQPSupabaseService {
       });
       
       return Array.from(keywordMap.values())
-        .map(kw => ({
+        .map((kw: any) => ({
           keyword: kw.keyword,
           purchases: 0,
           marketPurchases: 100, // Placeholder
@@ -345,7 +345,7 @@ class SQPSupabaseService {
           roi: -(kw.clicks * 0.5), // Negative ROI
           trend: 'down' as 'up' | 'down' | 'stable',
         }))
-        .sort((a, b) => b.impressions - a.impressions)
+        .sort((a: any, b: any) => b.impressions - a.impressions)
         .slice(0, limit);
     } catch (error) {
       console.error('Error fetching brand zero purchase keywords:', error);
@@ -411,7 +411,7 @@ class SQPSupabaseService {
       // Aggregate by week
       const weeklyData = new Map();
       
-      (data || []).forEach(row => {
+      (data || []).forEach((row: any) => {
         const weekStart = startOfWeek(new Date(row.start_date));
         const weekKey = format(weekStart, 'yyyy-MM-dd');
         

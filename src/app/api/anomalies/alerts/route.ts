@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert anomalies to alerts with priority and actionability
-    const alerts = (anomalies || []).map(anomaly => {
+    const alerts = (anomalies || []).map((anomaly: any) => {
       const alertPriority = calculateAlertPriority(anomaly)
       const impact = calculateBusinessImpact(anomaly)
       
@@ -70,12 +70,12 @@ export async function GET(request: NextRequest) {
     // Filter by priority if specified
     let filteredAlerts = alerts
     if (priority) {
-      filteredAlerts = alerts.filter(alert => alert.priority === priority)
+      filteredAlerts = alerts.filter((alert: any) => alert.priority === priority)
     }
 
     // Sort by priority and impact
-    filteredAlerts.sort((a, b) => {
-      const priorityOrder = { high: 0, medium: 1, low: 2 }
+    filteredAlerts.sort((a: any, b: any) => {
+      const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 }
       if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
         return priorityOrder[a.priority] - priorityOrder[b.priority]
       }
@@ -84,9 +84,9 @@ export async function GET(request: NextRequest) {
 
     // Group alerts by priority
     const groupedAlerts = {
-      high: filteredAlerts.filter(a => a.priority === 'high'),
-      medium: filteredAlerts.filter(a => a.priority === 'medium'),
-      low: filteredAlerts.filter(a => a.priority === 'low')
+      high: filteredAlerts.filter((a: any) => a.priority === 'high'),
+      medium: filteredAlerts.filter((a: any) => a.priority === 'medium'),
+      low: filteredAlerts.filter((a: any) => a.priority === 'low')
     }
 
     return NextResponse.json({
@@ -102,10 +102,10 @@ export async function GET(request: NextRequest) {
           medium: groupedAlerts.medium.length,
           low: groupedAlerts.low.length
         },
-        criticalAlerts: filteredAlerts.filter(a => 
+        criticalAlerts: filteredAlerts.filter((a: any) => 
           a.priority === 'high' && Math.abs(a.impact.revenueImpact) > 1000
         ).length,
-        estimatedTotalImpact: filteredAlerts.reduce((sum, a) => sum + Math.abs(a.impact.revenueImpact), 0)
+        estimatedTotalImpact: filteredAlerts.reduce((sum: number, a: any) => sum + Math.abs(a.impact.revenueImpact), 0)
       },
       alerts: filteredAlerts,
       grouped: groupedAlerts

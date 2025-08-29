@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by trend type if specified
     if (trendType) {
-      filteredData = filteredData.filter(d => d.o_trend_classification === trendType)
+      filteredData = filteredData.filter((d: any) => d.o_trend_classification === trendType)
     }
 
     // Apply pagination
@@ -49,22 +49,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate trend distribution
-    filteredData.forEach(item => {
+    filteredData.forEach((item: any) => {
       const trend = item.o_trend_classification
       summary.trendDistribution[trend] = (summary.trendDistribution[trend] || 0) + 1
     })
 
     // Calculate averages
     if (filteredData.length > 0) {
-      summary.avgVolatility = filteredData.reduce((sum, d) => sum + (d.o_volatility_score || 0), 0) / filteredData.length
-      summary.avgTrendStrength = filteredData.reduce((sum, d) => sum + (d.o_trend_strength || 0), 0) / filteredData.length
+      summary.avgVolatility = filteredData.reduce((sum: number, d: any) => sum + (d.o_volatility_score || 0), 0) / filteredData.length
+      summary.avgTrendStrength = filteredData.reduce((sum: number, d: any) => sum + (d.o_trend_strength || 0), 0) / filteredData.length
       
       // Get top performers (emerging with high impressions)
       summary.topPerformers = filteredData
-        .filter(d => d.o_trend_classification === 'emerging' || d.o_trend_classification === 'surging')
-        .sort((a, b) => b.o_current_week_impressions - a.o_current_week_impressions)
+        .filter((d: any) => d.o_trend_classification === 'emerging' || d.o_trend_classification === 'surging')
+        .sort((a: any, b: any) => b.o_current_week_impressions - a.o_current_week_impressions)
         .slice(0, 5)
-        .map(d => ({
+        .map((d: any) => ({
           asin: d.o_asin,
           searchQuery: d.o_search_query,
           trend: d.o_trend_classification,
@@ -75,13 +75,13 @@ export async function GET(request: NextRequest) {
 
       // Get keywords needing attention (declining/plummeting with high base)
       summary.needsAttention = filteredData
-        .filter(d => 
+        .filter((d: any) => 
           (d.o_trend_classification === 'declining' || d.o_trend_classification === 'plummeting') &&
           d.o_avg_weekly_impressions > 1000
         )
-        .sort((a, b) => a.o_momentum_score - b.o_momentum_score)
+        .sort((a: any, b: any) => a.o_momentum_score - b.o_momentum_score)
         .slice(0, 5)
-        .map(d => ({
+        .map((d: any) => ({
           asin: d.o_asin,
           searchQuery: d.o_search_query,
           trend: d.o_trend_classification,

@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate aggregate statistics
-    const stats = {
+    const stats: any = {
       dateRange: {
         start: startDate.toISOString(),
         end: endDate.toISOString(),
@@ -67,12 +67,12 @@ export async function GET(request: NextRequest) {
       },
       brandId,
       totals: {
-        asins: new Set(data?.map(d => d.asin) || []).size,
-        impressions: data?.reduce((sum, d) => sum + (d.impressions_sum || 0), 0) || 0,
-        clicks: data?.reduce((sum, d) => sum + (d.clicks_sum || 0), 0) || 0,
-        cartAdds: data?.reduce((sum, d) => sum + (d.cart_adds_sum || 0), 0) || 0,
-        purchases: data?.reduce((sum, d) => sum + (d.purchases_sum || 0), 0) || 0,
-        revenue: data?.reduce((sum, d) => sum + ((d.purchases_sum || 0) * (d.median_price_purchase || 0)), 0) || 0
+        asins: new Set(data?.map((d: any) => d.asin) || []).size,
+        impressions: data?.reduce((sum: number, d: any) => sum + (d.impressions_sum || 0), 0) || 0,
+        clicks: data?.reduce((sum: number, d: any) => sum + (d.clicks_sum || 0), 0) || 0,
+        cartAdds: data?.reduce((sum: number, d: any) => sum + (d.cart_adds_sum || 0), 0) || 0,
+        purchases: data?.reduce((sum: number, d: any) => sum + (d.purchases_sum || 0), 0) || 0,
+        revenue: data?.reduce((sum: number, d: any) => sum + ((d.purchases_sum || 0) * (d.median_price_purchase || 0)), 0) || 0
       },
       averages: {
         ctr: 0,

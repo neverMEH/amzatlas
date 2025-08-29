@@ -61,9 +61,9 @@ export async function GET(request: NextRequest) {
     })
 
     const topAffected = (affectedProducts || [])
-      .sort((a, b) => Math.abs(b.o_impressions_z_score) - Math.abs(a.o_impressions_z_score))
+      .sort((a: any, b: any) => Math.abs(b.o_impressions_z_score) - Math.abs(a.o_impressions_z_score))
       .slice(0, 10)
-      .map(item => ({
+      .map((item: any) => ({
         asin: item.o_asin,
         searchQuery: item.o_search_query,
         metric: 'impressions',

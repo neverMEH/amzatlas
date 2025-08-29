@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process and enhance the data
-    const processedData = (data || []).map(row => ({
+    const processedData = (data || []).map((row: any) => ({
       ...row,
       performanceCategory: categorizePerformance(row),
       insights: generateInsights(row)
@@ -140,32 +140,32 @@ function calculateAggregateStats(data: any[]) {
     }
   }
 
-  const validData = data.filter(d => d.o_impressions_change_pct !== null)
+  const validData = data.filter((d: any) => d.o_impressions_change_pct !== null)
   
   return {
     overview: {
       totalKeywords: validData.length,
-      avgImpressionChange: validData.reduce((sum, d) => sum + d.o_impressions_change_pct, 0) / validData.length,
-      avgCvrChange: validData.reduce((sum, d) => sum + (d.o_cvr_change_pct || 0), 0) / validData.length,
-      avgRevenueChange: validData.reduce((sum, d) => sum + (d.o_revenue_change_pct || 0), 0) / validData.length,
-      totalCurrentRevenue: validData.reduce((sum, d) => sum + (d.o_current_revenue || 0), 0),
-      totalPreviousRevenue: validData.reduce((sum, d) => sum + (d.o_previous_revenue || 0), 0)
+      avgImpressionChange: validData.reduce((sum: number, d: any) => sum + d.o_impressions_change_pct, 0) / validData.length,
+      avgCvrChange: validData.reduce((sum: number, d: any) => sum + (d.o_cvr_change_pct || 0), 0) / validData.length,
+      avgRevenueChange: validData.reduce((sum: number, d: any) => sum + (d.o_revenue_change_pct || 0), 0) / validData.length,
+      totalCurrentRevenue: validData.reduce((sum: number, d: any) => sum + (d.o_current_revenue || 0), 0),
+      totalPreviousRevenue: validData.reduce((sum: number, d: any) => sum + (d.o_previous_revenue || 0), 0)
     },
     distribution: {
-      improved: validData.filter(d => d.o_impressions_change_pct > 5).length,
-      declined: validData.filter(d => d.o_impressions_change_pct < -5).length,
-      stable: validData.filter(d => Math.abs(d.o_impressions_change_pct) <= 5).length,
-      starPerformers: validData.filter(d => d.performanceCategory === 'star_performer').length,
-      needsAttention: validData.filter(d => d.performanceCategory === 'needs_attention').length
+      improved: validData.filter((d: any) => d.o_impressions_change_pct > 5).length,
+      declined: validData.filter((d: any) => d.o_impressions_change_pct < -5).length,
+      stable: validData.filter((d: any) => Math.abs(d.o_impressions_change_pct) <= 5).length,
+      starPerformers: validData.filter((d: any) => d.performanceCategory === 'star_performer').length,
+      needsAttention: validData.filter((d: any) => d.performanceCategory === 'needs_attention').length
     },
     topMetrics: {
-      highestGrowth: validData.reduce((max, d) => 
+      highestGrowth: validData.reduce((max: any, d: any) => 
         d.o_impressions_change_pct > max.o_impressions_change_pct ? d : max
       , validData[0]),
-      biggestDecline: validData.reduce((min, d) => 
+      biggestDecline: validData.reduce((min: any, d: any) => 
         d.o_impressions_change_pct < min.o_impressions_change_pct ? d : min
       , validData[0]),
-      highestRevenue: validData.reduce((max, d) => 
+      highestRevenue: validData.reduce((max: any, d: any) => 
         (d.o_current_revenue || 0) > (max.o_current_revenue || 0) ? d : max
       , validData[0])
     }

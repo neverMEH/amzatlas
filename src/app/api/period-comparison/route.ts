@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Map comparison type to view name
-    const viewMap = {
+    const viewMap: Record<string, string> = {
       'week': 'week_over_week_comparison',
       'month': 'month_over_month_comparison',
       'quarter': 'quarter_over_quarter_comparison',

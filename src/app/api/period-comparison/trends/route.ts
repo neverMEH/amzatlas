@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       const ctr = week.impressions > 0 ? (week.clicks / week.impressions) * 100 : 0
       const cvr = week.clicks > 0 ? (week.purchases / week.clicks) * 100 : 0
       
-      const metricValues = {
+      const metricValues: Record<string, number> = {
         impressions: week.impressions,
         clicks: week.clicks,
         purchases: week.purchases,
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
         const prevCtr = prevWeek.impressions > 0 ? (prevWeek.clicks / prevWeek.impressions) * 100 : 0
         const prevCvr = prevWeek.clicks > 0 ? (prevWeek.purchases / prevWeek.clicks) * 100 : 0
         
-        const prevMetricValues = {
+        const prevMetricValues: Record<string, number> = {
           impressions: prevWeek.impressions,
           clicks: prevWeek.clicks,
           purchases: prevWeek.purchases,

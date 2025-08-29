@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
     // Filter by metric if specified
     if (metric !== 'all') {
-      anomalies = anomalies.filter(a => {
+      anomalies = anomalies.filter((a: any) => {
         switch (metric) {
           case 'impressions':
             return Math.abs(a.o_impressions_z_score) >= (severity === 'extreme' ? 3 : severity === 'mild' ? 1.5 : 2)
@@ -70,35 +70,35 @@ export async function GET(request: NextRequest) {
     const summary = {
       totalAnomalies: anomalies.length,
       byMetric: {
-        impressions: anomalies.filter(a => Math.abs(a.o_impressions_z_score) >= 1.5).length,
-        clicks: anomalies.filter(a => Math.abs(a.o_clicks_z_score) >= 1.5).length,
-        purchases: anomalies.filter(a => Math.abs(a.o_purchases_z_score) >= 1.5).length
+        impressions: anomalies.filter((a: any) => Math.abs(a.o_impressions_z_score) >= 1.5).length,
+        clicks: anomalies.filter((a: any) => Math.abs(a.o_clicks_z_score) >= 1.5).length,
+        purchases: anomalies.filter((a: any) => Math.abs(a.o_purchases_z_score) >= 1.5).length
       },
       bySeverity: {
-        extreme: anomalies.filter(a => 
+        extreme: anomalies.filter((a: any) => 
           Math.abs(a.o_impressions_z_score) >= 3 || 
           Math.abs(a.o_clicks_z_score) >= 3 || 
           Math.abs(a.o_purchases_z_score) >= 3
         ).length,
-        moderate: anomalies.filter(a => 
+        moderate: anomalies.filter((a: any) => 
           (Math.abs(a.o_impressions_z_score) >= 2 && Math.abs(a.o_impressions_z_score) < 3) ||
           (Math.abs(a.o_clicks_z_score) >= 2 && Math.abs(a.o_clicks_z_score) < 3) ||
           (Math.abs(a.o_purchases_z_score) >= 2 && Math.abs(a.o_purchases_z_score) < 3)
         ).length,
-        mild: anomalies.filter(a => 
+        mild: anomalies.filter((a: any) => 
           (Math.abs(a.o_impressions_z_score) >= 1.5 && Math.abs(a.o_impressions_z_score) < 2) ||
           (Math.abs(a.o_clicks_z_score) >= 1.5 && Math.abs(a.o_clicks_z_score) < 2) ||
           (Math.abs(a.o_purchases_z_score) >= 1.5 && Math.abs(a.o_purchases_z_score) < 2)
         ).length
       },
       byDirection: {
-        positive: anomalies.filter(a => a.o_impressions_z_score > 0).length,
-        negative: anomalies.filter(a => a.o_impressions_z_score < 0).length
+        positive: anomalies.filter((a: any) => a.o_impressions_z_score > 0).length,
+        negative: anomalies.filter((a: any) => a.o_impressions_z_score < 0).length
       }
     }
 
     // Enrich anomalies with insights
-    const enrichedAnomalies = anomalies.map(anomaly => ({
+    const enrichedAnomalies = anomalies.map((anomaly: any) => ({
       ...anomaly,
       severity: getAnomalySeverity(anomaly),
       type: getAnomalyType(anomaly),
@@ -231,31 +231,31 @@ function identifyAnomalyPatterns(anomalies: any[]): any {
     categorySpecific: new Map(),
     timeConcentrated: false,
     primaryMetricAffected: '',
-    commonCharacteristics: []
+    commonCharacteristics: [] as string[]
   }
   
   if (anomalies.length < 3) return patterns
   
   // Check if anomalies are brand-wide
-  const uniqueBrands = new Set(anomalies.map(a => a.o_brand_id))
+  const uniqueBrands = new Set(anomalies.map((a: any) => a.o_brand_id))
   patterns.brandWide = uniqueBrands.size === 1 && anomalies.length > 10
   
   // Check metric concentration
   const metricCounts = {
-    impressions: anomalies.filter(a => Math.abs(a.o_impressions_z_score) >= 2).length,
-    clicks: anomalies.filter(a => Math.abs(a.o_clicks_z_score) >= 2).length,
-    purchases: anomalies.filter(a => Math.abs(a.o_purchases_z_score) >= 2).length
+    impressions: anomalies.filter((a: any) => Math.abs(a.o_impressions_z_score) >= 2).length,
+    clicks: anomalies.filter((a: any) => Math.abs(a.o_clicks_z_score) >= 2).length,
+    purchases: anomalies.filter((a: any) => Math.abs(a.o_purchases_z_score) >= 2).length
   }
   
   patterns.primaryMetricAffected = Object.entries(metricCounts)
-    .sort((a, b) => b[1] - a[1])[0][0]
+    .sort((a: any, b: any) => b[1] - a[1])[0][0]
   
   // Identify common characteristics
-  if (anomalies.filter(a => a.o_impressions_z_score < -2).length > anomalies.length * 0.7) {
+  if (anomalies.filter((a: any) => a.o_impressions_z_score < -2).length > anomalies.length * 0.7) {
     patterns.commonCharacteristics.push('Widespread traffic decline')
   }
   
-  if (anomalies.filter(a => a.o_purchases_z_score > 2).length > anomalies.length * 0.5) {
+  if (anomalies.filter((a: any) => a.o_purchases_z_score > 2).length > anomalies.length * 0.5) {
     patterns.commonCharacteristics.push('Broad conversion improvement')
   }
   
