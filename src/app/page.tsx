@@ -2,12 +2,18 @@
 
 import { useState } from 'react'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
+import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
 
 export default function Dashboard() {
   const [selectedASIN, setSelectedASIN] = useState<string>('')
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
+  })
+  const [compareRange, setCompareRange] = useState({
+    startDate: '',
+    endDate: '',
+    enabled: false,
   })
 
   return (
@@ -30,25 +36,19 @@ export default function Dashboard() {
               </label>
               <ASINSelector value={selectedASIN} onChange={setSelectedASIN} />
             </div>
-            <div className="max-w-xl">
+            <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date Range
               </label>
-              <div className="flex space-x-2">
-                <input
-                  type="date"
-                  className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  value={dateRange.startDate}
-                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-                />
-                <span className="flex items-center px-2 text-gray-500">to</span>
-                <input
-                  type="date"
-                  className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  value={dateRange.endDate}
-                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-                />
-              </div>
+              <DateRangePicker
+                startDate={dateRange.startDate}
+                endDate={dateRange.endDate}
+                onChange={setDateRange}
+                showComparison={true}
+                compareStartDate={compareRange.startDate}
+                compareEndDate={compareRange.endDate}
+                onCompareChange={setCompareRange}
+              />
             </div>
           </div>
         </div>
