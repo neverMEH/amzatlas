@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
+import { PerformanceChart } from '@/components/asin-performance/PerformanceChart'
 import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
@@ -103,12 +104,23 @@ export default function Dashboard() {
               />
             </section>
 
-            {/* Placeholder for charts */}
+            {/* Performance charts */}
             <section>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h2>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-500">Performance charts will be displayed here</p>
-              </div>
+              <PerformanceChart
+                data={data?.timeSeries || []}
+                comparisonData={compareRange.enabled && data?.comparison ? 
+                  // Generate comparison time series from the comparison metrics
+                  data.timeSeries.map((item, idx) => ({
+                    date: item.date,
+                    impressions: Math.round(item.impressions * (1 - (data.comparison?.changes.impressions || 0))),
+                    clicks: Math.round(item.clicks * (1 - (data.comparison?.changes.clicks || 0))),
+                    cartAdds: Math.round(item.cartAdds * (1 - ((data.comparison?.metrics.totals.cartAdds || 0) / (data.metrics.totals.cartAdds || 1) - 1))),
+                    purchases: Math.round(item.purchases * (1 - (data.comparison?.changes.purchases || 0))),
+                  })) : undefined
+                }
+                isLoading={isLoading}
+                error={error as Error | null}
+              />
             </section>
 
             {/* Placeholder for search query table */}
