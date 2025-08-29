@@ -37,6 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Sync Engine**: Automated data synchronization with error handling
 - **Dashboard**: Interactive metrics visualization with drill-down capabilities
 - **Reporting**: Automated report generation and performance analysis
+- **Brand Management**: Automatic ASIN-to-brand mapping with pattern matching
 
 ## Environment Setup
 
@@ -239,6 +240,13 @@ npm run fix:columns        # Add missing columns to tables
 
 ## Recent Changes & Migration Notes
 
+### Brand Management System (Aug 2025)
+- Added automatic ASIN-to-brand mapping based on product titles
+- Implemented RPC functions for brand matching and creation
+- Successfully mapped 83 ASINs to Work Sharp brand
+- Added CLI tools for brand management (add-brand.ts, cleanup-brands.ts)
+- See `/docs/brand-management-system.md` for detailed documentation
+
 ### BigQuery Schema Migration (Dec 2024)
 - Migrated from flat to nested BigQuery data structure
 - Added comprehensive funnel analysis (Impressions → Clicks → Cart Adds → Purchases)
@@ -251,7 +259,11 @@ npm run fix:columns        # Add missing columns to tables
 - `015_add_missing_weekly_summary_columns.sql` - Added cart add columns to weekly summary
 - `016_create_public_sync_views.sql` - Created public views for sync_log and data_quality_checks
 - `017_fix_summary_table_permissions.sql` - Fixed permissions for summary tables
+- `025_add_post_sync_brand_extraction.sql` - Trigger for automatic brand extraction
+- `026_create_public_views_for_sqp_tables.sql` - Public schema views for API access
+- `027_add_brand_matching_functions.sql` - RPC functions for brand management
 - `docs/bigquery-schema-migration.md` - Detailed migration guide
+- `docs/brand-management-system.md` - Brand management documentation
 
 ### Data Sync Implementation (Dec 2024)
 - **BigQuery Schema**: Discovered flat structure with space-separated column names (e.g., `Child ASIN`, `Search Query`)
