@@ -45,13 +45,6 @@ const navigationItems: NavigationItem[] = [
     icon: HomeIcon,
   },
   {
-    id: 'enhanced-dashboard',
-    label: 'Enhanced Dashboard',
-    href: '/dashboard/enhanced',
-    icon: HomeIcon,
-    badge: 'New',
-  },
-  {
     id: 'reports',
     label: 'Reports',
     href: '/dashboard/reports',

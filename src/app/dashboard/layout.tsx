@@ -1,7 +1,6 @@
 import { ReactNode } from 'react'
-import DashboardSidebar from '@/components/dashboard/sidebar'
-import DashboardHeader from '@/components/dashboard/header'
 import { DashboardProvider } from '@/contexts/dashboard-context'
+import EnhancedDashboardLayout from '@/components/dashboard/enhanced-dashboard-layout'
 
 export default function DashboardLayout({
   children,
@@ -10,17 +9,9 @@ export default function DashboardLayout({
 }) {
   return (
     <DashboardProvider>
-      <div className="min-h-screen bg-gray-25 dark:bg-gray-950">
-        <DashboardSidebar />
-        <div className="lg:pl-64">
-          <DashboardHeader />
-          <main className="px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mx-auto max-w-7xl">
-              {children}
-            </div>
-          </main>
-        </div>
-      </div>
+      <EnhancedDashboardLayout>
+        {children}
+      </EnhancedDashboardLayout>
     </DashboardProvider>
   )
 }
