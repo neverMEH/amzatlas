@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
     const compareStartDate = searchParams.get('compareStartDate')
     const compareEndDate = searchParams.get('compareEndDate')
-    const includeQueries = searchParams.get('includeQueries') !== 'false'
+    // Remove includeQueries - we're focusing on weekly aggregated data
 
     if (!asin || !startDate || !endDate) {
       return NextResponse.json(
@@ -20,16 +20,17 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient()
 
-    // Fetch current period data
-    const { data: currentData, error: currentError } = await supabase
-      .from('search_performance_summary')
+    // Fetch weekly aggregated data for the time series
+    const { data: weeklyData, error: weeklyError } = await supabase
+      .from('weekly_summary')
       .select('*')
       .eq('asin', asin)
-      .gte('start_date', startDate)
-      .lte('end_date', endDate)
+      .gte('period_start', startDate)
+      .lte('period_end', endDate)
+      .order('period_start', { ascending: true })
 
-    if (currentError) {
-      console.error('Error fetching current period data:', currentError)
+    if (weeklyError) {
+      console.error('Error fetching weekly data:', weeklyError)
       return NextResponse.json(
         { error: 'Failed to fetch performance data' },
         { status: 500 }
@@ -44,13 +45,13 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .single()
 
-    // Aggregate metrics for current period
+    // Aggregate metrics for current period from weekly data
     const metrics = {
       totals: {
-        impressions: currentData?.reduce((sum: number, row: any) => sum + (row.impressions || 0), 0) || 0,
-        clicks: currentData?.reduce((sum: number, row: any) => sum + (row.clicks || 0), 0) || 0,
-        cartAdds: currentData?.reduce((sum: number, row: any) => sum + (row.cart_adds || 0), 0) || 0,
-        purchases: currentData?.reduce((sum: number, row: any) => sum + (row.purchases || 0), 0) || 0,
+        impressions: weeklyData?.reduce((sum: number, row: any) => sum + (row.total_impressions || 0), 0) || 0,
+        clicks: weeklyData?.reduce((sum: number, row: any) => sum + (row.total_clicks || 0), 0) || 0,
+        cartAdds: weeklyData?.reduce((sum: number, row: any) => sum + (row.cart_adds || 0), 0) || 0,
+        purchases: weeklyData?.reduce((sum: number, row: any) => sum + (row.total_purchases || 0), 0) || 0,
       },
       rates: {
         clickThroughRate: 0,
@@ -59,12 +60,12 @@ export async function GET(request: NextRequest) {
         overallConversionRate: 0,
       },
       marketShare: {
-        impressionShare: currentData?.[0]?.impression_share || 0,
-        clickShare: currentData?.[0]?.click_share || 0,
-        purchaseShare: currentData?.[0]?.purchase_share || 0,
+        impressionShare: 0, // Not available in weekly_summary
+        clickShare: 0, // Not available in weekly_summary
+        purchaseShare: 0, // Not available in weekly_summary
       },
       pricing: {
-        medianPrice: currentData?.[0]?.median_price || 0,
+        medianPrice: 0, // Not available in weekly_summary
         competitorMedianPrice: 0,
         priceCompetitiveness: 0,
       },
@@ -80,31 +81,31 @@ export async function GET(request: NextRequest) {
       metrics.rates.purchaseRate = metrics.totals.purchases / metrics.totals.cartAdds
     }
 
-    // Prepare time series data
-    const timeSeries = currentData?.map((row: any) => ({
-      date: row.start_date,
-      impressions: row.impressions || 0,
-      clicks: row.clicks || 0,
+    // Prepare time series data from weekly data
+    const timeSeries = weeklyData?.map((row: any) => ({
+      date: row.period_start,
+      impressions: row.total_impressions || 0,
+      clicks: row.total_clicks || 0,
       cartAdds: row.cart_adds || 0,
-      purchases: row.purchases || 0,
+      purchases: row.total_purchases || 0,
     })) || []
 
     // Fetch comparison data if requested
     let comparison = null
     if (compareStartDate && compareEndDate) {
       const { data: compareData } = await supabase
-        .from('search_performance_summary')
+        .from('weekly_summary')
         .select('*')
         .eq('asin', asin)
-        .gte('start_date', compareStartDate)
-        .lte('end_date', compareEndDate)
+        .gte('period_start', compareStartDate)
+        .lte('period_end', compareEndDate)
 
       if (compareData && compareData.length > 0) {
         const compareTotals = {
-          impressions: compareData.reduce((sum: number, row: any) => sum + (row.impressions || 0), 0),
-          clicks: compareData.reduce((sum: number, row: any) => sum + (row.clicks || 0), 0),
+          impressions: compareData.reduce((sum: number, row: any) => sum + (row.total_impressions || 0), 0),
+          clicks: compareData.reduce((sum: number, row: any) => sum + (row.total_clicks || 0), 0),
           cartAdds: compareData.reduce((sum: number, row: any) => sum + (row.cart_adds || 0), 0),
-          purchases: compareData.reduce((sum: number, row: any) => sum + (row.purchases || 0), 0),
+          purchases: compareData.reduce((sum: number, row: any) => sum + (row.total_purchases || 0), 0),
         }
 
         comparison = {
@@ -135,26 +136,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch top queries if requested
-    let topQueries = []
-    if (includeQueries) {
-      const { data: queryData } = await supabase
-        .from('search_query_performance')
-        .select('search_query, impressions, clicks, purchases')
-        .eq('asin', asin)
-        .gte('start_date', startDate)
-        .lte('end_date', endDate)
-        .order('impressions', { ascending: false })
-        .limit(10)
-
-      topQueries = queryData?.map((q: any) => ({
-        query: q.search_query,
-        impressions: q.impressions || 0,
-        clicks: q.clicks || 0,
-        purchases: q.purchases || 0,
-        conversionRate: q.impressions > 0 ? (q.purchases || 0) / q.impressions : 0,
-      })) || []
-    }
+    // Remove top queries - focusing on weekly aggregated data
+    const topQueries: any[] = []
 
     return NextResponse.json({
       asin,

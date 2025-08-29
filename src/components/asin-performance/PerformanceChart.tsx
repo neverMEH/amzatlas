@@ -43,7 +43,7 @@ function formatNumber(num: number): string {
 }
 
 function formatDate(dateString: string): string {
-  return format(new Date(dateString), 'MMM d')
+  return format(new Date(dateString), 'MMM d, yyyy')
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -214,7 +214,10 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Performance Trends</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Performance Trends</h3>
+          <p className="text-sm text-gray-500">Weekly aggregated data</p>
+        </div>
         {comparisonData && (
           <label className="flex items-center space-x-2 text-sm">
             <input
