@@ -136,8 +136,30 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Remove top queries - focusing on weekly aggregated data
-    const topQueries: any[] = []
+    // Fetch top search queries for the ASIN
+    const { data: searchQueryData, error: searchQueryError } = await supabase
+      .from('search_performance_summary')
+      .select('*')
+      .eq('asin', asin)
+      .gte('start_date', startDate)
+      .lte('end_date', endDate)
+      .order('impressions', { ascending: false })
+      .limit(100)
+
+    const topQueries = searchQueryData?.map((row: any) => ({
+      searchQuery: row.search_query,
+      impressions: row.impressions || 0,
+      clicks: row.clicks || 0,
+      cartAdds: row.cart_adds || 0,
+      purchases: row.purchases || 0,
+      ctr: row.click_through_rate || 0,
+      cvr: row.conversion_rate || 0,
+      cartAddRate: row.cart_add_rate || 0,
+      purchaseRate: row.purchase_rate || 0,
+      impressionShare: row.impression_share || 0,
+      clickShare: row.click_share || 0,
+      purchaseShare: row.purchase_share || 0,
+    })) || []
 
     return NextResponse.json({
       asin,

@@ -68,11 +68,18 @@ export interface ASINPerformanceData {
     purchases: number
   }>
   topQueries: Array<{
-    query: string
+    searchQuery: string
     impressions: number
     clicks: number
+    cartAdds: number
     purchases: number
-    conversionRate: number
+    ctr: number
+    cvr: number
+    cartAddRate: number
+    purchaseRate: number
+    impressionShare: number
+    clickShare: number
+    purchaseShare: number
   }>
 }
 

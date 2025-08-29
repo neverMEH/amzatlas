@@ -6,6 +6,7 @@ import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
 import { PerformanceChart } from '@/components/asin-performance/PerformanceChart'
 import { FunnelChart } from '@/components/asin-performance/FunnelChart'
+import { SearchQueryTable } from '@/components/asin-performance/SearchQueryTable'
 import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
@@ -134,12 +135,14 @@ export default function Dashboard() {
               />
             </section>
 
-            {/* Placeholder for search query table */}
+            {/* Search query table */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Query Performance</h2>
-              <div className="bg-white rounded-lg shadow p-6">
-                <p className="text-gray-500">Search query table will be displayed here</p>
-              </div>
+              <SearchQueryTable
+                data={data?.topQueries || []}
+                isLoading={isLoading}
+                error={error as Error | null}
+              />
             </section>
           </div>
         )}
