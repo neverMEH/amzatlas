@@ -161,6 +161,36 @@ export async function GET(request: NextRequest) {
       purchaseShare: row.purchase_share || 0,
     })) || []
 
+    // Fetch comparison search query data if requested
+    let topQueriesComparison = null
+    if (compareStartDate && compareEndDate) {
+      const { data: compareSearchQueryData } = await supabase
+        .from('search_performance_summary')
+        .select('*')
+        .eq('asin', asin)
+        .gte('start_date', compareStartDate)
+        .lte('end_date', compareEndDate)
+        .order('impressions', { ascending: false })
+        .limit(100)
+
+      if (compareSearchQueryData) {
+        topQueriesComparison = compareSearchQueryData.map((row: any) => ({
+          searchQuery: row.search_query,
+          impressions: row.impressions || 0,
+          clicks: row.clicks || 0,
+          cartAdds: row.cart_adds || 0,
+          purchases: row.purchases || 0,
+          ctr: row.click_through_rate || 0,
+          cvr: row.conversion_rate || 0,
+          cartAddRate: row.cart_add_rate || 0,
+          purchaseRate: row.purchase_rate || 0,
+          impressionShare: row.impression_share || 0,
+          clickShare: row.click_share || 0,
+          purchaseShare: row.purchase_share || 0,
+        }))
+      }
+    }
+
     return NextResponse.json({
       asin,
       productTitle: asinData?.product_title || `ASIN: ${asin}`,
@@ -173,6 +203,7 @@ export async function GET(request: NextRequest) {
       comparison,
       timeSeries,
       topQueries,
+      topQueriesComparison,
     })
   } catch (error) {
     console.error('Error in /api/dashboard/v2/asin-overview:', error)

@@ -20,6 +20,7 @@ interface SearchQueryData {
 
 interface SearchQueryTableProps {
   data: SearchQueryData[]
+  comparisonData?: SearchQueryData[]
   isLoading: boolean
   error: Error | null
   onExport?: (data: SearchQueryData[]) => void
@@ -36,13 +37,26 @@ function formatPercentage(num: number, decimals: number = 2): string {
   return `${(num * 100).toFixed(decimals)}%`
 }
 
-export function SearchQueryTable({ data, isLoading, error, onExport }: SearchQueryTableProps) {
+function formatChange(current: number, previous: number): string {
+  if (previous === 0) return current > 0 ? '+∞' : '0%'
+  const change = ((current - previous) / previous) * 100
+  return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`
+}
+
+export function SearchQueryTable({ data, comparisonData, isLoading, error, onExport }: SearchQueryTableProps) {
   const [sortField, setSortField] = useState<SortField>('impressions')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchTerm, setSearchTerm] = useState('')
   const [showShareMetrics, setShowShareMetrics] = useState(false)
+  const [showComparison, setShowComparison] = useState(!!comparisonData)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  // Create comparison data map for quick lookup
+  const comparisonMap = useMemo(() => {
+    if (!comparisonData) return new Map()
+    return new Map(comparisonData.map(item => [item.searchQuery, item]))
+  }, [comparisonData])
 
   // Filter data based on search term
   const filteredData = useMemo(() => {
@@ -175,6 +189,18 @@ export function SearchQueryTable({ data, isLoading, error, onExport }: SearchQue
               />
               <span className="text-gray-600">Show share metrics</span>
             </label>
+            {comparisonData && (
+              <label className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={showComparison}
+                  onChange={(e) => setShowComparison(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  aria-label="Show comparison"
+                />
+                <span className="text-gray-600">Show comparison</span>
+              </label>
+            )}
           </div>
           {onExport && (
             <button
@@ -290,47 +316,90 @@ export function SearchQueryTable({ data, isLoading, error, onExport }: SearchQue
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedData.map((row, index) => (
-              <tr 
-                key={`${row.searchQuery}-${index}`}
-                className={`hover:bg-gray-50 ${isHighPerforming(row) ? 'bg-green-50' : ''}`}
-              >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {row.searchQuery}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatNumber(row.impressions)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatNumber(row.clicks)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatNumber(row.cartAdds)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatNumber(row.purchases)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatPercentage(row.ctr)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  {formatPercentage(row.cvr)}
-                </td>
-                {showShareMetrics && (
-                  <>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {formatPercentage(row.impressionShare, 1)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {formatPercentage(row.clickShare, 1)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                      {formatPercentage(row.purchaseShare, 1)}
-                    </td>
-                  </>
-                )}
-              </tr>
-            ))}
+            {paginatedData.map((row, index) => {
+              const comparisonRow = showComparison ? comparisonMap.get(row.searchQuery) : null
+              return (
+                <tr 
+                  key={`${row.searchQuery}-${index}`}
+                  className={`hover:bg-gray-50 ${isHighPerforming(row) ? 'bg-green-50' : ''}`}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {row.searchQuery}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <div>
+                      {formatNumber(row.impressions)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.impressions > comparisonRow.impressions ? 'text-green-600' : 
+                          row.impressions < comparisonRow.impressions ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.impressions, comparisonRow.impressions)}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <div>
+                      {formatNumber(row.clicks)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.clicks > comparisonRow.clicks ? 'text-green-600' : 
+                          row.clicks < comparisonRow.clicks ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.clicks, comparisonRow.clicks)}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <div>
+                      {formatNumber(row.cartAdds)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.cartAdds > comparisonRow.cartAdds ? 'text-green-600' : 
+                          row.cartAdds < comparisonRow.cartAdds ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.cartAdds, comparisonRow.cartAdds)}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    <div>
+                      {formatNumber(row.purchases)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.purchases > comparisonRow.purchases ? 'text-green-600' : 
+                          row.purchases < comparisonRow.purchases ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.purchases, comparisonRow.purchases)}
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatPercentage(row.ctr)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                    {formatPercentage(row.cvr)}
+                  </td>
+                  {showShareMetrics && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatPercentage(row.impressionShare, 1)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatPercentage(row.clickShare, 1)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        {formatPercentage(row.purchaseShare, 1)}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

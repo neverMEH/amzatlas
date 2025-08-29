@@ -30,12 +30,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 2. **ETL Pipeline**: Data extraction, transformation, and loading via custom sync scripts
 3. **Supabase Storage**: Structured data in PostgreSQL with materialized views
 4. **API Layer**: Next.js API routes serving processed data
-5. **Dashboard**: React components with real-time data visualization
+5. **Dashboard**: Single-page React application with ASIN performance visualizations
 
 ### Key Components
 - **BigQuery Client**: Connection pool and query management
 - **Sync Engine**: Automated data synchronization with error handling
-- **Dashboard**: Interactive metrics visualization with drill-down capabilities
+- **Dashboard**: Single-page ASIN performance dashboard with comprehensive metrics
 - **Reporting**: Automated report generation and performance analysis
 - **Brand Management**: Automatic ASIN-to-brand mapping with pattern matching
 
@@ -197,9 +197,15 @@ npm run fix:columns        # Add missing columns to tables
 - `/src/services/dashboard/` - Data services for dashboard APIs
 
 ### Frontend Components
-- `/src/components/dashboard/` - Dashboard UI components
-- `/src/components/dashboard/enhanced-metrics-dashboard.tsx` - New v2 dashboard
-- `/src/app/dashboard/` - Dashboard page components
+- `/src/components/dashboard/` - Legacy dashboard UI components (removed)
+- `/src/components/asin-performance/` - New single-page ASIN performance dashboard components
+  - `ASINSelector.tsx` - ASIN selection dropdown
+  - `DateRangePicker.tsx` - Date range and comparison period selector
+  - `MetricsCards.tsx` - Key performance indicator cards
+  - `PerformanceChart.tsx` - Time series chart with metric toggles
+  - `FunnelChart.tsx` - Conversion funnel visualization
+  - `SearchQueryTable.tsx` - Sortable, searchable keyword performance table
+- `/src/app/page.tsx` - Main dashboard page (single-page application)
 
 ### Data Processing
 - `/src/lib/bigquery/transformers/` - Data transformation utilities
@@ -239,6 +245,23 @@ npm run fix:columns        # Add missing columns to tables
 - Maintain test coverage for critical paths
 
 ## Recent Changes & Migration Notes
+
+### Dashboard Redesign (Aug 2025)
+- **Complete dashboard overhaul**: Replaced multi-page dashboard with single-page ASIN performance report
+- **Desktop-optimized**: Designed for 1920px width, removed all mobile responsiveness
+- **Component architecture**: 
+  - Removed legacy `/dashboard/*` routes and components
+  - Created new `/src/components/asin-performance/` component library
+  - Single-page application at root `/` route
+- **Features implemented**:
+  - ASIN selector with product titles and brands
+  - Date range picker with comparison period support
+  - Metrics cards showing KPIs with percentage changes
+  - Performance chart with time series data and metric toggles
+  - Conversion funnel visualization (Impressions → Clicks → Cart Adds → Purchases)
+  - Search query performance table with sorting, filtering, and pagination
+- **Test-driven development**: All components built with comprehensive test coverage
+- **Production fixes**: Created migrations 029-030 to handle missing database objects
 
 ### Brand Management System (Aug 2025)
 - Added automatic ASIN-to-brand mapping based on product titles

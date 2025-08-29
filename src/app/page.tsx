@@ -140,6 +140,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Query Performance</h2>
               <SearchQueryTable
                 data={data?.topQueries || []}
+                comparisonData={compareRange.enabled && data?.topQueriesComparison ? data.topQueriesComparison : undefined}
                 isLoading={isLoading}
                 error={error as Error | null}
               />

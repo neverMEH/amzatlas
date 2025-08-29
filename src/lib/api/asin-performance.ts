@@ -81,6 +81,20 @@ export interface ASINPerformanceData {
     clickShare: number
     purchaseShare: number
   }>
+  topQueriesComparison?: Array<{
+    searchQuery: string
+    impressions: number
+    clicks: number
+    cartAdds: number
+    purchases: number
+    ctr: number
+    cvr: number
+    cartAddRate: number
+    purchaseRate: number
+    impressionShare: number
+    clickShare: number
+    purchaseShare: number
+  }>
 }
 
 export function useASINList() {
