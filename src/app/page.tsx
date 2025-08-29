@@ -1,68 +1,112 @@
-export default function Home() {
+'use client'
+
+import { useState } from 'react'
+import { ASINSelector } from '@/components/asin-performance/ASINSelector'
+
+export default function Dashboard() {
+  const [selectedASIN, setSelectedASIN] = useState<string>('')
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
+  })
+
   return (
-    <main className="container mx-auto p-8">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">SQP Intelligence Platform</h1>
-        <p className="text-xl text-gray-600 mb-8">
-          AI-powered analytics platform for Amazon sellers and agencies.<br/>
-          <span className="text-sm">Version 1.0.1 - BigQuery Pipeline Ready</span>
-        </p>
-        
-        <div className="mb-8">
-          <a 
-            href="/dashboard" 
-            className="inline-block bg-primary-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-primary-700 transition-colors shadow-lg"
-          >
-            Open SQP Dashboard →
-          </a>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          <div className="border rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-4">Pipeline Monitoring</h2>
-            <p className="text-gray-600 mb-4">
-              Monitor your BigQuery SQP data pipeline health, metrics, and performance.
-            </p>
-            <a 
-              href="/api/monitoring/pipeline" 
-              className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              View Pipeline Status
-            </a>
-          </div>
-          
-          <div className="border rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-4">Health Check</h2>
-            <p className="text-gray-600 mb-4">
-              Check the current health status of your data pipeline.
-            </p>
-            <a 
-              href="/api/health/pipeline" 
-              className="inline-block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
-            >
-              Health Status
-            </a>
-          </div>
-        </div>
-        
-        <div className="mt-12">
-          <h3 className="text-lg font-semibold mb-4">Features</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-            <div className="p-4 bg-gray-50 rounded">
-              <strong>Search Performance Data</strong><br/>
-              Access real Amazon purchase behavior data
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-[1920px] mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold text-gray-900">ASIN Performance Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {selectedASIN ? `Selected: ${selectedASIN}` : 'No ASIN selected'}
+              </div>
             </div>
-            <div className="p-4 bg-gray-50 rounded">
-              <strong>AI Analysis</strong><br/>
-              Transform weeks of reporting into seconds of insights
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div className="max-w-xl">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Select ASIN
+              </label>
+              <ASINSelector value={selectedASIN} onChange={setSelectedASIN} />
             </div>
-            <div className="p-4 bg-gray-50 rounded">
-              <strong>Accurate ROI</strong><br/>
-              90% more accurate keyword ROI calculations
+            <div className="max-w-xl">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date Range
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="date"
+                  className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  value={dateRange.startDate}
+                  onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                />
+                <span className="flex items-center px-2 text-gray-500">to</span>
+                <input
+                  type="date"
+                  className="flex-1 px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  value={dateRange.endDate}
+                  onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-[1920px] mx-auto px-6 py-8">
+        {!selectedASIN ? (
+          <div className="flex flex-col items-center justify-center h-[60vh]">
+            <div className="text-center">
+              <svg
+                className="mx-auto h-24 w-24 text-gray-400 mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No ASIN Selected</h3>
+              <p className="text-gray-500 mb-6">
+                Select an ASIN from the dropdown above to view performance metrics
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Placeholder for metrics cards */}
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Performance Indicators</h2>
+              <div className="bg-white rounded-lg shadow p-6">
+                <p className="text-gray-500">KPI metrics will be displayed here</p>
+              </div>
+            </section>
+
+            {/* Placeholder for charts */}
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h2>
+              <div className="bg-white rounded-lg shadow p-6">
+                <p className="text-gray-500">Performance charts will be displayed here</p>
+              </div>
+            </section>
+
+            {/* Placeholder for search query table */}
+            <section>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Query Performance</h2>
+              <div className="bg-white rounded-lg shadow p-6">
+                <p className="text-gray-500">Search query table will be displayed here</p>
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
+    </div>
   )
 }
