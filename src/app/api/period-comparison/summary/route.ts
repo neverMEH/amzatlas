@@ -7,21 +7,17 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const brandId = searchParams.get('brandId')
 
-    // Fetch data from all period comparison views
+    // Fetch data from all period comparison views using RPC
     const periods = ['week', 'month', 'quarter', 'year']
     const summaries = await Promise.all(
       periods.map(async (period: any) => {
-        const viewName = `${period}_over_${period}_comparison`
-        
-        let query = supabase
-          .from(viewName)
-          .select('*')
-        
-        if (brandId) {
-          query = query.eq('brand_id', brandId)
-        }
-
-        const { data, error } = await query
+        // Use RPC function to get period comparison data
+        const { data, error } = await supabase.rpc('get_period_comparison', {
+          p_comparison_type: period,
+          p_brand_id: brandId,
+          p_limit: 1000,
+          p_offset: 0
+        })
 
         if (error) {
           console.error(`Error fetching ${period} comparison:`, error)
