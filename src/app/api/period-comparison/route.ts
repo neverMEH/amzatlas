@@ -23,54 +23,72 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // For now, use search_query_performance table directly
-    // TODO: Implement proper period comparison views
-    const { data: performanceData, error } = await supabase
-      .from('search_query_performance')
-      .select(`
-        *,
-        asin_brand_mapping:asin_performance_data!inner(
-          asin_brand_mapping!inner(
-            brand_id
-          )
-        )
-      `)
-      .order('impressions_sum', { ascending: false })
-      .limit(limit)
-      .range(offset, offset + limit - 1)
+    // Use RPC function to get period comparison data
+    const { data, error } = await supabase.rpc('get_period_comparison', {
+      p_comparison_type: comparisonType,
+      p_brand_id: brandId,
+      p_asin: asin,
+      p_search_query: searchQuery,
+      p_limit: limit,
+      p_offset: offset
+    })
 
     if (error) {
       console.error('Error fetching period comparison:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch period comparison data' },
-        { status: 500 }
-      )
+      
+      // Fallback: Return empty data structure
+      return NextResponse.json({
+        comparisonType,
+        filters: {
+          brandId,
+          asin,
+          searchQuery
+        },
+        pagination: {
+          limit,
+          offset,
+          total: 0,
+          hasMore: false
+        },
+        summary: {
+          totalRecords: 0,
+          avgImpressionChange: 0,
+          avgCvrChange: 0,
+          avgRevenueChange: 0,
+          improvedCount: 0,
+          declinedCount: 0,
+          stableCount: 0
+        },
+        data: []
+      })
     }
 
-    // Transform data to include change metrics (placeholder for now)
-    const data = performanceData || []
-    const transformedData = data.map((item: any) => ({
-      ...item,
-      impressions_change_pct: 0,
-      cvr_change_pct: 0,
-      revenue_change_pct: 0,
-      previous_impressions: item.impressions_sum,
-      current_impressions: item.impressions_sum,
-      previous_cvr: 0,
-      current_cvr: 0,
-      previous_revenue: 0,
-      current_revenue: 0
-    }))
-
+    // Process the data
+    const results = data || []
+    
     // Calculate summary statistics
     const summary = {
-      totalRecords: transformedData.length,
+      totalRecords: results.length,
       avgImpressionChange: 0,
       avgCvrChange: 0,
       avgRevenueChange: 0,
       improvedCount: 0,
       declinedCount: 0,
       stableCount: 0
+    }
+
+    if (results.length > 0) {
+      const validData = results.filter((d: any) => d.impressions_change_pct !== null)
+      
+      if (validData.length > 0) {
+        summary.avgImpressionChange = validData.reduce((sum: number, d: any) => sum + (d.impressions_change_pct || 0), 0) / validData.length
+        summary.avgCvrChange = validData.reduce((sum: number, d: any) => sum + (d.cvr_change_pct || 0), 0) / validData.length
+        summary.avgRevenueChange = validData.reduce((sum: number, d: any) => sum + (d.revenue_change_pct || 0), 0) / validData.length
+        
+        summary.improvedCount = validData.filter((d: any) => d.impressions_change_pct > 5).length
+        summary.declinedCount = validData.filter((d: any) => d.impressions_change_pct < -5).length
+        summary.stableCount = validData.filter((d: any) => Math.abs(d.impressions_change_pct) <= 5).length
+      }
     }
 
     return NextResponse.json({
@@ -83,11 +101,11 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        total: transformedData.length,
-        hasMore: false
+        total: results.length,
+        hasMore: results.length === limit
       },
       summary,
-      data: transformedData
+      data: results
     })
   } catch (error) {
     console.error('API Error:', error)

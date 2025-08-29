@@ -20,31 +20,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch weekly data for trend analysis
-    let query = supabase
-      .from('search_query_performance')
-      .select(`
-        asin,
-        start_date,
-        end_date,
-        impressions_sum,
-        clicks_sum,
-        cart_adds_sum,
-        purchases_sum,
-        median_price_purchase,
-        asin_brand_mapping!inner(brand_id)
-      `)
-      .order('start_date', { ascending: false })
-      .limit(periods * 7) // Approximate days for the period
-
-    if (brandId) {
-      query = query.eq('asin_brand_mapping.brand_id', brandId)
-    }
-    if (asin) {
-      query = query.eq('asin', asin)
-    }
-
-    const { data, error } = await query
+    // Use RPC function to get trend data
+    const { data, error } = await supabase.rpc('get_dashboard_trends', {
+      p_start_date: null,
+      p_end_date: null,
+      p_brand_id: brandId,
+      p_limit: periods
+    })
 
     if (error) {
       console.error('Error fetching trend data:', error)
