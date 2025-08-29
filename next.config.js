@@ -19,11 +19,6 @@ const nextConfig = {
   // Ensure proper build optimization
   poweredByHeader: false,
 
-  // Environment variable configuration
-  env: {
-    NEXT_RUNTIME: 'true',
-  },
-
   // Public runtime configuration
   publicRuntimeConfig: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL,

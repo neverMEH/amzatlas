@@ -1,7 +1,11 @@
 // Environment configuration with runtime validation
 export const getEnvConfig = () => {
   // Check if we're in a build environment
-  const isBuildTime = process.env.NODE_ENV === 'production' && !process.env.NEXT_RUNTIME
+  // During Next.js build, certain globals are not available
+  const isBuildTime = typeof window === 'undefined' && 
+                     !process.env.RAILWAY_ENVIRONMENT &&
+                     !process.env.VERCEL &&
+                     process.env.NODE_ENV === 'production'
 
   // During build time, return dummy values
   if (isBuildTime) {

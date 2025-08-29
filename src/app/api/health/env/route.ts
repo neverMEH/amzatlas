@@ -39,7 +39,6 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       environment: {
         NODE_ENV: process.env.NODE_ENV,
-        NEXT_RUNTIME: process.env.NEXT_RUNTIME,
         isVercel: !!process.env.VERCEL,
         isRailway: !!process.env.RAILWAY_ENVIRONMENT
       },
