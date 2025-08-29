@@ -144,8 +144,14 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
           const prevStageValue = index > 0 ? stages[index - 1].value : 0
           const conversionRate = index > 0 ? calculateConversionRate(prevStageValue, stage.value) : 1
           
+          const keyMap: Record<string, keyof FunnelData> = {
+            'Impressions': 'impressions',
+            'Clicks': 'clicks',
+            'Cart Adds': 'cartAdds',
+            'Purchases': 'purchases'
+          }
           const comparisonValue = comparisonData && 
-            comparisonData[stage.label.toLowerCase().replace(' ', '') as keyof FunnelData]
+            comparisonData[keyMap[stage.label]]
           const percentageChange = comparisonData && comparisonValue !== undefined && typeof comparisonValue === 'number'
             ? calculatePercentageChange(stage.value, comparisonValue)
             : null

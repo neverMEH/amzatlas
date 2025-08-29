@@ -110,16 +110,7 @@ export default function Dashboard() {
             <section>
               <PerformanceChart
                 data={data?.timeSeries || []}
-                comparisonData={compareRange.enabled && data?.comparison ? 
-                  // Generate comparison time series from the comparison metrics
-                  data.timeSeries.map((item, idx) => ({
-                    date: item.date,
-                    impressions: Math.round(item.impressions * (1 - (data.comparison?.changes.impressions || 0))),
-                    clicks: Math.round(item.clicks * (1 - (data.comparison?.changes.clicks || 0))),
-                    cartAdds: Math.round(item.cartAdds * (1 - ((data.comparison?.metrics.totals.cartAdds || 0) / (data.metrics.totals.cartAdds || 1) - 1))),
-                    purchases: Math.round(item.purchases * (1 - (data.comparison?.changes.purchases || 0))),
-                  })) : undefined
-                }
+                comparisonData={compareRange.enabled ? data?.comparisonTimeSeries : undefined}
                 isLoading={isLoading}
                 error={error as Error | null}
               />

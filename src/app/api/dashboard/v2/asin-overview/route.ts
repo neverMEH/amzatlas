@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch comparison data if requested
     let comparison = null
+    let comparisonTimeSeries = null
     if (compareStartDate && compareEndDate) {
       const { data: compareData } = await supabase
         .from('weekly_summary')
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
         .eq('asin', asin)
         .gte('period_start', compareStartDate)
         .lte('period_end', compareEndDate)
+        .order('period_start', { ascending: true })
 
       if (compareData && compareData.length > 0) {
         const compareTotals = {
@@ -133,6 +135,15 @@ export async function GET(request: NextRequest) {
               : 0,
           },
         }
+
+        // Prepare comparison time series data
+        comparisonTimeSeries = compareData.map((row: any) => ({
+          date: row.period_start,
+          impressions: row.total_impressions || 0,
+          clicks: row.total_clicks || 0,
+          cartAdds: row.cart_adds || 0,
+          purchases: row.total_purchases || 0,
+        }))
       }
     }
 
@@ -202,6 +213,7 @@ export async function GET(request: NextRequest) {
       metrics,
       comparison,
       timeSeries,
+      comparisonTimeSeries,
       topQueries,
       topQueriesComparison,
     })

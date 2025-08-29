@@ -67,6 +67,13 @@ export interface ASINPerformanceData {
     cartAdds: number
     purchases: number
   }>
+  comparisonTimeSeries?: Array<{
+    date: string
+    impressions: number
+    clicks: number
+    cartAdds: number
+    purchases: number
+  }>
   topQueries: Array<{
     searchQuery: string
     impressions: number
