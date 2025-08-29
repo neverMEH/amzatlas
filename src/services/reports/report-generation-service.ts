@@ -36,18 +36,28 @@ export class ReportGenerationService {
   private supabase: any
 
   constructor() {
-    this.supabase = createClient(
-      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        db: { schema: 'sqp' }
+    // Initialize supabase client lazily to avoid runtime errors
+  }
+
+  private getSupabaseClient() {
+    if (!this.supabase) {
+      const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Missing Supabase environment variables')
       }
-    )
+      
+      this.supabase = createClient(supabaseUrl, supabaseKey, {
+        db: { schema: 'sqp' }
+      })
+    }
+    return this.supabase
   }
 
   async generateReport(configurationId: string): Promise<GeneratedReport> {
     // Fetch configuration
-    const { data: config, error: configError } = await this.supabase
+    const { data: config, error: configError } = await this.getSupabaseClient()
       .from('report_configurations')
       .select('*')
       .eq('id', configurationId)
@@ -327,7 +337,7 @@ export class ReportGenerationService {
     
     // Use template if specified
     if (config.config?.template_id) {
-      const { data: template } = await this.supabase
+      const { data: template } = await this.getSupabaseClient()
         .from('report_templates')
         .select('sections')
         .eq('id', config.config.template_id)
@@ -374,7 +384,7 @@ export class ReportGenerationService {
   private async fetchPeriodComparison(period: string, filters: Record<string, any>) {
     const viewName = `${period}_over_${period}_comparison`
     
-    let query = this.supabase.from(viewName).select('*')
+    let query = this.getSupabaseClient().from(viewName).select('*')
     
     if (filters.brand_id) {
       query = query.eq('brand_id', filters.brand_id)
