@@ -280,7 +280,7 @@ class SQPSupabaseService {
       
       // Convert to array and calculate metrics
       return Array.from(keywordMap.values())
-        .map(kw => ({
+        .map((kw: any) => ({
           keyword: kw.keyword,
           purchases: kw.purchases,
           marketPurchases: kw.purchases * 5, // Placeholder
@@ -335,7 +335,7 @@ class SQPSupabaseService {
       });
       
       return Array.from(keywordMap.values())
-        .map(kw => ({
+        .map((kw: any) => ({
           keyword: kw.keyword,
           impressions: kw.impressions,
           purchases: 0,

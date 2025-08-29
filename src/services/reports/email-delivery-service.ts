@@ -1,0 +1,311 @@
+import nodemailer from 'nodemailer'
+import sgMail from '@sendgrid/mail'
+import { GeneratedReport } from './report-generation-service'
+import { pdfExportService } from './pdf-export-service'
+import { csvExcelExportService } from './csv-excel-export-service'
+
+export interface EmailRecipient {
+  email: string
+  name?: string
+}
+
+export interface EmailAttachment {
+  filename: string
+  content: Buffer
+  contentType: string
+}
+
+export class EmailDeliveryService {
+  private transporter: nodemailer.Transporter | null = null
+  private useSendGrid: boolean = false
+
+  constructor() {
+    // Initialize based on environment variables
+    if (process.env.SENDGRID_API_KEY) {
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      this.useSendGrid = true
+    } else if (process.env.SMTP_HOST) {
+      // Configure SMTP transporter
+      this.transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS
+        }
+      })
+    }
+  }
+
+  async sendReportEmail(
+    report: GeneratedReport,
+    recipients: EmailRecipient[],
+    exportFormats: string[] = ['pdf']
+  ): Promise<{ success: boolean; errors?: string[] }> {
+    try {
+      // Generate attachments based on export formats
+      const attachments = await this.generateAttachments(report, exportFormats)
+
+      // Prepare email content
+      const emailContent = this.generateEmailContent(report)
+
+      // Send emails
+      if (this.useSendGrid) {
+        return await this.sendViaSendGrid(recipients, emailContent, attachments, report)
+      } else if (this.transporter) {
+        return await this.sendViaSMTP(recipients, emailContent, attachments, report)
+      } else {
+        throw new Error('No email service configured. Please set up SendGrid or SMTP.')
+      }
+    } catch (error) {
+      console.error('Email delivery error:', error)
+      return {
+        success: false,
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      }
+    }
+  }
+
+  private async generateAttachments(
+    report: GeneratedReport,
+    formats: string[]
+  ): Promise<EmailAttachment[]> {
+    const attachments: EmailAttachment[] = []
+    const baseFilename = `${report.configuration.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}`
+
+    for (const format of formats) {
+      switch (format.toLowerCase()) {
+        case 'pdf':
+          const pdfBuffer = await pdfExportService.generatePdf(report)
+          attachments.push({
+            filename: `${baseFilename}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          })
+          break
+
+        case 'csv':
+          const csvBuffer = await csvExcelExportService.exportToCsv(report)
+          attachments.push({
+            filename: `${baseFilename}.csv`,
+            content: csvBuffer,
+            contentType: 'text/csv'
+          })
+          break
+
+        case 'xlsx':
+        case 'excel':
+          const excelBuffer = await csvExcelExportService.exportToExcel(report)
+          attachments.push({
+            filename: `${baseFilename}.xlsx`,
+            content: excelBuffer,
+            contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          })
+          break
+      }
+    }
+
+    return attachments
+  }
+
+  private generateEmailContent(report: GeneratedReport): {
+    subject: string
+    text: string
+    html: string
+  } {
+    const reportDate = new Date(report.metadata.generated_at).toLocaleDateString()
+    const periodStart = new Date(report.metadata.period_start).toLocaleDateString()
+    const periodEnd = new Date(report.metadata.period_end).toLocaleDateString()
+
+    const subject = `${report.configuration.name} - ${reportDate}`
+
+    // Extract key metrics for email summary
+    const executiveSummary = report.sections.find(s => s.type === 'executive_summary')?.data
+    const keyMetrics = executiveSummary ? {
+      impressions: executiveSummary.total_impressions?.toLocaleString() || 'N/A',
+      clicks: executiveSummary.total_clicks?.toLocaleString() || 'N/A',
+      purchases: executiveSummary.total_purchases?.toLocaleString() || 'N/A',
+      revenue: executiveSummary.total_revenue ? `$${executiveSummary.total_revenue.toLocaleString()}` : 'N/A'
+    } : null
+
+    const text = `
+${report.configuration.name}
+Generated: ${reportDate}
+Period: ${periodStart} - ${periodEnd}
+
+${report.configuration.description || ''}
+
+${keyMetrics ? `
+Key Metrics:
+- Total Impressions: ${keyMetrics.impressions}
+- Total Clicks: ${keyMetrics.clicks}
+- Total Purchases: ${keyMetrics.purchases}
+- Total Revenue: ${keyMetrics.revenue}
+` : ''}
+
+Please find the full report attached to this email.
+
+---
+This report was automatically generated by SQP Intelligence.
+    `.trim()
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .header h1 { color: #0066cc; margin: 0 0 10px 0; }
+    .metrics { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+    .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+    .metric { padding: 15px; background: #f8f9fa; border-radius: 4px; }
+    .metric-value { font-size: 24px; font-weight: bold; color: #0066cc; }
+    .metric-label { font-size: 14px; color: #666; }
+    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>${report.configuration.name}</h1>
+    <p><strong>Generated:</strong> ${reportDate}</p>
+    <p><strong>Period:</strong> ${periodStart} - ${periodEnd}</p>
+    ${report.configuration.description ? `<p>${report.configuration.description}</p>` : ''}
+  </div>
+
+  ${keyMetrics ? `
+  <div class="metrics">
+    <h2>Key Metrics Summary</h2>
+    <div class="metric-grid">
+      <div class="metric">
+        <div class="metric-value">${keyMetrics.impressions}</div>
+        <div class="metric-label">Total Impressions</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">${keyMetrics.clicks}</div>
+        <div class="metric-label">Total Clicks</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">${keyMetrics.purchases}</div>
+        <div class="metric-label">Total Purchases</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">${keyMetrics.revenue}</div>
+        <div class="metric-label">Total Revenue</div>
+      </div>
+    </div>
+  </div>
+  ` : ''}
+
+  <p>Please find the full report attached to this email.</p>
+
+  <div class="footer">
+    <p>This report was automatically generated by SQP Intelligence.</p>
+    <p>If you have any questions or need assistance, please contact your administrator.</p>
+  </div>
+</body>
+</html>
+    `
+
+    return { subject, text, html }
+  }
+
+  private async sendViaSendGrid(
+    recipients: EmailRecipient[],
+    content: { subject: string; text: string; html: string },
+    attachments: EmailAttachment[],
+    report: GeneratedReport
+  ): Promise<{ success: boolean; errors?: string[] }> {
+    const errors: string[] = []
+
+    try {
+      const msg = {
+        to: recipients.map(r => ({ email: r.email, name: r.name })),
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || 'noreply@sqpintelligence.com',
+          name: 'SQP Intelligence'
+        },
+        subject: content.subject,
+        text: content.text,
+        html: content.html,
+        attachments: attachments.map(att => ({
+          content: att.content.toString('base64'),
+          filename: att.filename,
+          type: att.contentType,
+          disposition: 'attachment'
+        }))
+      }
+
+      await sgMail.send(msg)
+      return { success: true }
+    } catch (error) {
+      console.error('SendGrid error:', error)
+      errors.push(error instanceof Error ? error.message : 'SendGrid error')
+      return { success: false, errors }
+    }
+  }
+
+  private async sendViaSMTP(
+    recipients: EmailRecipient[],
+    content: { subject: string; text: string; html: string },
+    attachments: EmailAttachment[],
+    report: GeneratedReport
+  ): Promise<{ success: boolean; errors?: string[] }> {
+    if (!this.transporter) {
+      return { success: false, errors: ['SMTP transporter not configured'] }
+    }
+
+    const errors: string[] = []
+    let successCount = 0
+
+    // Send individual emails (could be batched for better performance)
+    for (const recipient of recipients) {
+      try {
+        await this.transporter.sendMail({
+          from: process.env.SMTP_FROM || 'SQP Intelligence <noreply@sqpintelligence.com>',
+          to: recipient.email,
+          subject: content.subject,
+          text: content.text,
+          html: content.html,
+          attachments: attachments.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            contentType: att.contentType
+          }))
+        })
+        successCount++
+      } catch (error) {
+        console.error(`Failed to send to ${recipient.email}:`, error)
+        errors.push(`${recipient.email}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }
+
+    return {
+      success: successCount > 0,
+      errors: errors.length > 0 ? errors : undefined
+    }
+  }
+
+  async testConnection(): Promise<{ success: boolean; message: string }> {
+    if (this.useSendGrid) {
+      return { success: true, message: 'SendGrid configured' }
+    }
+
+    if (this.transporter) {
+      try {
+        await this.transporter.verify()
+        return { success: true, message: 'SMTP connection verified' }
+      } catch (error) {
+        return {
+          success: false,
+          message: `SMTP connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        }
+      }
+    }
+
+    return { success: false, message: 'No email service configured' }
+  }
+}
+
+export const emailDeliveryService = new EmailDeliveryService()

@@ -237,7 +237,7 @@ function identifyAnomalyPatterns(anomalies: any[]): any {
   if (anomalies.length < 3) return patterns
   
   // Check if anomalies are brand-wide
-  const uniqueBrands = new Set(anomalies.map(a => a.o_brand_id))
+  const uniqueBrands = new Set(anomalies.map((a: any) => a.o_brand_id))
   patterns.brandWide = uniqueBrands.size === 1 && anomalies.length > 10
   
   // Check metric concentration

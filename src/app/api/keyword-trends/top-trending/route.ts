@@ -64,16 +64,13 @@ export async function GET(request: NextRequest) {
       },
       summary: {
         totalKeywords: data?.length || 0,
-        trendBreakdown: Object.entries(groupedData).map(([trend, items]) => {
-          const itemsArray = items as any[]
-          return {
-            trend,
-            count: itemsArray.length,
-            avgImpressions: itemsArray.reduce((sum: number, item: any) => sum + item.impressions, 0) / itemsArray.length,
-            totalImpressions: itemsArray.reduce((sum: number, item: any) => sum + item.impressions, 0)
-          }
-        }),
-        topOpportunity: enrichedData.reduce((best: any, item) => 
+        trendBreakdown: Object.entries(groupedData).map(([trend, items]: [string, any]) => ({
+          trend,
+          count: items.length,
+          avgImpressions: items.reduce((sum: number, item: any) => sum + item.impressions, 0) / items.length,
+          totalImpressions: items.reduce((sum: number, item: any) => sum + item.impressions, 0)
+        })),
+        topOpportunity: enrichedData.reduce((best: any, item: any) => 
           item.opportunityScore > best.opportunityScore ? item : best
         , enrichedData[0] || {})
       },
@@ -192,7 +189,7 @@ function findCrossAsinOpportunities(keywords: any[]): any[] {
   // Find queries with multiple ASINs where at least one is performing well
   const opportunities: any[] = []
   
-  queryGroups.forEach((group: any, query: any) => {
+  queryGroups.forEach((group: any, query: string) => {
     if (group.length >= 2) {
       const bestPerformer = group.reduce((best: any, item: any) => 
         item.impressions > best.impressions ? item : best

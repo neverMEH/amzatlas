@@ -159,13 +159,13 @@ function calculateAggregateStats(data: any[]) {
       needsAttention: validData.filter((d: any) => d.performanceCategory === 'needs_attention').length
     },
     topMetrics: {
-      highestGrowth: validData.reduce((max: any, d) => 
+      highestGrowth: validData.reduce((max: any, d: any) => 
         d.o_impressions_change_pct > max.o_impressions_change_pct ? d : max
       , validData[0]),
-      biggestDecline: validData.reduce((min: any, d) => 
+      biggestDecline: validData.reduce((min: any, d: any) => 
         d.o_impressions_change_pct < min.o_impressions_change_pct ? d : min
       , validData[0]),
-      highestRevenue: validData.reduce((max: any, d) => 
+      highestRevenue: validData.reduce((max: any, d: any) => 
         (d.o_current_revenue || 0) > (max.o_current_revenue || 0) ? d : max
       , validData[0])
     }

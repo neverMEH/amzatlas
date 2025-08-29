@@ -68,18 +68,18 @@ export async function GET(request: NextRequest) {
     // Sort children at each level
     const sortChildren = (node: BrandNode) => {
       if (node.children && node.children.length > 0) {
-        node.children.sort((a: any, b: any) => a.brand_name.localeCompare(b.brand_name))
-        node.children.forEach(sortChildren)
+        node.children.sort((a, b) => a.brand_name.localeCompare(b.brand_name))
+        node.children.forEach((child: any) => sortChildren(child))
       }
     }
 
-    rootBrands.forEach(sortChildren)
+    rootBrands.forEach((brand: any) => sortChildren(brand))
 
     // Calculate aggregated metrics if needed
     if (includeMetrics) {
       const calculateAggregates = (node: BrandNode): void => {
         if (node.children && node.children.length > 0) {
-          node.children.forEach(calculateAggregates)
+          node.children.forEach((child: any) => calculateAggregates(child))
           
           // Add child metrics to parent
           const childMetrics = node.children.reduce((acc: any, child: any) => ({
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      rootBrands.forEach(calculateAggregates)
+      rootBrands.forEach((brand: any) => calculateAggregates(brand))
     }
 
     return NextResponse.json({

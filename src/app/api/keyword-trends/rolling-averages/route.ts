@@ -160,8 +160,8 @@ export async function GET(request: NextRequest) {
 function calculateVolatility(values: number[]): number {
   if (values.length < 2) return 0
   
-  const mean = values.reduce((sum: number, val) => sum + val, 0) / values.length
-  const variance = values.reduce((sum: number, val) => sum + Math.pow(val - mean, 2), 0) / values.length
+  const mean = values.reduce((sum: number, val: number) => sum + val, 0) / values.length
+  const variance = values.reduce((sum: number, val: number) => sum + Math.pow(val - mean, 2), 0) / values.length
   const stdDev = Math.sqrt(variance)
   
   return mean > 0 ? (stdDev / mean) : 0
