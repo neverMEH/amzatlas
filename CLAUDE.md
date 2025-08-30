@@ -246,6 +246,17 @@ npm run fix:columns        # Add missing columns to tables
 
 ## Recent Changes & Migration Notes
 
+### Comparison Date Display Enhancement (Aug 2025)
+- **Enhanced all charts**: Added comparison date references to tooltips and headers
+- **API update**: Added `comparisonDateRange` field to asin-overview response
+- **Components updated**:
+  - PerformanceChart: Enhanced tooltip with date sections, updated legend labels
+  - FunnelChart: Added comparison dates to header and trend tooltips
+  - SearchQueryTable: Added comparison header and change tooltips
+  - MetricsCards: Added tooltips to trend indicators
+- **User experience**: Users now always know which periods are being compared
+- **Documentation**: See `/docs/comparison-date-display.md` for implementation details
+
 ### Dashboard Redesign (Aug 2025)
 - **Complete dashboard overhaul**: Replaced multi-page dashboard with single-page ASIN performance report
 - **Desktop-optimized**: Designed for 1920px width, removed all mobile responsiveness
