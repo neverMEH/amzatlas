@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { 
+  shouldAggregateKeywords, 
+  aggregateSearchQueries, 
+  transformSearchQueryData 
+} from './utils/keyword-aggregation'
 
 export async function GET(request: NextRequest) {
   try {
@@ -155,22 +160,31 @@ export async function GET(request: NextRequest) {
       .gte('start_date', startDate)
       .lte('end_date', endDate)
       .order('impressions', { ascending: false })
-      .limit(100)
+      .limit(1000) // Increase limit to get all data for aggregation
 
-    const topQueries = searchQueryData?.map((row: any) => ({
-      searchQuery: row.search_query,
-      impressions: row.impressions || 0,
-      clicks: row.clicks || 0,
-      cartAdds: row.cart_adds || 0,
-      purchases: row.purchases || 0,
-      ctr: row.click_through_rate || 0,
-      cvr: row.conversion_rate || 0,
-      cartAddRate: row.cart_add_rate || 0,
-      purchaseRate: row.purchase_rate || 0,
-      impressionShare: row.impression_share || 0,
-      clickShare: row.click_share || 0,
-      purchaseShare: row.purchase_share || 0,
-    })) || []
+    // Check if we need to aggregate keywords
+    let topQueries = []
+    if (searchQueryData && shouldAggregateKeywords(startDate, endDate)) {
+      // Transform and aggregate the data
+      const transformedData = transformSearchQueryData(searchQueryData)
+      topQueries = aggregateSearchQueries(transformedData)
+    } else {
+      // Use data as-is for single week ranges
+      topQueries = searchQueryData?.map((row: any) => ({
+        searchQuery: row.search_query,
+        impressions: row.impressions || 0,
+        clicks: row.clicks || 0,
+        cartAdds: row.cart_adds || 0,
+        purchases: row.purchases || 0,
+        ctr: row.click_through_rate || 0,
+        cvr: row.conversion_rate || 0,
+        cartAddRate: row.cart_add_rate || 0,
+        purchaseRate: row.purchase_rate || 0,
+        impressionShare: row.impression_share || 0,
+        clickShare: row.click_share || 0,
+        purchaseShare: row.purchase_share || 0,
+      })) || []
+    }
 
     // Fetch comparison search query data if requested
     let topQueriesComparison = null
@@ -182,23 +196,29 @@ export async function GET(request: NextRequest) {
         .gte('start_date', compareStartDate)
         .lte('end_date', compareEndDate)
         .order('impressions', { ascending: false })
-        .limit(100)
+        .limit(1000) // Increase limit to get all data for aggregation
 
       if (compareSearchQueryData) {
-        topQueriesComparison = compareSearchQueryData.map((row: any) => ({
-          searchQuery: row.search_query,
-          impressions: row.impressions || 0,
-          clicks: row.clicks || 0,
-          cartAdds: row.cart_adds || 0,
-          purchases: row.purchases || 0,
-          ctr: row.click_through_rate || 0,
-          cvr: row.conversion_rate || 0,
-          cartAddRate: row.cart_add_rate || 0,
-          purchaseRate: row.purchase_rate || 0,
-          impressionShare: row.impression_share || 0,
-          clickShare: row.click_share || 0,
-          purchaseShare: row.purchase_share || 0,
-        }))
+        // Check if we need to aggregate comparison data
+        if (shouldAggregateKeywords(compareStartDate, compareEndDate)) {
+          const transformedData = transformSearchQueryData(compareSearchQueryData)
+          topQueriesComparison = aggregateSearchQueries(transformedData)
+        } else {
+          topQueriesComparison = compareSearchQueryData.map((row: any) => ({
+            searchQuery: row.search_query,
+            impressions: row.impressions || 0,
+            clicks: row.clicks || 0,
+            cartAdds: row.cart_adds || 0,
+            purchases: row.purchases || 0,
+            ctr: row.click_through_rate || 0,
+            cvr: row.conversion_rate || 0,
+            cartAddRate: row.cart_add_rate || 0,
+            purchaseRate: row.purchase_rate || 0,
+            impressionShare: row.impression_share || 0,
+            clickShare: row.click_share || 0,
+            purchaseShare: row.purchase_share || 0,
+          }))
+        }
       }
     }
 
