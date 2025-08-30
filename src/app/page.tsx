@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
-import { DateRangePicker } from '@/components/asin-performance/DateRangePicker'
+import { DateRangePickerV2 } from '@/components/asin-performance/DateRangePickerV2'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
 import { PerformanceChart } from '@/components/asin-performance/PerformanceChart'
 import { FunnelChart } from '@/components/asin-performance/FunnelChart'
@@ -54,7 +54,7 @@ export default function Dashboard() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date Range
               </label>
-              <DateRangePicker
+              <DateRangePickerV2
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
                 onChange={setDateRange}

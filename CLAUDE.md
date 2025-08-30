@@ -263,6 +263,24 @@ npm run fix:columns        # Add missing columns to tables
 - **Test-driven development**: All components built with comprehensive test coverage
 - **Production fixes**: Created migrations 029-030 to handle missing database objects
 
+### Data Consistency Fix (Aug 2025)
+- **Issue**: KPI metrics showed performance down while charts/tables showed performance up
+- **Root Cause**: PerformanceChart was generating synthetic comparison data with inverted calculations
+  - Formula `impressions * (1 - changes.impressions)` was backwards
+  - If current period had 20% more impressions, it would show comparison as 80% of current
+- **Solution**:
+  - Modified API (`/api/dashboard/v2/asin-overview`) to return actual historical comparison time series
+  - Added `comparisonTimeSeries` field with real data from comparison period
+  - Updated PerformanceChart to use real comparison data instead of synthetic calculations
+  - Fixed FunnelChart key mapping bug where "Cart Adds" wasn't properly mapped
+  - Updated TypeScript interfaces to include new `comparisonTimeSeries` field
+- **Result**: All dashboard components now show consistent and accurate comparison data
+- **Files changed**: 
+  - `src/app/api/dashboard/v2/asin-overview/route.ts`
+  - `src/app/page.tsx`
+  - `src/components/asin-performance/FunnelChart.tsx`
+  - `src/lib/api/asin-performance.ts`
+
 ### Brand Management System (Aug 2025)
 - Added automatic ASIN-to-brand mapping based on product titles
 - Implemented RPC functions for brand matching and creation
