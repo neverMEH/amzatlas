@@ -378,10 +378,30 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {formatPercentage(row.ctr)}
+                    <div>
+                      {formatPercentage(row.ctr)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.ctr > comparisonRow.ctr ? 'text-green-600' : 
+                          row.ctr < comparisonRow.ctr ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.ctr, comparisonRow.ctr)}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                    {formatPercentage(row.cvr)}
+                    <div>
+                      {formatPercentage(row.cvr)}
+                      {comparisonRow && (
+                        <div className={`text-xs ${
+                          row.cvr > comparisonRow.cvr ? 'text-green-600' : 
+                          row.cvr < comparisonRow.cvr ? 'text-red-600' : 'text-gray-500'
+                        }`}>
+                          {formatChange(row.cvr, comparisonRow.cvr)}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   {showShareMetrics && (
                     <>

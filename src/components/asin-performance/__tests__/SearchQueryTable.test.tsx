@@ -300,6 +300,132 @@ describe('SearchQueryTable', () => {
     expect(onExport).toHaveBeenCalledWith(mockSearchQueries)
   })
 
+  describe('Rate Metrics Comparison Data', () => {
+    it('displays comparison data for CTR and CVR', () => {
+      const mockData = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 15000,
+          clicks: 750,
+          cartAdds: 225,
+          purchases: 112,
+          ctr: 0.05,
+          cvr: 0.15,
+          cartAddRate: 0.3,
+          purchaseRate: 0.498,
+          impressionShare: 0.25,
+          clickShare: 0.30,
+          purchaseShare: 0.35,
+        },
+      ]
+
+      const mockComparisonData = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 12000,
+          clicks: 480,
+          cartAdds: 120,
+          purchases: 60,
+          ctr: 0.04,
+          cvr: 0.125,
+          cartAddRate: 0.25,
+          purchaseRate: 0.5,
+          impressionShare: 0.20,
+          clickShare: 0.25,
+          purchaseShare: 0.28,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockData}
+          comparisonData={mockComparisonData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should display CTR value
+      expect(screen.getByText('5.00%')).toBeInTheDocument()
+      
+      // Should display CTR comparison change (0.05 vs 0.04 = +25%)
+      const ctrElement = screen.getByText('5.00%')
+      const ctrContainer = ctrElement.closest('td')
+      const ctrChange = ctrContainer?.querySelector('.text-xs')
+      expect(ctrChange).toHaveTextContent('+25.0%')
+      expect(ctrChange).toHaveClass('text-green-600')
+
+      // Should display CVR value
+      expect(screen.getByText('15.00%')).toBeInTheDocument()
+      
+      // Should display CVR comparison change (0.15 vs 0.125 = +20%)
+      const cvrElement = screen.getByText('15.00%')
+      const cvrContainer = cvrElement.closest('td')
+      const cvrChange = cvrContainer?.querySelector('.text-xs')
+      expect(cvrChange).toHaveTextContent('+20.0%')
+      expect(cvrChange).toHaveClass('text-green-600')
+    })
+
+    it('handles zero and negative changes for rate metrics', () => {
+      const mockData = [
+        {
+          searchQuery: 'test query',
+          impressions: 1000,
+          clicks: 50,
+          cartAdds: 15,
+          purchases: 5,
+          ctr: 0.05,
+          cvr: 0.10,
+          cartAddRate: 0.3,
+          purchaseRate: 0.333,
+          impressionShare: 0.15,
+          clickShare: 0.20,
+          purchaseShare: 0.25,
+        },
+      ]
+
+      const mockComparisonData = [
+        {
+          searchQuery: 'test query',
+          impressions: 1000,
+          clicks: 60,
+          cartAdds: 12,
+          purchases: 6,
+          ctr: 0.06, // Higher CTR
+          cvr: 0.10, // Same CVR
+          cartAddRate: 0.2,
+          purchaseRate: 0.5,
+          impressionShare: 0.15,
+          clickShare: 0.20,
+          purchaseShare: 0.25,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockData}
+          comparisonData={mockComparisonData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Check CTR with decrease (0.05 vs 0.06 = -16.7%)
+      const ctrElement = screen.getByText('5.00%')
+      const ctrContainer = ctrElement.closest('td')
+      const ctrChange = ctrContainer?.querySelector('.text-xs')
+      expect(ctrChange).toHaveTextContent('-16.7%')
+      expect(ctrChange).toHaveClass('text-red-600')
+
+      // Check CVR with no change (0.10 vs 0.10 = 0%)
+      const cvrElement = screen.getByText('10.00%')
+      const cvrContainer = cvrElement.closest('td')
+      const cvrChange = cvrContainer?.querySelector('.text-xs')
+      expect(cvrChange).toHaveTextContent('0.0%')
+      expect(cvrChange).toHaveClass('text-gray-500')
+    })
+  })
+
   describe('Share Metrics Comparison Data', () => {
     it('displays comparison data for share metrics when showShareMetrics is enabled', () => {
       const mockData = [
