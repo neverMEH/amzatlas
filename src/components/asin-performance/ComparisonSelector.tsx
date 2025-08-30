@@ -54,6 +54,7 @@ export function ComparisonSelector({
         ...defaultComparison,
         enabled: true,
       })
+      setComparisonType('previous')
     }
   }, [enabled, mainStartDate, mainEndDate, periodType])
 
@@ -75,7 +76,7 @@ export function ComparisonSelector({
 
   // Update comparison when main period changes
   useEffect(() => {
-    if (enabled && compareStartDate && compareEndDate) {
+    if (enabled) {
       const newComparison = calculateComparisonPeriod({
         startDate: mainStartDate,
         endDate: mainEndDate,
@@ -101,7 +102,7 @@ export function ComparisonSelector({
         setValidationErrors(validation.errors)
       }
     }
-  }, [mainStartDate, mainEndDate, periodType])
+  }, [mainStartDate, mainEndDate, periodType, comparisonType])
 
   const handleComparisonTypeChange = (type: ComparisonType) => {
     setComparisonType(type)
