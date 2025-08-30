@@ -28,6 +28,7 @@ interface SearchQueryTableProps {
   isLoading: boolean
   error: Error | null
   onExport?: (data: SearchQueryData[]) => void
+  onKeywordClick?: (keyword: string, rowData: SearchQueryData) => void
 }
 
 type SortField = keyof SearchQueryData
@@ -51,7 +52,7 @@ function formatDateRange(start: string, end: string): string {
   return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
 }
 
-export function SearchQueryTable({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error, onExport }: SearchQueryTableProps) {
+export function SearchQueryTable({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error, onExport, onKeywordClick }: SearchQueryTableProps) {
   const [sortField, setSortField] = useState<SortField>('impressions')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchTerm, setSearchTerm] = useState('')
@@ -350,7 +351,25 @@ export function SearchQueryTable({ data, comparisonData, dateRange, comparisonDa
                   className={`hover:bg-gray-50 ${isHighPerforming(row) ? 'bg-green-50' : ''}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {row.searchQuery}
+                    {onKeywordClick ? (
+                      <span
+                        onClick={() => onKeywordClick(row.searchQuery, row)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            onKeywordClick(row.searchQuery, row)
+                          }
+                        }}
+                        className="cursor-pointer hover:text-blue-600 hover:underline transition-colors"
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`Click to analyze keyword: ${row.searchQuery}`}
+                      >
+                        {row.searchQuery}
+                      </span>
+                    ) : (
+                      row.searchQuery
+                    )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
                     <div>

@@ -1,5 +1,6 @@
 import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { SearchQueryTable } from '../SearchQueryTable'
 
@@ -923,6 +924,295 @@ describe('SearchQueryTable', () => {
       expect(onExport).toHaveBeenCalledWith(mockAggregatedData)
       expect(onExport.mock.calls[0][0]).toHaveLength(2)
       expect(onExport.mock.calls[0][0][0].impressions).toBe(25000) // Aggregated value
+    })
+  })
+
+  describe('Keyword Click Functionality', () => {
+    it('makes keyword cells clickable with proper styling', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Get the first keyword cell
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Check that it has clickable styling classes
+      expect(keywordCell).toHaveClass('cursor-pointer')
+      expect(keywordCell).toHaveClass('hover:text-blue-600')
+      expect(keywordCell).toHaveClass('hover:underline')
+    })
+
+    it('calls onKeywordClick when keyword is clicked', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      await user.click(keywordCell)
+
+      expect(onKeywordClick).toHaveBeenCalledTimes(1)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+    })
+
+    it('applies hover styles when hovering over keyword', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      const keywordRow = keywordCell.closest('tr')
+      
+      // Check initial state
+      expect(keywordRow).not.toHaveClass('bg-gray-100')
+      
+      // Hover over keyword
+      await user.hover(keywordCell)
+      
+      // Row should have hover background
+      expect(keywordRow).toHaveClass('hover:bg-gray-50')
+    })
+
+    it('supports keyboard navigation with Enter key', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Focus the cell
+      keywordCell.focus()
+      expect(document.activeElement).toBe(keywordCell)
+      
+      // Press Enter
+      await user.keyboard('{Enter}')
+      
+      expect(onKeywordClick).toHaveBeenCalledTimes(1)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+    })
+
+    it('supports keyboard navigation with Space key', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Focus the cell
+      keywordCell.focus()
+      
+      // Press Space
+      await user.keyboard(' ')
+      
+      expect(onKeywordClick).toHaveBeenCalledTimes(1)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+    })
+
+    it('does not make keywords clickable when onKeywordClick is not provided', () => {
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Should not have clickable styling
+      expect(keywordCell).not.toHaveClass('cursor-pointer')
+      expect(keywordCell).not.toHaveClass('hover:text-blue-600')
+    })
+
+    it('maintains clickability after sorting', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Sort by CTR
+      const ctrHeader = screen.getByRole('button', { name: /^ctr$/i })
+      await user.click(ctrHeader)
+
+      // Click on a keyword after sorting
+      const keywordCell = screen.getByText('work sharp knife sharpener')
+      await user.click(keywordCell)
+
+      expect(onKeywordClick).toHaveBeenCalledWith('work sharp knife sharpener', expect.objectContaining({
+        searchQuery: 'work sharp knife sharpener'
+      }))
+    })
+
+    it('maintains clickability after filtering', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Filter for 'electric'
+      const searchInput = screen.getByPlaceholderText(/search queries/i)
+      await user.type(searchInput, 'electric')
+
+      // Click on filtered keyword
+      const keywordCell = await screen.findByText('electric knife sharpener')
+      await user.click(keywordCell)
+
+      expect(onKeywordClick).toHaveBeenCalledWith('electric knife sharpener', expect.objectContaining({
+        searchQuery: 'electric knife sharpener'
+      }))
+    })
+
+    it('adds aria-label for accessibility', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      expect(keywordCell).toHaveAttribute('aria-label', 'Click to analyze keyword: knife sharpener')
+      expect(keywordCell).toHaveAttribute('role', 'button')
+      expect(keywordCell).toHaveAttribute('tabIndex', '0')
+    })
+
+    it('maintains proper focus order with tab navigation', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Tab through elements
+      await user.tab()
+      
+      // Should be able to tab to keyword cells
+      const firstKeyword = screen.getByText('knife sharpener')
+      const secondKeyword = screen.getByText('electric knife sharpener')
+      
+      // Continue tabbing and check focus order
+      let activeElement = document.activeElement
+      const focusableElements = []
+      
+      while (activeElement && focusableElements.length < 20) {
+        focusableElements.push(activeElement)
+        await user.tab()
+        if (document.activeElement === focusableElements[0]) break
+        activeElement = document.activeElement
+      }
+      
+      // Keywords should be in the focus order
+      expect(focusableElements).toContain(firstKeyword)
+      expect(focusableElements).toContain(secondKeyword)
+    })
+
+    it('handles rapid clicks without issues', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Rapid clicks
+      await user.tripleClick(keywordCell)
+      
+      // Should handle all clicks
+      expect(onKeywordClick).toHaveBeenCalledTimes(3)
+    })
+
+    it('provides visual feedback on click', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordCell = screen.getByText('knife sharpener')
+      
+      // Should have transition class for smooth feedback
+      expect(keywordCell).toHaveClass('transition-colors')
+      
+      await user.click(keywordCell)
+      
+      // Callback should fire
+      expect(onKeywordClick).toHaveBeenCalled()
     })
   })
 })

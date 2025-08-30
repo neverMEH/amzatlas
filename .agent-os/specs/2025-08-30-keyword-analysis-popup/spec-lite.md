@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Enable users to click keywords in the search query table to open a detailed analysis popup showing keyword-specific performance metrics, trends, and market share data. The popup supports comparing up to 10 keywords simultaneously with combined and individual insights, and can be expanded to a new tab with breadcrumb navigation for extended analysis with independent date range controls.
