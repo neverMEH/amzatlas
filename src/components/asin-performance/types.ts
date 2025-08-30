@@ -1,5 +1,7 @@
 export type PeriodType = 'week' | 'month' | 'quarter' | 'year' | 'custom'
 
+export type ChartType = 'line' | 'bar'
+
 export interface DateRange {
   startDate: string
   endDate: string

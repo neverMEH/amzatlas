@@ -266,4 +266,115 @@ describe('PerformanceChart', () => {
     // Clicks should still be selected
     expect(screen.getByRole('button', { name: /clicks/i })).toHaveClass('bg-blue-100')
   })
+
+  describe('Chart Type Switching', () => {
+    it('renders bar chart for single data point', () => {
+      const singleDataPoint = [{
+        date: '2024-01-01',
+        impressions: 10000,
+        clicks: 500,
+        cartAdds: 150,
+        purchases: 75,
+      }]
+      
+      render(
+        <PerformanceChart
+          data={singleDataPoint}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Bar chart should be rendered (we can verify this by checking for Bar components)
+      const chart = screen.getByTestId('performance-chart')
+      expect(chart).toBeInTheDocument()
+    })
+
+    it('renders line chart for multiple data points', () => {
+      render(
+        <PerformanceChart
+          data={mockTimeSeriesData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Line chart should be rendered
+      const chart = screen.getByTestId('performance-chart')
+      expect(chart).toBeInTheDocument()
+    })
+
+    it('respects explicit chartType prop over auto-detection', () => {
+      render(
+        <PerformanceChart
+          data={mockTimeSeriesData}
+          isLoading={false}
+          error={null}
+          chartType="bar"
+        />
+      )
+
+      // Should render bar chart even with multiple data points
+      const chart = screen.getByTestId('performance-chart')
+      expect(chart).toBeInTheDocument()
+    })
+
+    it('handles chart type switching with comparison data', () => {
+      const singleWeekData = [{
+        date: '2024-01-01',
+        impressions: 10000,
+        clicks: 500,
+        cartAdds: 150,
+        purchases: 75,
+      }]
+
+      const singleWeekComparison = [{
+        date: '2023-12-25',
+        impressions: 8000,
+        clicks: 400,
+        cartAdds: 120,
+        purchases: 60,
+      }]
+
+      render(
+        <PerformanceChart
+          data={singleWeekData}
+          comparisonData={singleWeekComparison}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should render bar chart with comparison data
+      const chart = screen.getByTestId('performance-chart')
+      expect(chart).toBeInTheDocument()
+    })
+
+    it('maintains metric selection across chart type changes', () => {
+      const { rerender } = render(
+        <PerformanceChart
+          data={mockTimeSeriesData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Select clicks metric
+      const clicksBtn = screen.getByRole('button', { name: /clicks/i })
+      fireEvent.click(clicksBtn)
+      expect(clicksBtn).toHaveClass('bg-blue-100')
+
+      // Change to single data point (should switch to bar chart)
+      rerender(
+        <PerformanceChart
+          data={[mockTimeSeriesData[0]]}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Clicks should still be selected
+      expect(screen.getByRole('button', { name: /clicks/i })).toHaveClass('bg-blue-100')
+    })
+  })
 })

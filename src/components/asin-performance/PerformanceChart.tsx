@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   LineChart,
   Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,6 +15,8 @@ import {
 } from 'recharts'
 import { format } from 'date-fns'
 import { TrendingUp } from 'lucide-react'
+import { getChartTypeFromData } from './utils/dateRange'
+import type { ChartType } from './types'
 
 interface TimeSeriesData {
   date: string
@@ -27,6 +31,7 @@ interface PerformanceChartProps {
   comparisonData?: TimeSeriesData[]
   isLoading: boolean
   error: Error | null
+  chartType?: ChartType // Allow explicit chart type override
 }
 
 type MetricType = 'impressions' | 'clicks' | 'cartAdds' | 'purchases' | 'all'
@@ -71,8 +76,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null
 }
 
-export function PerformanceChart({ data, comparisonData, isLoading, error }: PerformanceChartProps) {
+export function PerformanceChart({ data, comparisonData, isLoading, error, chartType }: PerformanceChartProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('impressions')
+  
+  // Determine chart type based on data length if not explicitly provided
+  const effectiveChartType = useMemo(() => {
+    return chartType || getChartTypeFromData(data)
+  }, [chartType, data])
 
   if (isLoading) {
     return (
@@ -144,6 +154,57 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
       {label}
     </button>
   )
+
+  const renderBars = () => {
+    if (selectedMetric === 'all') {
+      return (
+        <>
+          {Object.entries(metricConfig).map(([key, config]) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              name={config.label}
+              fill={config.color}
+              yAxisId={config.yAxisId}
+            />
+          ))}
+          {comparisonData && (
+            <>
+              {Object.entries(metricConfig).map(([key, config]) => (
+                <Bar
+                  key={`${key}Comp`}
+                  dataKey={`${key}Comp`}
+                  name={`${config.label} (Previous)`}
+                  fill={config.color}
+                  opacity={0.5}
+                  yAxisId={config.yAxisId}
+                />
+              ))}
+            </>
+          )}
+        </>
+      )
+    }
+
+    const config = metricConfig[selectedMetric as keyof typeof metricConfig]
+    return (
+      <>
+        <Bar
+          dataKey={selectedMetric}
+          name={config.label}
+          fill={config.color}
+        />
+        {comparisonData && (
+          <Bar
+            dataKey={`${selectedMetric}Comp`}
+            name={`${config.label} (Previous)`}
+            fill={config.color}
+            opacity={0.5}
+          />
+        )}
+      </>
+    )
+  }
 
   const renderLines = () => {
     if (selectedMetric === 'all') {
@@ -230,10 +291,53 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
 
       <div data-testid="performance-chart" className="h-64 sm:h-80">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          >
+          {effectiveChartType === 'bar' ? (
+            <BarChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis 
+                dataKey="date" 
+                tickFormatter={formatDate}
+                stroke="#6B7280"
+                fontSize={12}
+              />
+              {selectedMetric === 'all' ? (
+                <>
+                  <YAxis 
+                    yAxisId="left"
+                    stroke="#6B7280"
+                    fontSize={12}
+                    tickFormatter={(value) => formatNumber(value)}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    stroke="#6B7280"
+                    fontSize={12}
+                    tickFormatter={(value) => formatNumber(value)}
+                  />
+                </>
+              ) : (
+                <YAxis 
+                  stroke="#6B7280"
+                  fontSize={12}
+                  tickFormatter={(value) => formatNumber(value)}
+                />
+              )}
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                wrapperStyle={{ paddingTop: '1rem' }}
+                iconType="square"
+              />
+              {renderBars()}
+            </BarChart>
+          ) : (
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
             <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
             <XAxis 
               dataKey="date" 
@@ -269,8 +373,9 @@ export function PerformanceChart({ data, comparisonData, isLoading, error }: Per
               wrapperStyle={{ paddingTop: '1rem' }}
               iconType="line"
             />
-            {renderLines()}
-          </LineChart>
+              {renderLines()}
+            </LineChart>
+          )}
         </ResponsiveContainer>
       </div>
     </div>

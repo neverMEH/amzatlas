@@ -113,6 +113,7 @@ export default function Dashboard() {
                 comparisonData={compareRange.enabled ? data?.comparisonTimeSeries : undefined}
                 isLoading={isLoading}
                 error={error as Error | null}
+                // Let the chart auto-detect based on data length - no explicit chartType needed
               />
             </section>
 
