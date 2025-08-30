@@ -25,6 +25,10 @@ import {
 } from 'date-fns'
 import { PeriodTypeSelector } from './PeriodTypeSelector'
 import { PeriodType, DateRange, ComparisonRange } from './types'
+import { WeekSelector } from './calendars/WeekSelector'
+import { MonthSelector } from './calendars/MonthSelector'
+import { QuarterSelector } from './calendars/QuarterSelector'
+import { YearSelector } from './calendars/YearSelector'
 
 interface DateRangePickerV2Props {
   startDate: string
@@ -217,36 +221,60 @@ export function DateRangePickerV2({
           </button>
 
           {isOpen && (
-            <div className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 min-w-[300px]" role="dialog">
+            <div className="absolute z-10 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg min-w-[350px]" role="dialog">
               {periodType === 'week' && (
-                <div data-testid="week-selector" className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-700">Select Week</h3>
-                  {/* Week calendar implementation will go here */}
-                  <div className="text-sm text-gray-500">Week selector calendar</div>
+                <div data-testid="week-selector">
+                  <WeekSelector
+                    selectedStart={startDate}
+                    selectedEnd={endDate}
+                    onSelect={(range) => {
+                      onChange(range)
+                      setIsOpen(false)
+                    }}
+                    maxDate={format(new Date(), 'yyyy-MM-dd')}
+                  />
                 </div>
               )}
               
               {periodType === 'month' && (
-                <div data-testid="month-selector" className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-700">Select Month</h3>
-                  {/* Month selector implementation will go here */}
-                  <div className="text-sm text-gray-500">Month and year selector</div>
+                <div data-testid="month-selector">
+                  <MonthSelector
+                    selectedStart={startDate}
+                    selectedEnd={endDate}
+                    onSelect={(range) => {
+                      onChange(range)
+                      setIsOpen(false)
+                    }}
+                    maxDate={format(new Date(), 'yyyy-MM-dd')}
+                  />
                 </div>
               )}
               
               {periodType === 'quarter' && (
-                <div data-testid="quarter-selector" className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-700">Select Quarter</h3>
-                  {/* Quarter selector implementation will go here */}
-                  <div className="text-sm text-gray-500">Quarter and year selector</div>
+                <div data-testid="quarter-selector">
+                  <QuarterSelector
+                    selectedStart={startDate}
+                    selectedEnd={endDate}
+                    onSelect={(range) => {
+                      onChange(range)
+                      setIsOpen(false)
+                    }}
+                    maxDate={format(new Date(), 'yyyy-MM-dd')}
+                  />
                 </div>
               )}
               
               {periodType === 'year' && (
-                <div data-testid="year-selector" className="space-y-3">
-                  <h3 className="text-sm font-medium text-gray-700">Select Year</h3>
-                  {/* Year selector implementation will go here */}
-                  <div className="text-sm text-gray-500">Year selector</div>
+                <div data-testid="year-selector">
+                  <YearSelector
+                    selectedStart={startDate}
+                    selectedEnd={endDate}
+                    onSelect={(range) => {
+                      onChange(range)
+                      setIsOpen(false)
+                    }}
+                    maxDate={format(new Date(), 'yyyy-MM-dd')}
+                  />
                 </div>
               )}
               
