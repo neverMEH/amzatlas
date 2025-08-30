@@ -86,6 +86,7 @@ export interface ASINPerformanceData {
     purchaseRate: number
     impressionShare: number
     clickShare: number
+    cartAddShare?: number
     purchaseShare: number
   }>
   topQueriesComparison?: Array<{
@@ -100,6 +101,7 @@ export interface ASINPerformanceData {
     purchaseRate: number
     impressionShare: number
     clickShare: number
+    cartAddShare?: number
     purchaseShare: number
   }>
 }

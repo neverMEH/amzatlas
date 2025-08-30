@@ -15,6 +15,7 @@ interface SearchQueryData {
   purchaseRate: number
   impressionShare: number
   clickShare: number
+  cartAddShare?: number
   purchaseShare: number
 }
 
@@ -289,6 +290,17 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                       <SortIcon field="clickShare" />
                     </button>
                   </th>
+                  {data.some(d => d.cartAddShare !== undefined) && (
+                    <th className="px-6 py-3 text-right">
+                      <button
+                        onClick={() => handleSort('cartAddShare' as SortField)}
+                        className="flex items-center space-x-1 text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                      >
+                        <span>Cart Add Share</span>
+                        <SortIcon field={'cartAddShare' as SortField} />
+                      </button>
+                    </th>
+                  )}
                   <th className="px-6 py-3 text-right">
                     <button
                       onClick={() => handleSort('purchaseShare')}
@@ -374,13 +386,58 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                   {showShareMetrics && (
                     <>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        {formatPercentage(row.impressionShare, 1)}
+                        <div>
+                          {formatPercentage(row.impressionShare, 1)}
+                          {comparisonRow && (
+                            <div className={`text-xs ${
+                              row.impressionShare > comparisonRow.impressionShare ? 'text-green-600' : 
+                              row.impressionShare < comparisonRow.impressionShare ? 'text-red-600' : 'text-gray-500'
+                            }`}>
+                              {formatChange(row.impressionShare, comparisonRow.impressionShare)}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        {formatPercentage(row.clickShare, 1)}
+                        <div>
+                          {formatPercentage(row.clickShare, 1)}
+                          {comparisonRow && (
+                            <div className={`text-xs ${
+                              row.clickShare > comparisonRow.clickShare ? 'text-green-600' : 
+                              row.clickShare < comparisonRow.clickShare ? 'text-red-600' : 'text-gray-500'
+                            }`}>
+                              {formatChange(row.clickShare, comparisonRow.clickShare)}
+                            </div>
+                          )}
+                        </div>
                       </td>
+                      {row.cartAddShare !== undefined && (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                          <div>
+                            {formatPercentage(row.cartAddShare, 1)}
+                            {comparisonRow && comparisonRow.cartAddShare !== undefined && (
+                              <div className={`text-xs ${
+                                row.cartAddShare > comparisonRow.cartAddShare ? 'text-green-600' : 
+                                row.cartAddShare < comparisonRow.cartAddShare ? 'text-red-600' : 'text-gray-500'
+                              }`}>
+                                {formatChange(row.cartAddShare, comparisonRow.cartAddShare)}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                        {formatPercentage(row.purchaseShare, 1)}
+                        <div>
+                          {formatPercentage(row.purchaseShare, 1)}
+                          {comparisonRow && (
+                            <div className={`text-xs ${
+                              row.purchaseShare > comparisonRow.purchaseShare ? 'text-green-600' : 
+                              row.purchaseShare < comparisonRow.purchaseShare ? 'text-red-600' : 'text-gray-500'
+                            }`}>
+                              {formatChange(row.purchaseShare, comparisonRow.purchaseShare)}
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </>
                   )}

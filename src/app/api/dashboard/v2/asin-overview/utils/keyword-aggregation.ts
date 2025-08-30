@@ -14,6 +14,7 @@ export interface SearchQueryData {
   purchase_rate: number
   impression_share: number
   click_share: number
+  cart_add_share: number
   purchase_share: number
 }
 
@@ -29,6 +30,7 @@ export interface AggregatedSearchQuery {
   purchaseRate: number
   impressionShare: number
   clickShare: number
+  cartAddShare: number
   purchaseShare: number
 }
 
@@ -74,6 +76,10 @@ export function aggregateSearchQueries(data: SearchQueryData[]): AggregatedSearc
       return sum + (row.click_share * row.clicks)
     }, 0) / (totalClicks || 1)
 
+    const weightedCartAddShare = rows.reduce((sum, row) => {
+      return sum + (row.cart_add_share * row.cart_adds)
+    }, 0) / (totalCartAdds || 1)
+
     const weightedPurchaseShare = rows.reduce((sum, row) => {
       return sum + (row.purchase_share * row.purchases)
     }, 0) / (totalPurchases || 1)
@@ -96,6 +102,7 @@ export function aggregateSearchQueries(data: SearchQueryData[]): AggregatedSearc
       purchaseRate,
       impressionShare: weightedImpressionShare || 0,
       clickShare: weightedClickShare || 0,
+      cartAddShare: weightedCartAddShare || 0,
       purchaseShare: weightedPurchaseShare || 0,
     }
   })
@@ -121,6 +128,7 @@ export function transformSearchQueryData(data: any[]): SearchQueryData[] {
     purchase_rate: row.purchase_rate || 0,
     impression_share: row.impression_share || 0,
     click_share: row.click_share || 0,
+    cart_add_share: row.cart_add_share || 0,
     purchase_share: row.purchase_share || 0,
   }))
 }

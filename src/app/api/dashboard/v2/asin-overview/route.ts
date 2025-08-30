@@ -182,6 +182,7 @@ export async function GET(request: NextRequest) {
         purchaseRate: row.purchase_rate || 0,
         impressionShare: row.impression_share || 0,
         clickShare: row.click_share || 0,
+        cartAddShare: row.cart_add_share || 0,
         purchaseShare: row.purchase_share || 0,
       })) || []
     }
@@ -216,6 +217,7 @@ export async function GET(request: NextRequest) {
             purchaseRate: row.purchase_rate || 0,
             impressionShare: row.impression_share || 0,
             clickShare: row.click_share || 0,
+            cartAddShare: row.cart_add_share || 0,
             purchaseShare: row.purchase_share || 0,
           }))
         }

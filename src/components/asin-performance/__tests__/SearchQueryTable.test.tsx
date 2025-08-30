@@ -300,6 +300,267 @@ describe('SearchQueryTable', () => {
     expect(onExport).toHaveBeenCalledWith(mockSearchQueries)
   })
 
+  describe('Share Metrics Comparison Data', () => {
+    it('displays comparison data for share metrics when showShareMetrics is enabled', () => {
+      const mockData = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 15000,
+          clicks: 750,
+          cartAdds: 225,
+          purchases: 112,
+          ctr: 0.05,
+          cvr: 0.0075,
+          cartAddRate: 0.3,
+          purchaseRate: 0.498,
+          impressionShare: 0.25,
+          clickShare: 0.30,
+          purchaseShare: 0.35,
+        },
+      ]
+
+      const mockComparisonData = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 12000,
+          clicks: 600,
+          cartAdds: 180,
+          purchases: 90,
+          ctr: 0.05,
+          cvr: 0.0075,
+          cartAddRate: 0.3,
+          purchaseRate: 0.5,
+          impressionShare: 0.20,
+          clickShare: 0.25,
+          purchaseShare: 0.28,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockData}
+          comparisonData={mockComparisonData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Enable share metrics
+      const shareToggle = screen.getByLabelText(/show share metrics/i)
+      fireEvent.click(shareToggle)
+
+      // Should display share metric values
+      expect(screen.getByText('25.0%')).toBeInTheDocument() // Impression share
+      expect(screen.getByText('30.0%')).toBeInTheDocument() // Click share
+      expect(screen.getByText('35.0%')).toBeInTheDocument() // Purchase share
+
+      // Should display comparison changes for share metrics
+      // Impression share: 0.25 vs 0.20 = +25%
+      const impressionShareChanges = screen.getAllByText('+25.0%')
+      expect(impressionShareChanges.length).toBeGreaterThan(1) // One for impressions, one for impression share
+
+      // Click share: 0.30 vs 0.25 = +20%
+      expect(screen.getByText('+20.0%')).toBeInTheDocument()
+
+      // Purchase share: 0.35 vs 0.28 = +25%
+      // Note: There might be multiple +25.0% values (impressions and purchase share)
+      const purchaseShareElement = screen.getByText('35.0%')
+      const purchaseShareContainer = purchaseShareElement.closest('td')
+      const purchaseShareChange = purchaseShareContainer?.querySelector('.text-xs')
+      expect(purchaseShareChange).toHaveTextContent('+25.0%')
+    })
+
+    it('handles zero and missing comparison values for share metrics', () => {
+      const mockData = [
+        {
+          searchQuery: 'test query',
+          impressions: 1000,
+          clicks: 100,
+          cartAdds: 30,
+          purchases: 10,
+          ctr: 0.1,
+          cvr: 0.1,
+          cartAddRate: 0.3,
+          purchaseRate: 0.333,
+          impressionShare: 0.15,
+          clickShare: 0.20,
+          purchaseShare: 0.25,
+        },
+      ]
+
+      const mockComparisonData = [
+        {
+          searchQuery: 'test query',
+          impressions: 800,
+          clicks: 80,
+          cartAdds: 24,
+          purchases: 8,
+          ctr: 0.1,
+          cvr: 0.1,
+          cartAddRate: 0.3,
+          purchaseRate: 0.333,
+          impressionShare: 0, // Zero share
+          clickShare: 0.20, // Same share
+          purchaseShare: 0.30, // Higher previous share
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockData}
+          comparisonData={mockComparisonData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Enable share metrics
+      const shareToggle = screen.getByLabelText(/show share metrics/i)
+      fireEvent.click(shareToggle)
+
+      // Check impression share with zero comparison (0.15 vs 0 = +∞)
+      const impressionShareElement = screen.getByText('15.0%')
+      const impressionShareContainer = impressionShareElement.closest('td')
+      const impressionShareChange = impressionShareContainer?.querySelector('.text-xs')
+      expect(impressionShareChange).toHaveTextContent('+∞')
+
+      // Check click share with same value (0.20 vs 0.20 = 0%)
+      const clickShareElement = screen.getByText('20.0%')
+      const clickShareContainer = clickShareElement.closest('td')
+      const clickShareChange = clickShareContainer?.querySelector('.text-xs')
+      expect(clickShareChange).toHaveTextContent('0.0%')
+
+      // Check purchase share with decrease (0.25 vs 0.30 = -16.7%)
+      const purchaseShareElement = screen.getByText('25.0%')
+      const purchaseShareContainer = purchaseShareElement.closest('td')
+      const purchaseShareChange = purchaseShareContainer?.querySelector('.text-xs')
+      expect(purchaseShareChange).toHaveTextContent('-16.7%')
+      expect(purchaseShareChange).toHaveClass('text-red-600')
+    })
+
+    it('does not show comparison data for share metrics when comparison data is not provided', () => {
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Enable share metrics
+      const shareToggle = screen.getByLabelText(/show share metrics/i)
+      fireEvent.click(shareToggle)
+
+      // Should display share values but no comparison indicators
+      expect(screen.getByText('23.0%')).toBeInTheDocument() // Impression share
+      
+      // Should not have any comparison change elements for share metrics
+      const shareCell = screen.getByText('23.0%').closest('td')
+      const changeIndicator = shareCell?.querySelector('.text-xs')
+      expect(changeIndicator).not.toBeInTheDocument()
+    })
+
+    it('includes cart add share column when available in data', () => {
+      const mockDataWithCartAddShare = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 15000,
+          clicks: 750,
+          cartAdds: 225,
+          purchases: 112,
+          ctr: 0.05,
+          cvr: 0.0075,
+          cartAddRate: 0.3,
+          purchaseRate: 0.498,
+          impressionShare: 0.23,
+          clickShare: 0.28,
+          cartAddShare: 0.32, // New field
+          purchaseShare: 0.31,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockDataWithCartAddShare}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Enable share metrics
+      const shareToggle = screen.getByLabelText(/show share metrics/i)
+      fireEvent.click(shareToggle)
+
+      // Should display cart add share column header
+      expect(screen.getByText('Cart Add Share')).toBeInTheDocument()
+
+      // Should display cart add share value
+      expect(screen.getByText('32.0%')).toBeInTheDocument()
+    })
+
+    it('displays comparison data for cart add share when available', () => {
+      const mockDataWithCartAddShare = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 15000,
+          clicks: 750,
+          cartAdds: 225,
+          purchases: 112,
+          ctr: 0.05,
+          cvr: 0.0075,
+          cartAddRate: 0.3,
+          purchaseRate: 0.498,
+          impressionShare: 0.23,
+          clickShare: 0.28,
+          cartAddShare: 0.32,
+          purchaseShare: 0.31,
+        },
+      ]
+
+      const mockComparisonDataWithCartAddShare = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 12000,
+          clicks: 600,
+          cartAdds: 180,
+          purchases: 90,
+          ctr: 0.05,
+          cvr: 0.0075,
+          cartAddRate: 0.3,
+          purchaseRate: 0.5,
+          impressionShare: 0.20,
+          clickShare: 0.25,
+          cartAddShare: 0.28,
+          purchaseShare: 0.28,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockDataWithCartAddShare}
+          comparisonData={mockComparisonDataWithCartAddShare}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Enable share metrics
+      const shareToggle = screen.getByLabelText(/show share metrics/i)
+      fireEvent.click(shareToggle)
+
+      // Should display cart add share value
+      expect(screen.getByText('32.0%')).toBeInTheDocument()
+
+      // Should display comparison change for cart add share
+      // Cart add share: 0.32 vs 0.28 = +14.3%
+      const cartAddShareElement = screen.getByText('32.0%')
+      const cartAddShareContainer = cartAddShareElement.closest('td')
+      const cartAddShareChange = cartAddShareContainer?.querySelector('.text-xs')
+      expect(cartAddShareChange).toHaveTextContent('+14.3%')
+      expect(cartAddShareChange).toHaveClass('text-green-600')
+    })
+  })
+
   describe('Aggregated Data Handling', () => {
     const mockAggregatedData = [
       {
