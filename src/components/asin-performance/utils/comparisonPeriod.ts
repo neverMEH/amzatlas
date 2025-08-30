@@ -193,6 +193,16 @@ function calculateYearOverYear(start: Date, end: Date, periodType: PeriodType): 
     case 'year':
       // Year-over-year doesn't make sense for year period
       return calculatePreviousPeriod(start, end, periodType)
+    
+    case 'custom': {
+      // For custom periods, shift by one year
+      const newStart = subYears(start, 1)
+      const newEnd = subYears(end, 1)
+      return {
+        startDate: format(newStart, 'yyyy-MM-dd'),
+        endDate: format(newEnd, 'yyyy-MM-dd'),
+      }
+    }
   }
 }
 
@@ -233,6 +243,16 @@ function calculatePeriodOffset(start: Date, end: Date, periodType: PeriodType, o
         endDate: format(endOfYear(newStart), 'yyyy-MM-dd'),
       }
     }
+    
+    case 'custom': {
+      // For custom periods, offset by weeks
+      const newStart = subWeeks(start, offset)
+      const newEnd = subWeeks(end, offset)
+      return {
+        startDate: format(newStart, 'yyyy-MM-dd'),
+        endDate: format(newEnd, 'yyyy-MM-dd'),
+      }
+    }
   }
 }
 
@@ -271,6 +291,16 @@ function calculateCustomPeriod(start: Date, end: Date, periodType: PeriodType, o
       return {
         startDate: format(startOfYear(newStart), 'yyyy-MM-dd'),
         endDate: format(endOfYear(newStart), 'yyyy-MM-dd'),
+      }
+    }
+    
+    case 'custom': {
+      // For custom periods, offset by weeks
+      const newStart = subWeeks(start, offset)
+      const newEnd = subWeeks(end, offset)
+      return {
+        startDate: format(newStart, 'yyyy-MM-dd'),
+        endDate: format(newEnd, 'yyyy-MM-dd'),
       }
     }
   }
