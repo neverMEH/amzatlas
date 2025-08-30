@@ -299,4 +299,243 @@ describe('SearchQueryTable', () => {
 
     expect(onExport).toHaveBeenCalledWith(mockSearchQueries)
   })
+
+  describe('Aggregated Data Handling', () => {
+    const mockAggregatedData = [
+      {
+        searchQuery: 'knife sharpener',
+        impressions: 25000, // Sum of multiple weeks
+        clicks: 2200, // Sum of multiple weeks
+        cartAdds: 660,
+        purchases: 220,
+        ctr: 0.088, // Recalculated: 2200/25000
+        cvr: 0.1, // Recalculated: 220/2200
+        cartAddRate: 0.3, // Recalculated: 660/2200
+        purchaseRate: 0.333, // Recalculated: 220/660
+        impressionShare: 0.25, // Weighted average
+        clickShare: 0.28,
+        purchaseShare: 0.32,
+      },
+      {
+        searchQuery: 'electric knife sharpener',
+        impressions: 18500,
+        clicks: 1110,
+        cartAdds: 333,
+        purchases: 166,
+        ctr: 0.06,
+        cvr: 0.1495,
+        cartAddRate: 0.3,
+        purchaseRate: 0.498,
+        impressionShare: 0.20,
+        clickShare: 0.22,
+        purchaseShare: 0.25,
+      },
+    ]
+
+    it('displays aggregated data correctly with single entry per keyword', () => {
+      render(
+        <SearchQueryTable
+          data={mockAggregatedData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Check that each keyword appears only once
+      const knifeSharpenerElements = screen.getAllByText('knife sharpener')
+      expect(knifeSharpenerElements).toHaveLength(1)
+
+      // Check aggregated values are displayed
+      expect(screen.getByText('25,000')).toBeInTheDocument() // Aggregated impressions
+      expect(screen.getByText('2,200')).toBeInTheDocument() // Aggregated clicks
+      expect(screen.getByText('220')).toBeInTheDocument() // Aggregated purchases
+
+      // Check recalculated rate metrics
+      expect(screen.getByText('8.80%')).toBeInTheDocument() // CTR
+      expect(screen.getByText('10.00%')).toBeInTheDocument() // CVR
+    })
+
+    it('sorts aggregated data correctly by volume metrics', async () => {
+      render(
+        <SearchQueryTable
+          data={mockAggregatedData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Default sort by impressions descending
+      let rows = screen.getAllByRole('row')
+      expect(rows[1]).toHaveTextContent('knife sharpener') // 25,000 impressions
+
+      // Click to sort by purchases
+      const purchasesHeader = screen.getByRole('button', { name: /purchases/i })
+      fireEvent.click(purchasesHeader)
+
+      await waitFor(() => {
+        rows = screen.getAllByRole('row')
+        expect(rows[1]).toHaveTextContent('knife sharpener') // 220 purchases (still highest)
+      })
+    })
+
+    it('filters aggregated data correctly', async () => {
+      render(
+        <SearchQueryTable
+          data={mockAggregatedData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      const searchInput = screen.getByPlaceholderText(/search queries/i)
+      fireEvent.change(searchInput, { target: { value: 'electric' } })
+
+      await waitFor(() => {
+        expect(screen.getByText('electric knife sharpener')).toBeInTheDocument()
+        expect(screen.queryByText('knife sharpener')).not.toBeInTheDocument()
+      })
+    })
+
+    it('displays comparison data correctly with aggregated values', () => {
+      const mockComparisonData = [
+        {
+          searchQuery: 'knife sharpener',
+          impressions: 20000,
+          clicks: 1800,
+          cartAdds: 540,
+          purchases: 180,
+          ctr: 0.09,
+          cvr: 0.1,
+          cartAddRate: 0.3,
+          purchaseRate: 0.333,
+          impressionShare: 0.23,
+          clickShare: 0.26,
+          purchaseShare: 0.30,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockAggregatedData}
+          comparisonData={mockComparisonData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show percentage changes for aggregated data
+      // 25000 vs 20000 impressions = +25%
+      expect(screen.getByText('+25.0%')).toBeInTheDocument()
+      
+      // 2200 vs 1800 clicks = +22.2%
+      // Use getAllByText since multiple metrics might have the same percentage change
+      const percentageChanges = screen.getAllByText('+22.2%')
+      expect(percentageChanges.length).toBeGreaterThan(0)
+    })
+
+    it('handles pagination with aggregated data', async () => {
+      // Create large aggregated dataset
+      const largeAggregatedData = Array.from({ length: 15 }, (_, i) => ({
+        searchQuery: `aggregated query ${i + 1}`,
+        impressions: 50000 - i * 2000, // Decreasing order
+        clicks: 5000 - i * 200,
+        cartAdds: 1500 - i * 60,
+        purchases: 500 - i * 20,
+        ctr: 0.1,
+        cvr: 0.1,
+        cartAddRate: 0.3,
+        purchaseRate: 0.333,
+        impressionShare: 0.1,
+        clickShare: 0.1,
+        purchaseShare: 0.1,
+      }))
+
+      render(
+        <SearchQueryTable
+          data={largeAggregatedData}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show first 10 items
+      expect(screen.getByText('aggregated query 1')).toBeInTheDocument()
+      expect(screen.getByText('aggregated query 10')).toBeInTheDocument()
+      expect(screen.queryByText('aggregated query 11')).not.toBeInTheDocument()
+
+      // Navigate to next page
+      fireEvent.click(screen.getByLabelText(/next page/i))
+
+      await waitFor(() => {
+        expect(screen.queryByText('aggregated query 1')).not.toBeInTheDocument()
+        expect(screen.getByText('aggregated query 11')).toBeInTheDocument()
+        expect(screen.getByText('aggregated query 15')).toBeInTheDocument()
+      })
+    })
+
+    it('highlights high-performing aggregated queries', () => {
+      const mockHighPerformingAggregated = [
+        {
+          searchQuery: 'top performer',
+          impressions: 30000,
+          clicks: 3600,
+          cartAdds: 1080,
+          purchases: 540,
+          ctr: 0.12,
+          cvr: 0.15, // High CVR
+          cartAddRate: 0.3,
+          purchaseRate: 0.5,
+          impressionShare: 0.3,
+          clickShare: 0.35,
+          purchaseShare: 0.4,
+        },
+        {
+          searchQuery: 'average performer',
+          impressions: 20000,
+          clicks: 1000,
+          cartAdds: 200,
+          purchases: 50,
+          ctr: 0.05,
+          cvr: 0.05, // Low CVR
+          cartAddRate: 0.2,
+          purchaseRate: 0.25,
+          impressionShare: 0.2,
+          clickShare: 0.15,
+          purchaseShare: 0.1,
+        },
+      ]
+
+      render(
+        <SearchQueryTable
+          data={mockHighPerformingAggregated}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // High CVR row should be highlighted
+      const highPerformingRow = screen.getByText('top performer').closest('tr')
+      expect(highPerformingRow).toHaveClass('bg-green-50')
+    })
+
+    it('exports aggregated data correctly', () => {
+      const onExport = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockAggregatedData}
+          isLoading={false}
+          error={null}
+          onExport={onExport}
+        />
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: /export/i }))
+
+      // Should export the aggregated data
+      expect(onExport).toHaveBeenCalledWith(mockAggregatedData)
+      expect(onExport.mock.calls[0][0]).toHaveLength(2)
+      expect(onExport.mock.calls[0][0][0].impressions).toBe(25000) // Aggregated value
+    })
+  })
 })
