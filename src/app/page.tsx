@@ -101,6 +101,8 @@ export default function Dashboard() {
               <MetricsCards
                 data={data?.metrics}
                 comparisonData={data?.comparison}
+                dateRange={data?.dateRange}
+                comparisonDateRange={data?.comparisonDateRange}
                 isLoading={isLoading}
                 error={error as Error | null}
               />
@@ -111,6 +113,8 @@ export default function Dashboard() {
               <PerformanceChart
                 data={data?.timeSeries || []}
                 comparisonData={compareRange.enabled ? data?.comparisonTimeSeries : undefined}
+                dateRange={data?.dateRange}
+                comparisonDateRange={data?.comparisonDateRange}
                 isLoading={isLoading}
                 error={error as Error | null}
                 // Let the chart auto-detect based on data length - no explicit chartType needed
@@ -122,6 +126,8 @@ export default function Dashboard() {
               <FunnelChart
                 data={data?.metrics?.totals || null}
                 comparisonData={compareRange.enabled && data?.comparison ? data.comparison.metrics.totals : null}
+                dateRange={data?.dateRange}
+                comparisonDateRange={data?.comparisonDateRange}
                 isLoading={isLoading}
                 error={error as Error | null}
               />
@@ -133,6 +139,8 @@ export default function Dashboard() {
               <SearchQueryTable
                 data={data?.topQueries || []}
                 comparisonData={compareRange.enabled && data?.topQueriesComparison ? data.topQueriesComparison : undefined}
+                dateRange={data?.dateRange}
+                comparisonDateRange={data?.comparisonDateRange}
                 isLoading={isLoading}
                 error={error as Error | null}
               />

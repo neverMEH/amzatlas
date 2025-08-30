@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { ChevronUp, ChevronDown, Search, Download, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface SearchQueryData {
   searchQuery: string
@@ -22,6 +23,8 @@ interface SearchQueryData {
 interface SearchQueryTableProps {
   data: SearchQueryData[]
   comparisonData?: SearchQueryData[]
+  dateRange?: { start: string; end: string }
+  comparisonDateRange?: { start: string; end: string }
   isLoading: boolean
   error: Error | null
   onExport?: (data: SearchQueryData[]) => void
@@ -44,7 +47,11 @@ function formatChange(current: number, previous: number): string {
   return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`
 }
 
-export function SearchQueryTable({ data, comparisonData, isLoading, error, onExport }: SearchQueryTableProps) {
+function formatDateRange(start: string, end: string): string {
+  return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
+}
+
+export function SearchQueryTable({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error, onExport }: SearchQueryTableProps) {
   const [sortField, setSortField] = useState<SortField>('impressions')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchTerm, setSearchTerm] = useState('')
@@ -163,10 +170,30 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
       : <ChevronDown className="h-4 w-4 text-blue-600" />
   }
 
+  const ComparisonChange = ({ current, previous }: { current: number; previous: number }) => {
+    const changeClass = current > previous ? 'text-green-600' : 
+                       current < previous ? 'text-red-600' : 'text-gray-500'
+    
+    return (
+      <div 
+        className={`text-xs ${changeClass}`}
+        title={comparisonDateRange ? `vs ${formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}` : 'vs previous period'}
+      >
+        {formatChange(current, previous)}
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Header with search and controls */}
       <div className="p-4 border-b border-gray-200">
+        {comparisonDateRange && (
+          <div className="mb-3 text-sm text-gray-500 text-center">
+            Comparing {dateRange && formatDateRange(dateRange.start, dateRange.end)} 
+            {' '}vs {formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -329,12 +356,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatNumber(row.impressions)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.impressions > comparisonRow.impressions ? 'text-green-600' : 
-                          row.impressions < comparisonRow.impressions ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.impressions, comparisonRow.impressions)}
-                        </div>
+                        <ComparisonChange current={row.impressions} previous={comparisonRow.impressions} />
                       )}
                     </div>
                   </td>
@@ -342,12 +364,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatNumber(row.clicks)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.clicks > comparisonRow.clicks ? 'text-green-600' : 
-                          row.clicks < comparisonRow.clicks ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.clicks, comparisonRow.clicks)}
-                        </div>
+                        <ComparisonChange current={row.clicks} previous={comparisonRow.clicks} />
                       )}
                     </div>
                   </td>
@@ -355,12 +372,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatNumber(row.cartAdds)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.cartAdds > comparisonRow.cartAdds ? 'text-green-600' : 
-                          row.cartAdds < comparisonRow.cartAdds ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.cartAdds, comparisonRow.cartAdds)}
-                        </div>
+                        <ComparisonChange current={row.cartAdds} previous={comparisonRow.cartAdds} />
                       )}
                     </div>
                   </td>
@@ -368,12 +380,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatNumber(row.purchases)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.purchases > comparisonRow.purchases ? 'text-green-600' : 
-                          row.purchases < comparisonRow.purchases ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.purchases, comparisonRow.purchases)}
-                        </div>
+                        <ComparisonChange current={row.purchases} previous={comparisonRow.purchases} />
                       )}
                     </div>
                   </td>
@@ -381,12 +388,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatPercentage(row.ctr)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.ctr > comparisonRow.ctr ? 'text-green-600' : 
-                          row.ctr < comparisonRow.ctr ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.ctr, comparisonRow.ctr)}
-                        </div>
+                        <ComparisonChange current={row.ctr} previous={comparisonRow.ctr} />
                       )}
                     </div>
                   </td>
@@ -394,12 +396,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                     <div>
                       {formatPercentage(row.cvr)}
                       {comparisonRow && (
-                        <div className={`text-xs ${
-                          row.cvr > comparisonRow.cvr ? 'text-green-600' : 
-                          row.cvr < comparisonRow.cvr ? 'text-red-600' : 'text-gray-500'
-                        }`}>
-                          {formatChange(row.cvr, comparisonRow.cvr)}
-                        </div>
+                        <ComparisonChange current={row.cvr} previous={comparisonRow.cvr} />
                       )}
                     </div>
                   </td>
@@ -409,12 +406,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                         <div>
                           {formatPercentage(row.impressionShare, 1)}
                           {comparisonRow && (
-                            <div className={`text-xs ${
-                              row.impressionShare > comparisonRow.impressionShare ? 'text-green-600' : 
-                              row.impressionShare < comparisonRow.impressionShare ? 'text-red-600' : 'text-gray-500'
-                            }`}>
-                              {formatChange(row.impressionShare, comparisonRow.impressionShare)}
-                            </div>
+                            <ComparisonChange current={row.impressionShare} previous={comparisonRow.impressionShare} />
                           )}
                         </div>
                       </td>
@@ -422,12 +414,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                         <div>
                           {formatPercentage(row.clickShare, 1)}
                           {comparisonRow && (
-                            <div className={`text-xs ${
-                              row.clickShare > comparisonRow.clickShare ? 'text-green-600' : 
-                              row.clickShare < comparisonRow.clickShare ? 'text-red-600' : 'text-gray-500'
-                            }`}>
-                              {formatChange(row.clickShare, comparisonRow.clickShare)}
-                            </div>
+                            <ComparisonChange current={row.clickShare} previous={comparisonRow.clickShare} />
                           )}
                         </div>
                       </td>
@@ -436,12 +423,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                           <div>
                             {formatPercentage(row.cartAddShare, 1)}
                             {comparisonRow && comparisonRow.cartAddShare !== undefined && (
-                              <div className={`text-xs ${
-                                row.cartAddShare > comparisonRow.cartAddShare ? 'text-green-600' : 
-                                row.cartAddShare < comparisonRow.cartAddShare ? 'text-red-600' : 'text-gray-500'
-                              }`}>
-                                {formatChange(row.cartAddShare, comparisonRow.cartAddShare)}
-                              </div>
+                              <ComparisonChange current={row.cartAddShare} previous={comparisonRow.cartAddShare} />
                             )}
                           </div>
                         </td>
@@ -450,12 +432,7 @@ export function SearchQueryTable({ data, comparisonData, isLoading, error, onExp
                         <div>
                           {formatPercentage(row.purchaseShare, 1)}
                           {comparisonRow && (
-                            <div className={`text-xs ${
-                              row.purchaseShare > comparisonRow.purchaseShare ? 'text-green-600' : 
-                              row.purchaseShare < comparisonRow.purchaseShare ? 'text-red-600' : 'text-gray-500'
-                            }`}>
-                              {formatChange(row.purchaseShare, comparisonRow.purchaseShare)}
-                            </div>
+                            <ComparisonChange current={row.purchaseShare} previous={comparisonRow.purchaseShare} />
                           )}
                         </div>
                       </td>

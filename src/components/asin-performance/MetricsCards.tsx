@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { TrendingUp, TrendingDown, ShoppingCart, MousePointer, Package, Eye } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface MetricsData {
   totals: {
@@ -31,6 +32,8 @@ interface ComparisonData {
 interface MetricsCardsProps {
   data?: MetricsData
   comparisonData?: ComparisonData
+  dateRange?: { start: string; end: string }
+  comparisonDateRange?: { start: string; end: string }
   isLoading: boolean
   error: Error | null
 }
@@ -42,6 +45,7 @@ interface MetricCardProps {
   change?: number
   icon: React.ReactNode
   isLoading?: boolean
+  comparisonDateRange?: { start: string; end: string }
 }
 
 function formatNumber(num: number): string {
@@ -52,7 +56,11 @@ function formatPercentage(num: number, decimals: number = 2): string {
   return `${(num * 100).toFixed(decimals)}%`
 }
 
-function MetricCard({ title, value, subtext, change, icon, isLoading }: MetricCardProps) {
+function formatDateRange(start: string, end: string): string {
+  return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
+}
+
+function MetricCard({ title, value, subtext, change, icon, isLoading, comparisonDateRange }: MetricCardProps) {
   if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow p-6 animate-pulse" data-testid="metric-card-skeleton">
@@ -77,7 +85,10 @@ function MetricCard({ title, value, subtext, change, icon, isLoading }: MetricCa
           {icon}
         </div>
         {change !== undefined && (
-          <div className={`flex items-center space-x-1 text-sm font-medium ${changeColor}`}>
+          <div 
+            className={`flex items-center space-x-1 text-sm font-medium ${changeColor}`}
+            title={comparisonDateRange ? `vs ${formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}` : 'vs previous period'}
+          >
             {isPositive && (
               <>
                 <TrendingUp className="h-4 w-4" data-testid="trend-up" />
@@ -101,7 +112,7 @@ function MetricCard({ title, value, subtext, change, icon, isLoading }: MetricCa
   )
 }
 
-export function MetricsCards({ data, comparisonData, isLoading, error }: MetricsCardsProps) {
+export function MetricsCards({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error }: MetricsCardsProps) {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -151,6 +162,7 @@ export function MetricsCards({ data, comparisonData, isLoading, error }: Metrics
           key={metric.title}
           {...metric}
           isLoading={isLoading}
+          comparisonDateRange={comparisonDateRange}
         />
       ))}
     </div>

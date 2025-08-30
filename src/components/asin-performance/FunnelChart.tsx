@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { Eye, MousePointer, ShoppingCart, Package, TrendingUp, TrendingDown } from 'lucide-react'
+import { format } from 'date-fns'
 
 interface FunnelData {
   impressions: number
@@ -13,6 +14,8 @@ interface FunnelData {
 interface FunnelChartProps {
   data: FunnelData | null
   comparisonData?: FunnelData | null
+  dateRange?: { start: string; end: string }
+  comparisonDateRange?: { start: string; end: string }
   isLoading: boolean
   error: Error | null
 }
@@ -41,7 +44,11 @@ function calculatePercentageChange(current: number, previous: number): number {
   return previous > 0 ? (current - previous) / previous : 0
 }
 
-export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelChartProps) {
+function formatDateRange(start: string, end: string): string {
+  return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
+}
+
+export function FunnelChart({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error }: FunnelChartProps) {
 
   if (isLoading) {
     return (
@@ -134,6 +141,16 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
           <h3 className="text-lg font-semibold text-gray-900">Conversion Funnel</h3>
           <p className="text-sm text-gray-500 mt-1">
             Overall CVR: <span className="font-medium text-gray-900">{formatPercentage(overallCVR)}</span>
+            {dateRange && (
+              <span className="ml-4">
+                {formatDateRange(dateRange.start, dateRange.end)}
+                {comparisonDateRange && (
+                  <span className="ml-2 text-gray-400">
+                    vs {formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}
+                  </span>
+                )}
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -170,9 +187,12 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
                     {formatNumber(stage.value)}
                   </span>
                   {percentageChange !== null && (
-                    <div className={`flex items-center space-x-1 text-sm font-medium ${
-                      percentageChange > 0 ? 'text-green-600' : percentageChange < 0 ? 'text-red-600' : 'text-gray-500'
-                    }`}>
+                    <div 
+                      className={`flex items-center space-x-1 text-sm font-medium ${
+                        percentageChange > 0 ? 'text-green-600' : percentageChange < 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}
+                      title={comparisonDateRange ? `Compared to ${formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}` : 'Compared to previous period'}
+                    >
                       {percentageChange > 0 && (
                         <>
                           <TrendingUp className="h-4 w-4" />
@@ -227,6 +247,11 @@ export function FunnelChart({ data, comparisonData, isLoading, error }: FunnelCh
 
       {comparisonData && (
         <div className="mt-6 pt-6 border-t border-gray-200">
+          {comparisonDateRange && (
+            <p className="text-sm text-gray-500 mb-4 text-center">
+              Conversion rate changes vs {formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-4 text-sm">
             {conversionRates.map((rate, index) => {
               const currentRate = rate.value

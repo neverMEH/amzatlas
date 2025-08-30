@@ -232,6 +232,10 @@ export async function GET(request: NextRequest) {
         start: startDate,
         end: endDate,
       },
+      comparisonDateRange: compareStartDate && compareEndDate ? {
+        start: compareStartDate,
+        end: compareEndDate,
+      } : undefined,
       metrics,
       comparison,
       timeSeries,

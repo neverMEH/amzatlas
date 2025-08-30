@@ -29,6 +29,8 @@ interface TimeSeriesData {
 interface PerformanceChartProps {
   data: TimeSeriesData[]
   comparisonData?: TimeSeriesData[]
+  dateRange?: { start: string; end: string }
+  comparisonDateRange?: { start: string; end: string }
   isLoading: boolean
   error: Error | null
   chartType?: ChartType // Allow explicit chart type override
@@ -51,32 +53,83 @@ function formatDate(dateString: string): string {
   return format(new Date(dateString), 'MMM d, yyyy')
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+function formatDateRange(start: string, end: string): string {
+  return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
+}
+
+function getComparisonLabel(label: string, comparisonDateRange?: { start: string; end: string }): string {
+  if (comparisonDateRange) {
+    return `${label} (${formatDateRange(comparisonDateRange.start, comparisonDateRange.end)})`
+  }
+  return `${label} (Previous)`
+}
+
+const CustomTooltip = ({ active, payload, label, dateRange, comparisonDateRange }: any) => {
   if (active && payload && payload.length) {
+    // Group metrics by current and comparison
+    const currentMetrics = payload.filter((p: any) => !p.dataKey.endsWith('Comp'))
+    const comparisonMetrics = payload.filter((p: any) => p.dataKey.endsWith('Comp'))
+    
     return (
       <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
         <p className="text-sm font-medium text-gray-900 mb-2">{formatDate(label || '')}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center justify-between space-x-4 text-sm">
-            <span className="flex items-center space-x-1">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-gray-600">{entry.name}:</span>
-            </span>
-            <span className="font-medium text-gray-900">
-              {formatNumber(entry.value as number)}
-            </span>
+        
+        {/* Current period metrics */}
+        {currentMetrics.length > 0 && (
+          <div className="mb-2">
+            {dateRange && (
+              <p className="text-xs text-gray-500 mb-1">
+                Current: {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
+              </p>
+            )}
+            {currentMetrics.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center justify-between space-x-4 text-sm">
+                <span className="flex items-center space-x-1">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-gray-600">{entry.name}:</span>
+                </span>
+                <span className="font-medium text-gray-900">
+                  {formatNumber(entry.value as number)}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
+        
+        {/* Comparison period metrics */}
+        {comparisonMetrics.length > 0 && (
+          <div className="pt-2 border-t border-gray-100">
+            {comparisonDateRange && (
+              <p className="text-xs text-gray-500 mb-1">
+                Comparison: {formatDate(comparisonDateRange.start)} - {formatDate(comparisonDateRange.end)}
+              </p>
+            )}
+            {comparisonMetrics.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center justify-between space-x-4 text-sm">
+                <span className="flex items-center space-x-1">
+                  <div 
+                    className="w-3 h-3 rounded-full" 
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-gray-600">{entry.name}:</span>
+                </span>
+                <span className="font-medium text-gray-900">
+                  {formatNumber(entry.value as number)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
   return null
 }
 
-export function PerformanceChart({ data, comparisonData, isLoading, error, chartType }: PerformanceChartProps) {
+export function PerformanceChart({ data, comparisonData, dateRange, comparisonDateRange, isLoading, error, chartType }: PerformanceChartProps) {
   const [selectedMetric, setSelectedMetric] = useState<MetricType>('impressions')
   
   // Determine chart type based on data length if not explicitly provided
@@ -174,7 +227,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error, chart
                 <Bar
                   key={`${key}Comp`}
                   dataKey={`${key}Comp`}
-                  name={`${config.label} (Previous)`}
+                  name={getComparisonLabel(config.label, comparisonDateRange)}
                   fill={config.color}
                   opacity={0.5}
                   yAxisId={config.yAxisId}
@@ -229,7 +282,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error, chart
                   key={`${key}Comp`}
                   type="monotone"
                   dataKey={`${key}Comp`}
-                  name={`${config.label} (Previous)`}
+                  name={getComparisonLabel(config.label, comparisonDateRange)}
                   stroke={config.color}
                   strokeWidth={2}
                   strokeDasharray="5 5"
@@ -276,7 +329,14 @@ export function PerformanceChart({ data, comparisonData, isLoading, error, chart
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Performance Trends</h3>
-          <p className="text-sm text-gray-500">Weekly aggregated data</p>
+          <p className="text-sm text-gray-500">
+            {dateRange ? formatDateRange(dateRange.start, dateRange.end) : 'Weekly aggregated data'}
+            {comparisonDateRange && (
+              <span className="ml-2 text-gray-400">
+                vs {formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}
+              </span>
+            )}
+          </p>
         </div>
       </div>
 
@@ -326,7 +386,7 @@ export function PerformanceChart({ data, comparisonData, isLoading, error, chart
                   tickFormatter={(value) => formatNumber(value)}
                 />
               )}
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={(props: any) => <CustomTooltip {...props} dateRange={dateRange} comparisonDateRange={comparisonDateRange} />} />
               <Legend 
                 wrapperStyle={{ paddingTop: '1rem' }}
                 iconType="square"

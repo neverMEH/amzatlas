@@ -14,6 +14,10 @@ export interface ASINPerformanceData {
     start: string
     end: string
   }
+  comparisonDateRange?: {
+    start: string
+    end: string
+  }
   metrics: {
     totals: {
       impressions: number

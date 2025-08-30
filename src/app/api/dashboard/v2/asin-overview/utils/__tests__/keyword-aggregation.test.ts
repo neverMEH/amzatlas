@@ -294,6 +294,7 @@ describe('Keyword Aggregation Utilities', () => {
           purchase_rate: 0.2,
           impression_share: 0.2,
           click_share: 0.25,
+          cart_add_share: 0.15,
           purchase_share: 0.3,
         },
       ]
