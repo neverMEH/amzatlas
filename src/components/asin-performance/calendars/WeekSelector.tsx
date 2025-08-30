@@ -28,6 +28,8 @@ interface WeekSelectorProps {
   onSelect: (range: DateRange) => void
   maxDate?: string
   availableWeeks?: string[]
+  compareStart?: string
+  compareEnd?: string
 }
 
 export function WeekSelector({
@@ -36,6 +38,8 @@ export function WeekSelector({
   onSelect,
   maxDate,
   availableWeeks = [],
+  compareStart,
+  compareEnd,
 }: WeekSelectorProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const selected = parseISO(selectedStart)
@@ -44,6 +48,8 @@ export function WeekSelector({
 
   const selectedStartDate = parseISO(selectedStart)
   const maxDateParsed = maxDate ? parseISO(maxDate) : null
+  const compareStartDate = compareStart ? parseISO(compareStart) : null
+  const compareEndDate = compareEnd ? parseISO(compareEnd) : null
 
   const handlePreviousMonth = () => {
     setCurrentMonth(subMonths(currentMonth, 1))
@@ -107,6 +113,11 @@ export function WeekSelector({
     return isSameWeek(date, selectedStartDate, { weekStartsOn: 0 })
   }
 
+  const isWeekInComparison = (date: Date) => {
+    if (!compareStartDate || !compareEndDate) return false
+    return isSameWeek(date, compareStartDate, { weekStartsOn: 0 })
+  }
+
   const hasAvailableData = (date: Date) => {
     const weekStart = format(startOfWeek(date, { weekStartsOn: 0 }), 'yyyy-MM-dd')
     return availableWeeks.includes(weekStart)
@@ -157,6 +168,7 @@ export function WeekSelector({
             const weekNumber = getWeek(week[0], { weekStartsOn: 0 })
             const isWeekDisabled = week.every(day => isDateDisabled(day))
             const isCurrentWeek = week.some(day => isWeekSelected(day))
+            const isComparisonWeek = week.some(day => isWeekInComparison(day))
             
             return (
               <React.Fragment key={weekIndex}>
@@ -169,6 +181,7 @@ export function WeekSelector({
                 {week.map((day, dayIndex) => {
                   const isDisabled = isDateDisabled(day)
                   const isSelected = isWeekSelected(day)
+                  const isInComparison = isWeekInComparison(day)
                   const isCurrentMonth = isSameMonth(day, currentMonth)
                   const isTodayDate = isToday(day)
                   const hasData = hasAvailableData(day)
@@ -185,7 +198,9 @@ export function WeekSelector({
                         ${dayIndex === 0 ? 'border-l' : ''}
                         ${weekIndex === 0 ? 'border-t' : ''}
                         ${isCurrentWeek && !isDisabled ? 'bg-blue-100' : ''}
+                        ${isComparisonWeek && !isDisabled && !isCurrentWeek ? 'bg-purple-50' : ''}
                         ${isSelected && !isDisabled ? 'bg-blue-100' : ''}
+                        ${isInComparison && !isDisabled && !isSelected ? 'bg-purple-50' : ''}
                         ${!isCurrentMonth ? 'text-gray-400' : ''}
                         ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}
                         ${isTodayDate ? 'font-semibold' : ''}
@@ -223,6 +238,20 @@ export function WeekSelector({
           Today
         </button>
       </div>
+
+      {/* Legend */}
+      {(compareStart || compareEnd) && (
+        <div className="mt-4 flex items-center justify-center space-x-4 text-xs text-gray-600">
+          <div className="flex items-center space-x-1">
+            <div className="w-4 h-4 bg-blue-100 rounded border border-gray-300"></div>
+            <span>Selected period</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-4 h-4 bg-purple-50 rounded border border-gray-300"></div>
+            <span>Comparison period</span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Calendar, CalendarDays, CalendarRange, CalendarClock } from 'lucide-react'
+import { Calendar, CalendarDays, CalendarRange, CalendarClock, SlidersHorizontal } from 'lucide-react'
 import { PeriodType } from './types'
 
 interface PeriodTypeSelectorProps {
@@ -37,6 +37,11 @@ export function PeriodTypeSelector({ value, onChange, className = '' }: PeriodTy
       value: 'year',
       label: 'Year',
       icon: <CalendarClock className="h-4 w-4" data-testid="year-icon" />,
+    },
+    {
+      value: 'custom',
+      label: 'Custom',
+      icon: <SlidersHorizontal className="h-4 w-4" data-testid="custom-icon" />,
     },
   ]
 

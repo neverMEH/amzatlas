@@ -1,4 +1,4 @@
-export type PeriodType = 'week' | 'month' | 'quarter' | 'year'
+export type PeriodType = 'week' | 'month' | 'quarter' | 'year' | 'custom'
 
 export interface DateRange {
   startDate: string

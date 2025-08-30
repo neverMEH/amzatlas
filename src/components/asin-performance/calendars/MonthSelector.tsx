@@ -22,6 +22,8 @@ interface MonthSelectorProps {
   onSelect: (range: DateRange) => void
   maxDate?: string
   availableMonths?: string[]
+  compareStart?: string
+  compareEnd?: string
 }
 
 const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -32,6 +34,8 @@ export function MonthSelector({
   onSelect,
   maxDate,
   availableMonths = [],
+  compareStart,
+  compareEnd,
 }: MonthSelectorProps) {
   const selectedDate = parseISO(selectedStart)
   const currentYear = isValid(selectedDate) ? getYear(selectedDate) : new Date().getFullYear()
@@ -42,6 +46,9 @@ export function MonthSelector({
   const [yearInputValue, setYearInputValue] = useState(displayYear.toString())
   
   const maxDateParsed = maxDate ? parseISO(maxDate) : null
+  const compareDate = compareStart ? parseISO(compareStart) : null
+  const compareYear = compareDate && isValid(compareDate) ? getYear(compareDate) : null
+  const compareMonth = compareDate && isValid(compareDate) ? getMonth(compareDate) : null
 
   const handlePreviousYear = () => {
     setDisplayYear(displayYear - 1)
@@ -86,6 +93,10 @@ export function MonthSelector({
 
   const isMonthSelected = (monthIndex: number) => {
     return displayYear === currentYear && monthIndex === currentMonth
+  }
+
+  const isMonthInComparison = (monthIndex: number) => {
+    return displayYear === compareYear && monthIndex === compareMonth
   }
 
   const hasAvailableData = (monthIndex: number) => {
@@ -167,6 +178,7 @@ export function MonthSelector({
         {monthNames.map((monthName, index) => {
           const isDisabled = isMonthDisabled(index)
           const isSelected = isMonthSelected(index)
+          const isInComparison = isMonthInComparison(index)
           const hasData = hasAvailableData(index)
           const isCurrentYearMonth = displayYear === new Date().getFullYear() && index === new Date().getMonth()
           
@@ -178,7 +190,8 @@ export function MonthSelector({
               className={`
                 relative py-3 px-4 rounded-lg font-medium transition-all
                 ${isSelected ? 'bg-blue-600 text-white shadow-sm' : ''}
-                ${!isSelected && !isDisabled ? 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300' : ''}
+                ${isInComparison && !isSelected ? 'bg-purple-100 text-purple-900 border-purple-300' : ''}
+                ${!isSelected && !isInComparison && !isDisabled ? 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300' : ''}
                 ${isDisabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : ''}
               `}
             >
