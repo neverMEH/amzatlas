@@ -98,14 +98,13 @@ export function calculateComparisonPeriod({
 function calculatePreviousPeriod(start: Date, end: Date, periodType: PeriodType): DateRange {
   switch (periodType) {
     case 'week': {
-      // Calculate the number of weeks in the selection
-      const weekCount = differenceInCalendarWeeks(end, start) + 1
-      const newEnd = subWeeks(start, 1)
-      const newStart = subWeeks(start, weekCount)
+      // For week period, simply go back one week
+      const newStart = subWeeks(start, 1)
+      const newEnd = subWeeks(end, 1)
       
       return {
-        startDate: format(startOfWeek(newStart, { weekStartsOn: 0 }), 'yyyy-MM-dd'),
-        endDate: format(endOfWeek(newEnd, { weekStartsOn: 0 }), 'yyyy-MM-dd'),
+        startDate: format(newStart, 'yyyy-MM-dd'),
+        endDate: format(newEnd, 'yyyy-MM-dd'),
       }
     }
     
@@ -154,19 +153,9 @@ function calculatePreviousPeriod(start: Date, end: Date, periodType: PeriodType)
 function calculateYearOverYear(start: Date, end: Date, periodType: PeriodType): DateRange {
   switch (periodType) {
     case 'week': {
-      // Get the same week number in the previous year
-      const weekNum = getWeek(start, { weekStartsOn: 0 })
-      const prevYear = getYear(start) - 1
-      
-      // Find the start of the same week number in previous year
-      let date = new Date(prevYear, 0, 1)
-      while (getWeek(date, { weekStartsOn: 0 }) !== weekNum) {
-        date = addWeeks(date, 1)
-      }
-      
-      const newStart = startOfWeek(date, { weekStartsOn: 0 })
-      const weekCount = differenceInCalendarWeeks(end, start)
-      const newEnd = endOfWeek(addWeeks(newStart, weekCount), { weekStartsOn: 0 })
+      // For year-over-year comparison, go back exactly 52 weeks
+      const newStart = subWeeks(start, 52)
+      const newEnd = subWeeks(end, 52)
       
       return {
         startDate: format(newStart, 'yyyy-MM-dd'),
@@ -212,6 +201,7 @@ function calculateYearOverYear(start: Date, end: Date, periodType: PeriodType): 
 function calculatePeriodOffset(start: Date, end: Date, periodType: PeriodType, offset: number): DateRange {
   switch (periodType) {
     case 'week': {
+      // Maintain exact week duration
       const newStart = subWeeks(start, offset)
       const newEnd = subWeeks(end, offset)
       return {
@@ -262,6 +252,7 @@ function calculatePeriodOffset(start: Date, end: Date, periodType: PeriodType, o
 function calculateCustomPeriod(start: Date, end: Date, periodType: PeriodType, offset: number): DateRange {
   switch (periodType) {
     case 'week': {
+      // Maintain exact duration when going back by offset weeks
       const newStart = subWeeks(start, offset)
       const newEnd = subWeeks(end, offset)
       return {
