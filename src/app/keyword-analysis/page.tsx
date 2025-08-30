@@ -92,14 +92,20 @@ export default function KeywordAnalysisPage() {
     useKeywordComparison(comparisonParams)
 
   // Handle date range changes
-  const handleDateRangeChange = (range: { startDate: string; endDate: string; compareRange?: { startDate: string; endDate: string } }) => {
+  const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
     
-    if (range.compareRange) {
-      params.set('compareStartDate', range.compareRange.startDate)
-      params.set('compareEndDate', range.compareRange.endDate)
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const handleCompareRangeChange = (range: { startDate: string; endDate: string; enabled: boolean }) => {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (range.enabled && range.startDate && range.endDate) {
+      params.set('compareStartDate', range.startDate)
+      params.set('compareEndDate', range.endDate)
     } else {
       params.delete('compareStartDate')
       params.delete('compareEndDate')
@@ -283,10 +289,11 @@ export default function KeywordAnalysisPage() {
           <DateRangePickerV2
             startDate={startDate}
             endDate={endDate}
+            onChange={handleDateRangeChange}
+            showComparison={viewMode === 'single'}
             compareStartDate={compareStartDate || undefined}
             compareEndDate={compareEndDate || undefined}
-            onDateRangeChange={handleDateRangeChange}
-            enableComparison={viewMode === 'single'}
+            onCompareChange={handleCompareRangeChange}
           />
         </div>
 
@@ -332,15 +339,20 @@ export default function KeywordAnalysisPage() {
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h2>
               <KeywordPerformanceChart
-                data={performanceData.timeSeries}
-                comparisonData={performanceData.comparisonTimeSeries}
+                data={performanceData.timeSeries.map(point => ({
+                  ...point,
+                  clickRate: point.ctr,
+                  cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                  purchaseRate: point.cvr,
+                }))}
+                comparisonData={performanceData.comparisonTimeSeries?.map(point => ({
+                  ...point,
+                  clickRate: point.ctr,
+                  cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                  purchaseRate: point.cvr,
+                }))}
                 keyword={singleKeyword!}
                 dateRange={{ start: startDate, end: endDate }}
-                comparisonDateRange={
-                  compareStartDate && compareEndDate
-                    ? { start: compareStartDate, end: compareEndDate }
-                    : undefined
-                }
                 isLoading={false}
                 error={null}
               />
@@ -353,11 +365,6 @@ export default function KeywordAnalysisPage() {
                 comparisonData={performanceData.comparisonFunnelData}
                 keyword={singleKeyword!}
                 dateRange={{ start: startDate, end: endDate }}
-                comparisonDateRange={
-                  compareStartDate && compareEndDate
-                    ? { start: compareStartDate, end: compareEndDate }
-                    : undefined
-                }
                 isLoading={false}
                 error={null}
               />

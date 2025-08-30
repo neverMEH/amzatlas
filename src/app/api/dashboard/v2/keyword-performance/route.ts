@@ -137,7 +137,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform time series data
-    const timeSeries = (timeSeriesData || []).map(row => ({
+    const timeSeries = (timeSeriesData || []).map((row: any) => ({
       date: row.start_date,
       impressions: row.impressions || 0,
       clicks: row.clicks || 0,
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     if (funnelError || !funnelRpcData || funnelRpcData.length === 0) {
       console.error('Error fetching funnel data:', funnelError)
       // Use calculated totals as fallback
-      funnelData = timeSeries.reduce((acc, row) => ({
+      funnelData = timeSeries.reduce((acc: any, row: any) => ({
         impressions: acc.impressions + row.impressions,
         clicks: acc.clicks + row.clicks,
         cartAdds: acc.cartAdds + row.cartAdds,
@@ -183,14 +183,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate total market metrics
-    const totalMarket = (marketShareData || []).reduce((acc, row) => ({
+    const totalMarket = (marketShareData || []).reduce((acc: any, row: any) => ({
       impressions: acc.impressions + (row.impressions || 0),
       clicks: acc.clicks + (row.clicks || 0),
       purchases: acc.purchases + (row.purchases || 0),
     }), { impressions: 0, clicks: 0, purchases: 0 })
 
     // Transform market share data
-    const competitors = (marketShareData || []).map(row => ({
+    const competitors = (marketShareData || []).map((row: any) => ({
       asin: row.asin,
       brand: row.brand || 'Unknown',
       title: row.title || 'Unknown Product',
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
         .order('start_date', { ascending: true })
 
       if (comparisonTimeSeriesData) {
-        response.comparisonTimeSeries = comparisonTimeSeriesData.map(row => ({
+        response.comparisonTimeSeries = comparisonTimeSeriesData.map((row: any) => ({
           date: row.start_date,
           impressions: row.impressions || 0,
           clicks: row.clicks || 0,
@@ -259,7 +259,7 @@ export async function GET(request: NextRequest) {
         })
 
       if (comparisonMarketShareData) {
-        const comparisonTotalMarket = comparisonMarketShareData.reduce((acc, row) => ({
+        const comparisonTotalMarket = comparisonMarketShareData.reduce((acc: any, row: any) => ({
           impressions: acc.impressions + (row.impressions || 0),
           clicks: acc.clicks + (row.clicks || 0),
           purchases: acc.purchases + (row.purchases || 0),
@@ -267,7 +267,7 @@ export async function GET(request: NextRequest) {
 
         response.comparisonMarketShare = {
           totalMarket: comparisonTotalMarket,
-          competitors: comparisonMarketShareData.map(row => ({
+          competitors: comparisonMarketShareData.map((row: any) => ({
             asin: row.asin,
             brand: row.brand || 'Unknown',
             title: row.title || 'Unknown Product',

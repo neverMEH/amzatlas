@@ -198,12 +198,12 @@ export default function Dashboard() {
           keyword={selectedKeyword}
           asin={selectedASIN}
           dateRange={{
-            startDate: dateRange.startDate,
-            endDate: dateRange.endDate,
+            start: dateRange.startDate,
+            end: dateRange.endDate,
           }}
-          compareRange={compareRange.enabled ? {
-            startDate: compareRange.startDate,
-            endDate: compareRange.endDate,
+          comparisonDateRange={compareRange.enabled ? {
+            start: compareRange.startDate,
+            end: compareRange.endDate,
           } : undefined}
         />
       )}

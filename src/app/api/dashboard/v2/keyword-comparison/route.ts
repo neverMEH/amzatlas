@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     const timeSeriesMap = new Map<string, any>()
     
     if (timeSeriesData) {
-      timeSeriesData.forEach(row => {
+      timeSeriesData.forEach((row: any) => {
         const date = row.start_date
         if (!timeSeriesMap.has(date)) {
           timeSeriesMap.set(date, { date })
