@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePickerV2 } from '@/components/asin-performance/DateRangePickerV2'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
 import { PerformanceChart } from '@/components/asin-performance/PerformanceChart'
 import { FunnelChart } from '@/components/asin-performance/FunnelChart'
-import { SearchQueryTable } from '@/components/asin-performance/SearchQueryTable'
+import { SearchQueryTable, SearchQueryData } from '@/components/asin-performance/SearchQueryTable'
+import { KeywordAnalysisModal } from '@/components/asin-performance/KeywordAnalysisModal'
 import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
+  const router = useRouter()
   const [selectedASIN, setSelectedASIN] = useState<string>('')
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -20,6 +23,8 @@ export default function Dashboard() {
     endDate: '',
     enabled: false,
   })
+  const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null)
+  const [keywordModalOpen, setKeywordModalOpen] = useState(false)
 
   // Fetch performance data
   const { data, isLoading, error } = useASINPerformance(
@@ -29,6 +34,40 @@ export default function Dashboard() {
     compareRange.enabled ? compareRange.startDate : undefined,
     compareRange.enabled ? compareRange.endDate : undefined
   )
+
+  const handleKeywordClick = (keyword: string, rowData?: SearchQueryData) => {
+    setSelectedKeyword(keyword)
+    setKeywordModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setKeywordModalOpen(false)
+    // Keep the keyword selected for a moment to prevent flicker
+    setTimeout(() => setSelectedKeyword(null), 300)
+  }
+
+  const handleExpandModal = () => {
+    if (!selectedKeyword || !selectedASIN) return
+    
+    // Build URL parameters
+    const params = new URLSearchParams({
+      asin: selectedASIN,
+      keyword: selectedKeyword,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+    })
+    
+    if (compareRange.enabled && compareRange.startDate && compareRange.endDate) {
+      params.append('compareStartDate', compareRange.startDate)
+      params.append('compareEndDate', compareRange.endDate)
+    }
+    
+    // Navigate to keyword analysis page
+    router.push(`/keyword-analysis?${params.toString()}`)
+    
+    // Close modal
+    setKeywordModalOpen(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -143,11 +182,31 @@ export default function Dashboard() {
                 comparisonDateRange={data?.comparisonDateRange}
                 isLoading={isLoading}
                 error={error as Error | null}
+                onKeywordClick={handleKeywordClick}
               />
             </section>
           </div>
         )}
       </main>
+
+      {/* Keyword Analysis Modal */}
+      {selectedKeyword && (
+        <KeywordAnalysisModal
+          isOpen={keywordModalOpen}
+          onClose={handleCloseModal}
+          onExpand={handleExpandModal}
+          keyword={selectedKeyword}
+          asin={selectedASIN}
+          dateRange={{
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+          }}
+          compareRange={compareRange.enabled ? {
+            startDate: compareRange.startDate,
+            endDate: compareRange.endDate,
+          } : undefined}
+        />
+      )}
     </div>
   )
 }

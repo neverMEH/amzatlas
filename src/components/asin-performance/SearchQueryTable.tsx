@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { ChevronUp, ChevronDown, Search, Download, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 
-interface SearchQueryData {
+export interface SearchQueryData {
   searchQuery: string
   impressions: number
   clicks: number
