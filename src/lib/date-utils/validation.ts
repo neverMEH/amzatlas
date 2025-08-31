@@ -56,6 +56,19 @@ export function isOverlapping(range1: DateRange, range2: DateRange): boolean {
   const start2 = parseISO(range2.start)
   const end2 = parseISO(range2.end)
   
+  // Allow adjacent periods (where one ends the day before the other starts)
+  // Check if range2 ends exactly one day before range1 starts
+  const daysBetweenEnd2Start1 = differenceInDays(start1, end2)
+  if (daysBetweenEnd2Start1 === 1) {
+    return false // Adjacent periods are OK (range2 before range1)
+  }
+  
+  // Check if range1 ends exactly one day before range2 starts
+  const daysBetweenEnd1Start2 = differenceInDays(start2, end1)
+  if (daysBetweenEnd1Start2 === 1) {
+    return false // Adjacent periods are OK (range1 before range2)
+  }
+  
   // Check if range1 starts during range2
   if ((isAfter(start1, start2) || isEqual(start1, start2)) && 
       (isBefore(start1, end2) || isEqual(start1, end2))) {

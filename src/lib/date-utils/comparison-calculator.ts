@@ -100,8 +100,12 @@ function calculateDailyComparison(range: DateRange): ComparisonPeriod {
 
 function calculateWeeklyComparison(range: DateRange): ComparisonPeriod {
   const start = parseISO(range.start)
-  const comparisonStart = subWeeks(start, 1)
+  const end = parseISO(range.end)
+  const duration = differenceInDays(end, start)
+  
+  // Calculate the same duration period immediately before
   const comparisonEnd = subDays(start, 1)
+  const comparisonStart = subDays(start, duration + 1)
 
   return {
     start: format(comparisonStart, 'yyyy-MM-dd'),
