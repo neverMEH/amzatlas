@@ -266,6 +266,8 @@ export function KeywordAnalysisModal({
                     comparisonData={data?.comparisonMarketShare}
                     keyword={keyword}
                     asin={asin}
+                    isLoading={false}
+                    error={null}
                   />
                 </div>
               </div>
