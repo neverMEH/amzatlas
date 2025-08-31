@@ -155,8 +155,8 @@ export async function GET(request: NextRequest) {
       
       if (allAsinData && allAsinData.length > 0) {
         // Sum impressions for this ASIN and total market
-        const asinImpressions = allAsinData.reduce((sum, row) => sum + (row.asin_impression_count || 0), 0)
-        const totalImpressions = allAsinData.reduce((sum, row) => sum + (row.total_query_impression_count || 0), 0)
+        const asinImpressions = allAsinData.reduce((sum: number, row: any) => sum + (row.asin_impression_count || 0), 0)
+        const totalImpressions = allAsinData.reduce((sum: number, row: any) => sum + (row.total_query_impression_count || 0), 0)
         
         // Calculate impression share
         marketShare[keyword] = totalImpressions > 0 ? asinImpressions / totalImpressions : 0
