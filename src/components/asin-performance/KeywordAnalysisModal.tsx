@@ -252,6 +252,9 @@ export function KeywordAnalysisModal({
                     comparisonData={data?.comparisonFunnelData}
                     keyword={keyword}
                     dateRange={dateRange}
+                    comparisonDateRange={comparisonDateRange}
+                    isLoading={false}
+                    error={null}
                   />
                 </div>
 
