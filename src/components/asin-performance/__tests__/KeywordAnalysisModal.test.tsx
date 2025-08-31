@@ -10,6 +10,31 @@ vi.mock('react-dom', () => ({
   createPortal: (node: React.ReactNode) => node,
 }))
 
+// Mock the API hook
+const mockUseKeywordPerformance = vi.fn()
+vi.mock('@/lib/api/keyword-analysis', () => ({
+  useKeywordPerformance: (params: any) => mockUseKeywordPerformance(params),
+}))
+
+// Mock the chart components
+vi.mock('../KeywordPerformanceChart', () => ({
+  KeywordPerformanceChart: ({ keyword }: any) => (
+    <div data-testid="keyword-performance-chart">Performance Chart for {keyword}</div>
+  ),
+}))
+
+vi.mock('../KeywordFunnelChart', () => ({
+  KeywordFunnelChart: ({ keyword }: any) => (
+    <div data-testid="keyword-funnel-chart">Funnel Chart for {keyword}</div>
+  ),
+}))
+
+vi.mock('../KeywordMarketShare', () => ({
+  KeywordMarketShare: ({ keyword }: any) => (
+    <div data-testid="keyword-market-share">Market Share for {keyword}</div>
+  ),
+}))
+
 const mockKeywordData = {
   searchQuery: 'knife sharpener',
   impressions: 15000,
@@ -31,6 +56,12 @@ describe('KeywordAnalysisModal', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Default mock implementation
+    mockUseKeywordPerformance.mockImplementation(() => ({
+      data: null,
+      isLoading: false,
+      error: null,
+    }))
   })
 
   afterEach(() => {
@@ -382,5 +413,193 @@ describe('KeywordAnalysisModal', () => {
     )
 
     expect(document.body.style.overflow).not.toBe('hidden')
+  })
+
+  describe('Data Loading and Chart Rendering', () => {
+    const mockPerformanceData = {
+      timeSeries: [
+        { date: '2024-01-01', impressions: 1000, clicks: 50, cartAdds: 15, purchases: 7, ctr: 0.05, cvr: 0.007 },
+        { date: '2024-01-02', impressions: 1200, clicks: 60, cartAdds: 18, purchases: 9, ctr: 0.05, cvr: 0.0075 },
+      ],
+      funnelData: { impressions: 10000, clicks: 500, cartAdds: 150, purchases: 75 },
+      marketShare: {
+        totalMarket: { impressions: 50000, clicks: 2500, purchases: 375 },
+        competitors: [
+          { asin: 'B002', brand: 'Brand B', title: 'Product B', impressionShare: 0.3, clickShare: 0.25, purchaseShare: 0.2 }
+        ]
+      }
+    }
+
+    it('displays loading state while fetching data', () => {
+      mockUseKeywordPerformance.mockImplementation(() => ({
+        data: null,
+        isLoading: true,
+        error: null,
+      }))
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      expect(screen.getByTestId('modal-skeleton')).toBeInTheDocument()
+    })
+
+    it('displays error state when data fetch fails', () => {
+      mockUseKeywordPerformance.mockImplementation(() => ({
+        data: null,
+        isLoading: false,
+        error: new Error('Failed to fetch data'),
+      }))
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      expect(screen.getByText('Error loading keyword data')).toBeInTheDocument()
+      expect(screen.getByText('Failed to fetch data')).toBeInTheDocument()
+    })
+
+    it('renders all chart components when data is loaded', () => {
+      mockUseKeywordPerformance.mockImplementation(() => ({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      }))
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      // Check that all charts are rendered
+      expect(screen.getByTestId('keyword-performance-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('keyword-funnel-chart')).toBeInTheDocument()
+      expect(screen.getByTestId('keyword-market-share')).toBeInTheDocument()
+
+      // Check section headers
+      expect(screen.getByText('Performance Trends')).toBeInTheDocument()
+      expect(screen.getByText('Conversion Funnel')).toBeInTheDocument()
+      expect(screen.getByText('Market Share')).toBeInTheDocument()
+
+      // Check the compare keywords prompt
+      expect(screen.getByText('Want to compare multiple keywords?')).toBeInTheDocument()
+      expect(screen.getByText('Open Full Analysis')).toBeInTheDocument()
+    })
+
+    it('calls onExpand when Open Full Analysis button is clicked', async () => {
+      const user = userEvent.setup()
+      
+      mockUseKeywordPerformance.mockImplementation(() => ({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      }))
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      const expandButton = screen.getByText('Open Full Analysis')
+      await user.click(expandButton)
+
+      expect(mockOnExpand).toHaveBeenCalledTimes(1)
+    })
+
+    it('fetches data only when modal is open', () => {
+      const { rerender } = render(
+        <KeywordAnalysisModal
+          isOpen={false}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      // Should not fetch when closed
+      expect(mockUseKeywordPerformance).toHaveBeenCalledWith(null)
+
+      // Reset mock
+      mockUseKeywordPerformance.mockClear()
+
+      // Open modal
+      rerender(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      // Should fetch when opened
+      expect(mockUseKeywordPerformance).toHaveBeenCalledWith({
+        asin: 'B001CZKJYA',
+        keyword: 'knife sharpener',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        compareStartDate: undefined,
+        compareEndDate: undefined,
+      })
+    })
+
+    it('passes comparison dates when provided', () => {
+      mockUseKeywordPerformance.mockImplementation(() => ({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      }))
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+          comparisonDateRange={{ start: '2023-12-01', end: '2023-12-31' }}
+        />
+      )
+
+      expect(mockUseKeywordPerformance).toHaveBeenCalledWith({
+        asin: 'B001CZKJYA',
+        keyword: 'knife sharpener',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        compareStartDate: '2023-12-01',
+        compareEndDate: '2023-12-31',
+      })
+    })
   })
 })

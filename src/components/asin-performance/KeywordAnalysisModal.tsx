@@ -4,6 +4,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ExternalLink, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
+import { useKeywordPerformance } from '@/lib/api/keyword-analysis'
+import { KeywordPerformanceChart } from './KeywordPerformanceChart'
+import { KeywordFunnelChart } from './KeywordFunnelChart'
+import { KeywordMarketShare } from './KeywordMarketShare'
 
 interface KeywordAnalysisModalProps {
   isOpen: boolean
@@ -29,8 +33,8 @@ export function KeywordAnalysisModal({
   asin,
   dateRange,
   comparisonDateRange,
-  isLoading = false,
-  error = null,
+  isLoading: propIsLoading = false,
+  error: propError = null,
 }: KeywordAnalysisModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -38,6 +42,21 @@ export function KeywordAnalysisModal({
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const expandButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Fetch keyword performance data
+  const { data, isLoading: dataLoading, error: dataError } = useKeywordPerformance(
+    isOpen ? {
+      asin,
+      keyword,
+      startDate: dateRange.start,
+      endDate: dateRange.end,
+      compareStartDate: comparisonDateRange?.start,
+      compareEndDate: comparisonDateRange?.end,
+    } : null
+  )
+
+  const isLoading = propIsLoading || dataLoading
+  const error = propError || dataError
 
   // Handle open/close with animation
   useEffect(() => {
@@ -201,25 +220,63 @@ export function KeywordAnalysisModal({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Placeholder for charts and data */}
-              <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-                <p className="text-lg font-medium mb-2">Performance Charts</p>
-                <p className="text-sm">Time series charts and metrics will be displayed here</p>
+              {/* Performance Chart */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
+                <div className="h-64">
+                  <KeywordPerformanceChart
+                    data={data?.timeSeries.map(point => ({
+                      ...point,
+                      clickRate: point.ctr,
+                      cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                      purchaseRate: point.cvr,
+                    })) || []}
+                    comparisonData={data?.comparisonTimeSeries?.map(point => ({
+                      ...point,
+                      clickRate: point.ctr,
+                      cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                      purchaseRate: point.cvr,
+                    }))}
+                    keyword={keyword}
+                    dateRange={dateRange}
+                  />
+                </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-                <p className="text-lg font-medium mb-2">Conversion Funnel</p>
-                <p className="text-sm">Keyword-specific funnel visualization will be displayed here</p>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Funnel Chart */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Funnel</h3>
+                  <KeywordFunnelChart
+                    data={data?.funnelData || { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }}
+                    comparisonData={data?.comparisonFunnelData}
+                    keyword={keyword}
+                    dateRange={dateRange}
+                  />
+                </div>
+
+                {/* Market Share */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Share</h3>
+                  <KeywordMarketShare
+                    data={data?.marketShare || { totalMarket: { impressions: 0, clicks: 0, purchases: 0 }, competitors: [] }}
+                    comparisonData={data?.comparisonMarketShare}
+                    keyword={keyword}
+                    asin={asin}
+                  />
+                </div>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-                <p className="text-lg font-medium mb-2">Market Share Analysis</p>
-                <p className="text-sm">Competitive analysis for this keyword will be displayed here</p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-8 text-center text-gray-500">
-                <p className="text-lg font-medium mb-2">Multi-Keyword Comparison</p>
-                <p className="text-sm">Select up to 10 keywords for comparison</p>
+              {/* Compare Keywords Button */}
+              <div className="bg-blue-50 rounded-lg p-6 text-center">
+                <p className="text-gray-700 mb-3">Want to compare multiple keywords?</p>
+                <button
+                  onClick={onExpand}
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Open Full Analysis
+                </button>
               </div>
             </div>
           )}
