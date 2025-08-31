@@ -944,9 +944,154 @@ describe('SearchQueryTable', () => {
       const keywordCell = screen.getByText('knife sharpener')
       
       // Check that it has clickable styling classes
-      expect(keywordCell).toHaveClass('cursor-pointer')
       expect(keywordCell).toHaveClass('hover:text-blue-600')
       expect(keywordCell).toHaveClass('hover:underline')
+      
+      // Check that the row has cursor pointer
+      const keywordRow = keywordCell.closest('tr')
+      expect(keywordRow).toHaveClass('cursor-pointer')
+    })
+
+    it('makes entire row clickable, not just the keyword text', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Get the row containing the keyword
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Click on different parts of the row
+      // Click on impressions cell in the same row
+      const impressionsCell = keywordRow?.querySelector('td:nth-child(2)')
+      await user.click(impressionsCell!)
+
+      expect(onKeywordClick).toHaveBeenCalledTimes(1)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+
+      // Click on CTR cell in the same row
+      const ctrCell = keywordRow?.querySelector('td:nth-child(6)')
+      await user.click(ctrCell!)
+
+      expect(onKeywordClick).toHaveBeenCalledTimes(2)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+    })
+
+    it('applies cursor pointer style to entire row when clickable', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Get the row containing the keyword
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Check that the entire row has cursor pointer
+      expect(keywordRow).toHaveClass('cursor-pointer')
+    })
+
+    it('shows hover effect on entire row', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Hover over a non-keyword cell in the row
+      const impressionsCell = keywordRow?.querySelector('td:nth-child(2)')
+      await user.hover(impressionsCell!)
+      
+      // Row should have hover background
+      expect(keywordRow).toHaveClass('hover:bg-gray-50')
+    })
+
+    it('supports keyboard navigation on entire row', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Focus the row
+      keywordRow?.focus()
+      expect(document.activeElement).toBe(keywordRow)
+      
+      // Press Enter
+      await user.keyboard('{Enter}')
+      
+      expect(onKeywordClick).toHaveBeenCalledTimes(1)
+      expect(onKeywordClick).toHaveBeenCalledWith('knife sharpener', mockSearchQueries[0])
+
+      // Press Space
+      await user.keyboard(' ')
+      
+      expect(onKeywordClick).toHaveBeenCalledTimes(2)
+    })
+
+    it('updates aria-label for entire row accessibility', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Row should have appropriate ARIA attributes
+      expect(keywordRow).toHaveAttribute('aria-label', 'Click to analyze keyword: knife sharpener')
+      expect(keywordRow).toHaveAttribute('role', 'button')
+      expect(keywordRow).toHaveAttribute('tabIndex', '0')
+    })
+
+    it('does not make rows clickable when onKeywordClick is not provided', () => {
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
+      
+      // Row should not have clickable attributes
+      expect(keywordRow).not.toHaveClass('cursor-pointer')
+      expect(keywordRow).not.toHaveAttribute('role', 'button')
+      expect(keywordRow).not.toHaveAttribute('tabIndex')
     })
 
     it('calls onKeywordClick when keyword is clicked', async () => {
@@ -1008,11 +1153,11 @@ describe('SearchQueryTable', () => {
         />
       )
 
-      const keywordCell = screen.getByText('knife sharpener')
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
       
-      // Focus the cell
-      keywordCell.focus()
-      expect(document.activeElement).toBe(keywordCell)
+      // Focus the row
+      keywordRow?.focus()
+      expect(document.activeElement).toBe(keywordRow)
       
       // Press Enter
       await user.keyboard('{Enter}')
@@ -1034,10 +1179,10 @@ describe('SearchQueryTable', () => {
         />
       )
 
-      const keywordCell = screen.getByText('knife sharpener')
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
       
-      // Focus the cell
-      keywordCell.focus()
+      // Focus the row
+      keywordRow?.focus()
       
       // Press Space
       await user.keyboard(' ')
@@ -1126,11 +1271,11 @@ describe('SearchQueryTable', () => {
         />
       )
 
-      const keywordCell = screen.getByText('knife sharpener')
+      const keywordRow = screen.getByText('knife sharpener').closest('tr')
       
-      expect(keywordCell).toHaveAttribute('aria-label', 'Click to analyze keyword: knife sharpener')
-      expect(keywordCell).toHaveAttribute('role', 'button')
-      expect(keywordCell).toHaveAttribute('tabIndex', '0')
+      expect(keywordRow).toHaveAttribute('aria-label', 'Click to analyze keyword: knife sharpener')
+      expect(keywordRow).toHaveAttribute('role', 'button')
+      expect(keywordRow).toHaveAttribute('tabIndex', '0')
     })
 
     it('maintains proper focus order with tab navigation', async () => {
@@ -1149,9 +1294,9 @@ describe('SearchQueryTable', () => {
       // Tab through elements
       await user.tab()
       
-      // Should be able to tab to keyword cells
-      const firstKeyword = screen.getByText('knife sharpener')
-      const secondKeyword = screen.getByText('electric knife sharpener')
+      // Should be able to tab to keyword rows
+      const firstKeywordRow = screen.getByText('knife sharpener').closest('tr')
+      const secondKeywordRow = screen.getByText('electric knife sharpener').closest('tr')
       
       // Continue tabbing and check focus order
       let activeElement = document.activeElement
@@ -1164,9 +1309,9 @@ describe('SearchQueryTable', () => {
         activeElement = document.activeElement
       }
       
-      // Keywords should be in the focus order
-      expect(focusableElements).toContain(firstKeyword)
-      expect(focusableElements).toContain(secondKeyword)
+      // Keyword rows should be in the focus order
+      expect(focusableElements).toContain(firstKeywordRow)
+      expect(focusableElements).toContain(secondKeywordRow)
     })
 
     it('handles rapid clicks without issues', async () => {
@@ -1213,6 +1358,126 @@ describe('SearchQueryTable', () => {
       
       // Callback should fire
       expect(onKeywordClick).toHaveBeenCalled()
+    })
+  })
+
+  describe('Enhanced Styling and Visual Feedback', () => {
+    it('applies smooth transition effects to rows', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // Get all clickable rows by looking for tr elements with role="button"
+      const firstRow = screen.getByText('knife sharpener').closest('tr')
+      const secondRow = screen.getByText('electric knife sharpener').closest('tr')
+      const thirdRow = screen.getByText('work sharp knife sharpener').closest('tr')
+      
+      // All clickable rows should have transition
+      expect(firstRow).toHaveClass('transition-all')
+      expect(secondRow).toHaveClass('transition-all')
+      expect(thirdRow).toHaveClass('transition-all')
+    })
+
+    it('shows different hover states for regular vs high-performing rows', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // High-performing row (highest CVR)
+      const highPerformingRow = screen.getByText('work sharp knife sharpener').closest('tr')
+      expect(highPerformingRow).toHaveClass('bg-green-50')
+      expect(highPerformingRow).toHaveClass('hover:bg-green-100')
+      
+      // Regular row - use the one with lowest CVR
+      const regularRow = screen.getByText('knife sharpener').closest('tr')
+      expect(regularRow).not.toHaveClass('bg-green-50')
+      expect(regularRow).toHaveClass('hover:bg-gray-50')
+    })
+
+    it('maintains visual hierarchy with hover effects', async () => {
+      const onKeywordClick = vi.fn()
+      const user = userEvent.setup()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      // High-performing row
+      const highPerformingRow = screen.getByText('work sharp knife sharpener').closest('tr')
+      
+      // Should maintain green background even when hovering
+      await user.hover(highPerformingRow!)
+      expect(highPerformingRow).toHaveClass('bg-green-50')
+      expect(highPerformingRow).toHaveClass('hover:bg-green-100')
+    })
+
+    it('applies hover shadow effect to clickable rows', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const row = screen.getByText('knife sharpener').closest('tr')
+      expect(row).toHaveClass('hover:shadow-sm')
+    })
+
+    it('does not apply hover effects when rows are not clickable', () => {
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      const row = screen.getByText('knife sharpener').closest('tr')
+      
+      // Should not have cursor pointer or hover shadow
+      expect(row).not.toHaveClass('cursor-pointer')
+      expect(row).not.toHaveClass('hover:shadow-sm')
+      expect(row).not.toHaveClass('transition-all')
+    })
+
+    it('shows hover outline for better keyboard navigation visibility', () => {
+      const onKeywordClick = vi.fn()
+      
+      render(
+        <SearchQueryTable
+          data={mockSearchQueries}
+          isLoading={false}
+          error={null}
+          onKeywordClick={onKeywordClick}
+        />
+      )
+
+      const row = screen.getByText('knife sharpener').closest('tr')
+      expect(row).toHaveClass('focus:outline-2')
+      expect(row).toHaveClass('focus:outline-blue-500')
     })
   })
 })

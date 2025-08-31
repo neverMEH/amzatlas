@@ -348,23 +348,26 @@ export function SearchQueryTable({ data, comparisonData, dateRange, comparisonDa
               return (
                 <tr 
                   key={`${row.searchQuery}-${index}`}
-                  className={`hover:bg-gray-50 ${isHighPerforming(row) ? 'bg-green-50' : ''}`}
+                  className={`
+                    ${isHighPerforming(row) ? 'bg-green-50' : ''} 
+                    ${onKeywordClick ? (isHighPerforming(row) ? 'hover:bg-green-100' : 'hover:bg-gray-50') : ''} 
+                    ${onKeywordClick ? 'cursor-pointer hover:shadow-sm transition-all duration-150' : ''} 
+                    ${onKeywordClick ? 'focus:outline-2 focus:outline-offset-0 focus:outline-blue-500' : ''}
+                  `}
+                  onClick={onKeywordClick ? () => onKeywordClick(row.searchQuery, row) : undefined}
+                  onKeyDown={onKeywordClick ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onKeywordClick(row.searchQuery, row)
+                    }
+                  } : undefined}
+                  role={onKeywordClick ? "button" : undefined}
+                  tabIndex={onKeywordClick ? 0 : undefined}
+                  aria-label={onKeywordClick ? `Click to analyze keyword: ${row.searchQuery}` : undefined}
                 >
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     {onKeywordClick ? (
-                      <span
-                        onClick={() => onKeywordClick(row.searchQuery, row)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            onKeywordClick(row.searchQuery, row)
-                          }
-                        }}
-                        className="cursor-pointer hover:text-blue-600 hover:underline transition-colors"
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`Click to analyze keyword: ${row.searchQuery}`}
-                      >
+                      <span className="hover:text-blue-600 hover:underline transition-colors">
                         {row.searchQuery}
                       </span>
                     ) : (
