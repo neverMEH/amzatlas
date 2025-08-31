@@ -29,9 +29,9 @@ export function usePerformanceSuggestions(
 
     return () => {
       const totalTime = performance.now() - startTimeRef.current
+      metricsRef.current.totalTime = totalTime
       performanceTracker.endTimer('suggestions.total', {
         dateRange,
-        totalTime,
         ...metricsRef.current,
       })
 
