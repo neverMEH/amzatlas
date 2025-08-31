@@ -175,10 +175,10 @@ export async function GET(request: NextRequest) {
     const asinMetrics = new Map()
     
     // Always use manual aggregation for better compatibility
-    const aggregatedData = null
+    const aggregatedData: any[] | null = null
 
-    // If raw SQL didn't work, do manual aggregation
-    if (!aggregatedData && marketShareData) {
+    // Do manual aggregation
+    if (marketShareData) {
       const manualAggregation: { [key: string]: any } = {}
       
       // Fetch all records for this keyword in date range
@@ -208,14 +208,6 @@ export async function GET(request: NextRequest) {
           impressions: row.total_impressions,
           clicks: row.total_clicks,
           purchases: row.total_purchases,
-        })
-      })
-    } else if (aggregatedData) {
-      aggregatedData.forEach((row: any) => {
-        asinMetrics.set(row.asin, {
-          impressions: parseInt(row.total_impressions) || 0,
-          clicks: parseInt(row.total_clicks) || 0,
-          purchases: parseInt(row.total_purchases) || 0,
         })
       })
     }
