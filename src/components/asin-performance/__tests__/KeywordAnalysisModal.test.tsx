@@ -24,8 +24,10 @@ vi.mock('@/hooks/use-view-mode', () => ({
 
 // Mock MetricSparkline component
 vi.mock('../MetricSparkline', () => ({
-  MetricSparkline: ({ label, metric }: any) => (
-    <div data-testid={`metric-sparkline-${metric}`}>Sparkline: {label}</div>
+  MetricSparkline: ({ label, metric, chartType }: any) => (
+    <div data-testid={`metric-sparkline-${metric}`} data-chart-type={chartType}>
+      Sparkline: {label}
+    </div>
   ),
 }))
 
@@ -912,6 +914,179 @@ describe('KeywordAnalysisModal', () => {
       expect(screen.queryByText('Performance Trends')).not.toBeInTheDocument()
       expect(screen.queryByText('Conversion Funnel')).not.toBeInTheDocument()
       expect(screen.queryByText('Market Share')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('date range chart type detection', () => {
+    const mockPerformanceData = {
+      summary: {
+        impressions: 10000,
+        clicks: 500,
+        cartAdds: 150,
+        purchases: 75,
+        ctr: 0.05,
+        cvr: 0.0075,
+      },
+      timeSeries: [
+        { date: '2024-01-01', impressions: 1000, clicks: 50, cartAdds: 15, purchases: 7, ctr: 0.05, cvr: 0.007 },
+        { date: '2024-01-02', impressions: 1200, clicks: 60, cartAdds: 18, purchases: 9, ctr: 0.05, cvr: 0.0075 },
+      ],
+      funnelData: { impressions: 10000, clicks: 500, cartAdds: 150, purchases: 75 },
+      marketShare: {
+        totalMarket: { impressions: 50000, clicks: 2500, purchases: 375 },
+        competitors: []
+      }
+    }
+
+    beforeEach(() => {
+      // Mock popup view mode
+      mockUseViewMode.mockImplementation(() => ({
+        mode: 'popup',
+        isPopup: true,
+        isFullPage: false,
+        shouldShowSparklines: true,
+        shouldShowFullCharts: false,
+        layout: {
+          maxWidth: 'max-w-4xl',
+          padding: 'p-4',
+          chartHeight: 60,
+          showFunnel: false,
+          showMarketShare: false,
+          showSparklines: true,
+        },
+        queryParams: {},
+      }))
+    })
+
+    it('passes bar chart type for exactly 7-day date range', () => {
+      mockUseKeywordPerformance.mockReturnValue({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      })
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-07' }}
+        />
+      )
+
+      // Check that MetricSparkline components receive bar chart type
+      const impressionsSparkline = screen.getByTestId('metric-sparkline-impressions')
+      expect(impressionsSparkline).toHaveAttribute('data-chart-type', 'bar')
+      
+      const clicksSparkline = screen.getByTestId('metric-sparkline-clicks')
+      expect(clicksSparkline).toHaveAttribute('data-chart-type', 'bar')
+      
+      const purchasesSparkline = screen.getByTestId('metric-sparkline-purchases')
+      expect(purchasesSparkline).toHaveAttribute('data-chart-type', 'bar')
+      
+      const cvrSparkline = screen.getByTestId('metric-sparkline-cvr')
+      expect(cvrSparkline).toHaveAttribute('data-chart-type', 'bar')
+    })
+
+    it('passes line chart type for non-weekly date range', () => {
+      mockUseKeywordPerformance.mockReturnValue({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      })
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-31' }}
+        />
+      )
+
+      // Check that MetricSparkline components receive line chart type
+      const impressionsSparkline = screen.getByTestId('metric-sparkline-impressions')
+      expect(impressionsSparkline).toHaveAttribute('data-chart-type', 'line')
+      
+      const clicksSparkline = screen.getByTestId('metric-sparkline-clicks')
+      expect(clicksSparkline).toHaveAttribute('data-chart-type', 'line')
+      
+      const purchasesSparkline = screen.getByTestId('metric-sparkline-purchases')
+      expect(purchasesSparkline).toHaveAttribute('data-chart-type', 'line')
+      
+      const cvrSparkline = screen.getByTestId('metric-sparkline-cvr')
+      expect(cvrSparkline).toHaveAttribute('data-chart-type', 'line')
+    })
+
+    it('passes line chart type for date ranges less than 7 days', () => {
+      mockUseKeywordPerformance.mockReturnValue({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      })
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-05' }}
+        />
+      )
+
+      const impressionsSparkline = screen.getByTestId('metric-sparkline-impressions')
+      expect(impressionsSparkline).toHaveAttribute('data-chart-type', 'line')
+    })
+
+    it('passes line chart type for date ranges more than 7 days', () => {
+      mockUseKeywordPerformance.mockReturnValue({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      })
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-01', end: '2024-01-10' }}
+        />
+      )
+
+      const impressionsSparkline = screen.getByTestId('metric-sparkline-impressions')
+      expect(impressionsSparkline).toHaveAttribute('data-chart-type', 'line')
+    })
+
+    it('handles edge case where end date is before start date', () => {
+      mockUseKeywordPerformance.mockReturnValue({
+        data: mockPerformanceData,
+        isLoading: false,
+        error: null,
+      })
+
+      render(
+        <KeywordAnalysisModal
+          isOpen={true}
+          onClose={mockOnClose}
+          onExpand={mockOnExpand}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          dateRange={{ start: '2024-01-10', end: '2024-01-01' }}
+        />
+      )
+
+      // Should default to line chart for invalid date ranges
+      const impressionsSparkline = screen.getByTestId('metric-sparkline-impressions')
+      expect(impressionsSparkline).toHaveAttribute('data-chart-type', 'line')
     })
   })
 })

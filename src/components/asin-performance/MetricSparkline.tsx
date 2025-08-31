@@ -4,16 +4,27 @@ import React, { memo } from 'react'
 import { SparklineChart } from './SparklineChart'
 
 export interface MetricSparklineProps {
+  /** Array of data points to display in the sparkline */
   data: Array<Record<string, any>>
+  /** The key in the data objects to use for the chart values */
   metric: string
+  /** Label to display above the sparkline */
   label: string
+  /** Current period value to display */
   currentValue: number
+  /** Previous period value for comparison (optional) */
   comparisonValue?: number
+  /** Type of chart to render: 'line' (default), 'bar', or 'area' */
   chartType?: 'line' | 'bar' | 'area'
+  /** Color for the chart elements */
   color?: string
+  /** Height of the sparkline chart in pixels */
   height?: number
+  /** Custom function to format displayed values */
   formatValue?: (value: number) => string
+  /** Additional CSS classes */
   className?: string
+  /** Loading state */
   isLoading?: boolean
 }
 

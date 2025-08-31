@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ExternalLink, AlertCircle } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 import { useKeywordPerformance } from '@/lib/api/keyword-analysis'
 import { useViewMode, ViewMode } from '@/hooks/use-view-mode'
 import { KeywordPerformanceChart } from './KeywordPerformanceChart'
@@ -54,6 +54,28 @@ export function KeywordAnalysisModal({
     shouldShowFullCharts, 
     layout 
   } = useViewMode({ mode: viewMode })
+
+  /**
+   * Detect if the selected date range is exactly 7 days (one week).
+   * This is used to switch from line charts to bar charts for better
+   * visualization of weekly data with limited data points.
+   * 
+   * Note: differenceInDays returns 6 for a 7-day range because it
+   * calculates the difference between dates (e.g., Jan 7 - Jan 1 = 6 days),
+   * but the range includes both start and end dates (7 days total).
+   */
+  const isWeeklyRange = useMemo(() => {
+    if (!dateRange.start || !dateRange.end) return false
+    const days = differenceInDays(new Date(dateRange.end), new Date(dateRange.start))
+    return days === 6 // 6 days difference = 7 days total (inclusive)
+  }, [dateRange.start, dateRange.end])
+
+  /**
+   * Determine the chart type for sparklines based on the date range.
+   * Bar charts provide better visualization for exactly 7 data points (weekly data),
+   * while line charts are better for longer time series.
+   */
+  const sparklineChartType = isWeeklyRange ? 'bar' : 'line'
 
   // Fetch keyword performance data
   const { data, isLoading: dataLoading, error: dataError } = useKeywordPerformance(
@@ -258,6 +280,7 @@ export function KeywordAnalysisModal({
                       label="Impressions"
                       currentValue={data.summary.impressions}
                       comparisonValue={data.comparisonSummary?.impressions}
+                      chartType={sparklineChartType}
                       height={layout.chartHeight}
                     />
                     <MetricSparkline
@@ -266,6 +289,7 @@ export function KeywordAnalysisModal({
                       label="Clicks"
                       currentValue={data.summary.clicks}
                       comparisonValue={data.comparisonSummary?.clicks}
+                      chartType={sparklineChartType}
                       height={layout.chartHeight}
                     />
                   </div>
@@ -277,6 +301,7 @@ export function KeywordAnalysisModal({
                       label="Purchases"
                       currentValue={data.summary.purchases}
                       comparisonValue={data.comparisonSummary?.purchases}
+                      chartType={sparklineChartType}
                       height={layout.chartHeight}
                     />
                     <MetricSparkline
@@ -286,6 +311,7 @@ export function KeywordAnalysisModal({
                       currentValue={data.summary.cvr}
                       comparisonValue={data.comparisonSummary?.cvr}
                       formatValue={(v) => `${(v * 100).toFixed(2)}%`}
+                      chartType={sparklineChartType}
                       height={layout.chartHeight}
                     />
                   </div>
