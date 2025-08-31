@@ -5,9 +5,11 @@ import { createPortal } from 'react-dom'
 import { X, ExternalLink, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
 import { useKeywordPerformance } from '@/lib/api/keyword-analysis'
+import { useViewMode, ViewMode } from '@/hooks/use-view-mode'
 import { KeywordPerformanceChart } from './KeywordPerformanceChart'
 import { KeywordFunnelChart } from './KeywordFunnelChart'
 import { KeywordMarketShare } from './KeywordMarketShare'
+import { MetricSparkline } from './MetricSparkline'
 
 interface KeywordAnalysisModalProps {
   isOpen: boolean
@@ -19,6 +21,7 @@ interface KeywordAnalysisModalProps {
   comparisonDateRange?: { start: string; end: string }
   isLoading?: boolean
   error?: Error | null
+  viewMode?: ViewMode
 }
 
 function formatDateRange(start: string, end: string): string {
@@ -35,6 +38,7 @@ export function KeywordAnalysisModal({
   comparisonDateRange,
   isLoading: propIsLoading = false,
   error: propError = null,
+  viewMode,
 }: KeywordAnalysisModalProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
@@ -42,6 +46,14 @@ export function KeywordAnalysisModal({
   const previousFocusRef = useRef<HTMLElement | null>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const expandButtonRef = useRef<HTMLButtonElement>(null)
+
+  // Use view mode hook
+  const { 
+    isPopup, 
+    shouldShowSparklines, 
+    shouldShowFullCharts, 
+    layout 
+  } = useViewMode({ mode: viewMode })
 
   // Fetch keyword performance data
   const { data, isLoading: dataLoading, error: dataError } = useKeywordPerformance(
@@ -161,7 +173,7 @@ export function KeywordAnalysisModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className={`relative bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-200 ${
+        className={`relative bg-white rounded-lg shadow-xl w-full ${layout.maxWidth} max-h-[90vh] overflow-hidden transform transition-all duration-200 ${
           isAnimating ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -205,7 +217,7 @@ export function KeywordAnalysisModal({
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+        <div className={`${layout.padding} overflow-y-auto max-h-[calc(90vh-80px)]`}>
           {isLoading ? (
             <div className="animate-pulse" data-testid="modal-skeleton">
               <div className="h-64 bg-gray-200 rounded mb-4"></div>
@@ -220,57 +232,116 @@ export function KeywordAnalysisModal({
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Performance Chart */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
-                <div className="h-64">
-                  <KeywordPerformanceChart
-                    data={data?.timeSeries.map(point => ({
-                      ...point,
-                      clickRate: point.ctr,
-                      cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
-                      purchaseRate: point.cvr,
-                    })) || []}
-                    comparisonData={data?.comparisonTimeSeries?.map(point => ({
-                      ...point,
-                      clickRate: point.ctr,
-                      cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
-                      purchaseRate: point.cvr,
-                    }))}
-                    keyword={keyword}
-                    dateRange={dateRange}
-                  />
+              {/* Quick View Badge for Popup Mode */}
+              {isPopup && (
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    Quick View
+                  </span>
+                  <button
+                    onClick={onExpand}
+                    className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                  >
+                    See Full Analysis →
+                  </button>
                 </div>
-              </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-6">
-                {/* Funnel Chart */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Funnel</h3>
-                  <KeywordFunnelChart
-                    data={data?.funnelData || { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }}
-                    comparisonData={data?.comparisonFunnelData}
-                    keyword={keyword}
-                    dateRange={dateRange}
-                    comparisonDateRange={comparisonDateRange}
-                    isLoading={false}
-                    error={null}
+              {/* Sparkline View for Popup Mode */}
+              {shouldShowSparklines && data && (
+                <div className="grid grid-cols-1 gap-4">
+                  <MetricSparkline
+                    data={data.timeSeries}
+                    metric="impressions"
+                    label="Impressions"
+                    currentValue={data.summary.impressions}
+                    comparisonValue={data.comparisonSummary?.impressions}
+                    height={layout.chartHeight}
+                  />
+                  <MetricSparkline
+                    data={data.timeSeries}
+                    metric="clicks"
+                    label="Clicks"
+                    currentValue={data.summary.clicks}
+                    comparisonValue={data.comparisonSummary?.clicks}
+                    height={layout.chartHeight}
+                  />
+                  <MetricSparkline
+                    data={data.timeSeries}
+                    metric="purchases"
+                    label="Purchases"
+                    currentValue={data.summary.purchases}
+                    comparisonValue={data.comparisonSummary?.purchases}
+                    height={layout.chartHeight}
+                  />
+                  <MetricSparkline
+                    data={data.timeSeries}
+                    metric="cvr"
+                    label="Conversion Rate"
+                    currentValue={data.summary.cvr}
+                    comparisonValue={data.comparisonSummary?.cvr}
+                    formatValue={(v) => `${(v * 100).toFixed(2)}%`}
+                    height={layout.chartHeight}
                   />
                 </div>
+              )}
 
-                {/* Market Share */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Share</h3>
-                  <KeywordMarketShare
-                    data={data?.marketShare || { totalMarket: { impressions: 0, clicks: 0, purchases: 0 }, competitors: [] }}
-                    comparisonData={data?.comparisonMarketShare}
-                    keyword={keyword}
-                    asin={asin}
-                    isLoading={false}
-                    error={null}
-                  />
-                </div>
-              </div>
+              {/* Full Charts for Full Page Mode */}
+              {shouldShowFullCharts && (
+                <>
+                  {/* Performance Chart */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Trends</h3>
+                    <div style={{ height: layout.chartHeight }}>
+                      <KeywordPerformanceChart
+                        data={data?.timeSeries.map(point => ({
+                          ...point,
+                          clickRate: point.ctr,
+                          cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                          purchaseRate: point.cvr,
+                        })) || []}
+                        comparisonData={data?.comparisonTimeSeries?.map(point => ({
+                          ...point,
+                          clickRate: point.ctr,
+                          cartAddRate: point.impressions > 0 ? point.cartAdds / point.impressions : 0,
+                          purchaseRate: point.cvr,
+                        }))}
+                        keyword={keyword}
+                        dateRange={dateRange}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Funnel Chart */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversion Funnel</h3>
+                      <KeywordFunnelChart
+                        data={data?.funnelData || { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }}
+                        comparisonData={data?.comparisonFunnelData}
+                        keyword={keyword}
+                        dateRange={dateRange}
+                        comparisonDateRange={comparisonDateRange}
+                        isLoading={false}
+                        error={null}
+                      />
+                    </div>
+
+                    {/* Market Share */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Market Share</h3>
+                      <KeywordMarketShare
+                        data={data?.marketShare || { totalMarket: { impressions: 0, clicks: 0, purchases: 0 }, competitors: [] }}
+                        comparisonData={data?.comparisonMarketShare}
+                        keyword={keyword}
+                        asin={asin}
+                        isLoading={false}
+                        error={null}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* Compare Keywords Button */}
               <div className="bg-blue-50 rounded-lg p-6 text-center">

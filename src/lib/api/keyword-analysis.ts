@@ -18,6 +18,14 @@ export interface KeywordComparisonParams {
 }
 
 export interface KeywordPerformanceData {
+  summary: {
+    impressions: number
+    clicks: number
+    cartAdds: number
+    purchases: number
+    ctr: number
+    cvr: number
+  }
   timeSeries: Array<{
     date: string
     impressions: number
@@ -47,6 +55,14 @@ export interface KeywordPerformanceData {
       clickShare: number
       purchaseShare: number
     }>
+  }
+  comparisonSummary?: {
+    impressions: number
+    clicks: number
+    cartAdds: number
+    purchases: number
+    ctr: number
+    cvr: number
   }
   comparisonTimeSeries?: Array<{
     date: string

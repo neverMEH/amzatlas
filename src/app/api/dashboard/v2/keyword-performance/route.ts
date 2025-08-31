@@ -243,7 +243,20 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Calculate summary data from time series
+    const summary = timeSeries.reduce((acc: any, row: any) => ({
+      impressions: acc.impressions + row.impressions,
+      clicks: acc.clicks + row.clicks,
+      cartAdds: acc.cartAdds + row.cartAdds,
+      purchases: acc.purchases + row.purchases,
+    }), { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 })
+    
+    // Add calculated rates
+    summary.ctr = summary.impressions > 0 ? summary.clicks / summary.impressions : 0
+    summary.cvr = summary.impressions > 0 ? summary.purchases / summary.impressions : 0
+
     const response: KeywordPerformanceData = {
+      summary,
       timeSeries,
       funnelData: funnelData || { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 },
       marketShare: {
@@ -281,7 +294,7 @@ export async function GET(request: NextRequest) {
         }))
       }
 
-      // Calculate comparison funnel data from time series
+      // Calculate comparison funnel data and summary from time series
       if (response.comparisonTimeSeries) {
         response.comparisonFunnelData = response.comparisonTimeSeries.reduce((acc: any, row: any) => ({
           impressions: acc.impressions + row.impressions,
@@ -289,6 +302,17 @@ export async function GET(request: NextRequest) {
           cartAdds: acc.cartAdds + row.cartAdds,
           purchases: acc.purchases + row.purchases,
         }), { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 })
+        
+        // Add comparison summary
+        response.comparisonSummary = {
+          ...response.comparisonFunnelData,
+          ctr: response.comparisonFunnelData.impressions > 0 
+            ? response.comparisonFunnelData.clicks / response.comparisonFunnelData.impressions 
+            : 0,
+          cvr: response.comparisonFunnelData.impressions > 0 
+            ? response.comparisonFunnelData.purchases / response.comparisonFunnelData.impressions 
+            : 0,
+        }
       }
 
       // Fetch comparison market share data
