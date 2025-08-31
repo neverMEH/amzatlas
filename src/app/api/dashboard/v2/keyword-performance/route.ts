@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
       .from('search_query_performance')
       .select(`
         asin,
-        asin_performance_data!inner(product_title),
+        asin_performance_data!search_query_performance_asin_performance_id_fkey(product_title),
         asin_brand_mapping(brands(brand_name))
       `)
       .eq('search_query', keyword)
@@ -171,27 +171,11 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching market share data:', marketShareError)
     }
 
-    // Aggregate metrics by ASIN using raw SQL
+    // Aggregate metrics by ASIN - skip raw SQL and go directly to manual aggregation
     const asinMetrics = new Map()
     
-    const { data: aggregatedData, error: aggregateError } = await supabase.rpc('execute_sql', {
-      sql: `
-        SELECT 
-          asin,
-          SUM(asin_impression_count) as total_impressions,
-          SUM(asin_click_count) as total_clicks,
-          SUM(asin_purchase_count) as total_purchases
-        FROM sqp.search_query_performance
-        WHERE search_query = $1
-          AND start_date >= $2
-          AND start_date <= $3
-        GROUP BY asin
-      `,
-      params: [keyword, startDate, endDate]
-    }).catch(() => {
-      // Fallback to manual aggregation if execute_sql is not available
-      return { data: null, error: null }
-    })
+    // Always use manual aggregation for better compatibility
+    const aggregatedData = null
 
     // If raw SQL didn't work, do manual aggregation
     if (!aggregatedData && marketShareData) {
@@ -326,7 +310,7 @@ export async function GET(request: NextRequest) {
           asin_impression_count,
           asin_click_count,
           asin_purchase_count,
-          asin_performance_data!inner(product_title),
+          asin_performance_data!search_query_performance_asin_performance_id_fkey(product_title),
           asin_brand_mapping(brands(brand_name))
         `)
         .eq('search_query', keyword)
