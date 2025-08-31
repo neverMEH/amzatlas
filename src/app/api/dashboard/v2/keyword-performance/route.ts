@@ -147,57 +147,125 @@ export async function GET(request: NextRequest) {
       cvr: row.asin_impression_count > 0 ? (row.asin_purchase_count / row.asin_impression_count) : 0,
     }))
 
-    // Calculate funnel totals
-    const { data: funnelRpcData, error: funnelError } = await supabase
-      .rpc('get_keyword_funnel_totals', {
-        p_asin: asin,
-        p_keyword: keyword,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      })
+    // Calculate funnel totals from time series data
+    const funnelData = timeSeries.reduce((acc: any, row: any) => ({
+      impressions: acc.impressions + row.impressions,
+      clicks: acc.clicks + row.clicks,
+      cartAdds: acc.cartAdds + row.cartAdds,
+      purchases: acc.purchases + row.purchases,
+    }), { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 })
 
-    let funnelData = null
-    if (funnelError || !funnelRpcData || funnelRpcData.length === 0) {
-      console.error('Error fetching funnel data:', funnelError)
-      // Use calculated totals as fallback
-      funnelData = timeSeries.reduce((acc: any, row: any) => ({
-        impressions: acc.impressions + row.impressions,
-        clicks: acc.clicks + row.clicks,
-        cartAdds: acc.cartAdds + row.cartAdds,
-        purchases: acc.purchases + row.purchases,
-      }), { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 })
-    } else {
-      funnelData = funnelRpcData[0]
-    }
-
-    // Fetch market share data
+    // Fetch market share data - aggregate by ASIN for the keyword
     const { data: marketShareData, error: marketShareError } = await supabase
-      .rpc('get_keyword_market_share', {
-        p_keyword: keyword,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      })
+      .from('search_query_performance')
+      .select(`
+        asin,
+        asin_performance_data!inner(product_title),
+        asin_brand_mapping(brands(brand_name))
+      `)
+      .eq('search_query', keyword)
+      .gte('start_date', startDate)
+      .lte('start_date', endDate)
 
     if (marketShareError) {
       console.error('Error fetching market share data:', marketShareError)
     }
 
+    // Aggregate metrics by ASIN using raw SQL
+    const asinMetrics = new Map()
+    
+    const { data: aggregatedData, error: aggregateError } = await supabase.rpc('execute_sql', {
+      sql: `
+        SELECT 
+          asin,
+          SUM(asin_impression_count) as total_impressions,
+          SUM(asin_click_count) as total_clicks,
+          SUM(asin_purchase_count) as total_purchases
+        FROM sqp.search_query_performance
+        WHERE search_query = $1
+          AND start_date >= $2
+          AND start_date <= $3
+        GROUP BY asin
+      `,
+      params: [keyword, startDate, endDate]
+    }).catch(() => {
+      // Fallback to manual aggregation if execute_sql is not available
+      return { data: null, error: null }
+    })
+
+    // If raw SQL didn't work, do manual aggregation
+    if (!aggregatedData && marketShareData) {
+      const manualAggregation: { [key: string]: any } = {}
+      
+      // Fetch all records for this keyword in date range
+      const { data: allRecords } = await supabase
+        .from('search_query_performance')
+        .select('asin, asin_impression_count, asin_click_count, asin_purchase_count')
+        .eq('search_query', keyword)
+        .gte('start_date', startDate)
+        .lte('start_date', endDate)
+      
+      allRecords?.forEach((row: any) => {
+        if (!manualAggregation[row.asin]) {
+          manualAggregation[row.asin] = {
+            asin: row.asin,
+            total_impressions: 0,
+            total_clicks: 0,
+            total_purchases: 0
+          }
+        }
+        manualAggregation[row.asin].total_impressions += row.asin_impression_count || 0
+        manualAggregation[row.asin].total_clicks += row.asin_click_count || 0
+        manualAggregation[row.asin].total_purchases += row.asin_purchase_count || 0
+      })
+      
+      Object.values(manualAggregation).forEach((row: any) => {
+        asinMetrics.set(row.asin, {
+          impressions: row.total_impressions,
+          clicks: row.total_clicks,
+          purchases: row.total_purchases,
+        })
+      })
+    } else if (aggregatedData) {
+      aggregatedData.forEach((row: any) => {
+        asinMetrics.set(row.asin, {
+          impressions: parseInt(row.total_impressions) || 0,
+          clicks: parseInt(row.total_clicks) || 0,
+          purchases: parseInt(row.total_purchases) || 0,
+        })
+      })
+    }
+
     // Calculate total market metrics
-    const totalMarket = (marketShareData || []).reduce((acc: any, row: any) => ({
-      impressions: acc.impressions + (row.impressions || 0),
-      clicks: acc.clicks + (row.clicks || 0),
-      purchases: acc.purchases + (row.purchases || 0),
+    const totalMarket = Array.from(asinMetrics.values()).reduce((acc: any, metrics: any) => ({
+      impressions: acc.impressions + metrics.impressions,
+      clicks: acc.clicks + metrics.clicks,
+      purchases: acc.purchases + metrics.purchases,
     }), { impressions: 0, clicks: 0, purchases: 0 })
 
     // Transform market share data
-    const competitors = (marketShareData || []).map((row: any) => ({
-      asin: row.asin,
-      brand: row.brand || 'Unknown',
-      title: row.title || 'Unknown Product',
-      impressionShare: totalMarket.impressions > 0 ? (row.impressions || 0) / totalMarket.impressions : 0,
-      clickShare: totalMarket.clicks > 0 ? (row.clicks || 0) / totalMarket.clicks : 0,
-      purchaseShare: totalMarket.purchases > 0 ? (row.purchases || 0) / totalMarket.purchases : 0,
-    }))
+    const asinDataMap = new Map()
+    marketShareData?.forEach((row: any) => {
+      if (!asinDataMap.has(row.asin)) {
+        asinDataMap.set(row.asin, {
+          asin: row.asin,
+          title: row.asin_performance_data?.product_title || 'Unknown Product',
+          brand: row.asin_brand_mapping?.brands?.brand_name || 'Unknown',
+        })
+      }
+    })
+
+    const competitors = Array.from(asinDataMap.values()).map((asinData: any) => {
+      const metrics = asinMetrics.get(asinData.asin) || { impressions: 0, clicks: 0, purchases: 0 }
+      return {
+        asin: asinData.asin,
+        brand: asinData.brand,
+        title: asinData.title,
+        impressionShare: totalMarket.impressions > 0 ? metrics.impressions / totalMarket.impressions : 0,
+        clickShare: totalMarket.clicks > 0 ? metrics.clicks / totalMarket.clicks : 0,
+        purchaseShare: totalMarket.purchases > 0 ? metrics.purchases / totalMarket.purchases : 0,
+      }
+    })
 
     const response: KeywordPerformanceData = {
       timeSeries,
@@ -237,45 +305,81 @@ export async function GET(request: NextRequest) {
         }))
       }
 
-      // Fetch comparison funnel data
-      const { data: comparisonFunnelRpcData } = await supabase
-        .rpc('get_keyword_funnel_totals', {
-          p_asin: asin,
-          p_keyword: keyword,
-          p_start_date: compareStartDate,
-          p_end_date: compareEndDate,
-        })
-
-      if (comparisonFunnelRpcData && comparisonFunnelRpcData.length > 0) {
-        response.comparisonFunnelData = comparisonFunnelRpcData[0]
+      // Calculate comparison funnel data from time series
+      if (response.comparisonTimeSeries) {
+        response.comparisonFunnelData = response.comparisonTimeSeries.reduce((acc: any, row: any) => ({
+          impressions: acc.impressions + row.impressions,
+          clicks: acc.clicks + row.clicks,
+          cartAdds: acc.cartAdds + row.cartAdds,
+          purchases: acc.purchases + row.purchases,
+        }), { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 })
       }
 
-      // Fetch comparison market share
-      const { data: comparisonMarketShareData } = await supabase
-        .rpc('get_keyword_market_share', {
-          p_keyword: keyword,
-          p_start_date: compareStartDate,
-          p_end_date: compareEndDate,
-        })
-
-      if (comparisonMarketShareData) {
-        const comparisonTotalMarket = comparisonMarketShareData.reduce((acc: any, row: any) => ({
-          impressions: acc.impressions + (row.impressions || 0),
-          clicks: acc.clicks + (row.clicks || 0),
-          purchases: acc.purchases + (row.purchases || 0),
-        }), { impressions: 0, clicks: 0, purchases: 0 })
-
-        response.comparisonMarketShare = {
-          totalMarket: comparisonTotalMarket,
-          competitors: comparisonMarketShareData.map((row: any) => ({
-            asin: row.asin,
-            brand: row.brand || 'Unknown',
-            title: row.title || 'Unknown Product',
-            impressionShare: comparisonTotalMarket.impressions > 0 ? (row.impressions || 0) / comparisonTotalMarket.impressions : 0,
-            clickShare: comparisonTotalMarket.clicks > 0 ? (row.clicks || 0) / comparisonTotalMarket.clicks : 0,
-            purchaseShare: comparisonTotalMarket.purchases > 0 ? (row.purchases || 0) / comparisonTotalMarket.purchases : 0,
-          })),
+      // Fetch comparison market share data
+      const comparisonAsinMetrics = new Map()
+      
+      // Fetch all records for comparison period
+      const { data: comparisonRecords } = await supabase
+        .from('search_query_performance')
+        .select(`
+          asin,
+          asin_impression_count,
+          asin_click_count,
+          asin_purchase_count,
+          asin_performance_data!inner(product_title),
+          asin_brand_mapping(brands(brand_name))
+        `)
+        .eq('search_query', keyword)
+        .gte('start_date', compareStartDate)
+        .lte('start_date', compareEndDate)
+      
+      // Aggregate comparison metrics
+      const comparisonAsinData = new Map()
+      comparisonRecords?.forEach((row: any) => {
+        const currentMetrics = comparisonAsinMetrics.get(row.asin) || {
+          impressions: 0,
+          clicks: 0,
+          purchases: 0
         }
+        
+        comparisonAsinMetrics.set(row.asin, {
+          impressions: currentMetrics.impressions + (row.asin_impression_count || 0),
+          clicks: currentMetrics.clicks + (row.asin_click_count || 0),
+          purchases: currentMetrics.purchases + (row.asin_purchase_count || 0),
+        })
+        
+        if (!comparisonAsinData.has(row.asin)) {
+          comparisonAsinData.set(row.asin, {
+            asin: row.asin,
+            title: row.asin_performance_data?.product_title || 'Unknown Product',
+            brand: row.asin_brand_mapping?.brands?.brand_name || 'Unknown',
+          })
+        }
+      })
+      
+      // Calculate comparison total market
+      const comparisonTotalMarket = Array.from(comparisonAsinMetrics.values()).reduce((acc: any, metrics: any) => ({
+        impressions: acc.impressions + metrics.impressions,
+        clicks: acc.clicks + metrics.clicks,
+        purchases: acc.purchases + metrics.purchases,
+      }), { impressions: 0, clicks: 0, purchases: 0 })
+      
+      // Build comparison competitor data
+      const comparisonCompetitors = Array.from(comparisonAsinData.values()).map((asinData: any) => {
+        const metrics = comparisonAsinMetrics.get(asinData.asin) || { impressions: 0, clicks: 0, purchases: 0 }
+        return {
+          asin: asinData.asin,
+          brand: asinData.brand,
+          title: asinData.title,
+          impressionShare: comparisonTotalMarket.impressions > 0 ? metrics.impressions / comparisonTotalMarket.impressions : 0,
+          clickShare: comparisonTotalMarket.clicks > 0 ? metrics.clicks / comparisonTotalMarket.clicks : 0,
+          purchaseShare: comparisonTotalMarket.purchases > 0 ? metrics.purchases / comparisonTotalMarket.purchases : 0,
+        }
+      })
+      
+      response.comparisonMarketShare = {
+        totalMarket: comparisonTotalMarket,
+        competitors: comparisonCompetitors,
       }
     }
 
