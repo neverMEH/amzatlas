@@ -15,6 +15,8 @@ import {
 } from 'date-fns'
 import { DateRange, ComparisonPeriod, PeriodType, ComparisonMode, ComparisonOptions } from './types'
 import { detectPeriodType } from './period-detector'
+import { performanceTracker } from '../monitoring/performance-tracker'
+import { comparisonCache, CalculationCache } from './calculation-cache'
 
 /**
  * Calculates the comparison period based on the main date range
@@ -24,64 +26,87 @@ export function calculateComparisonPeriod(
   mode: ComparisonMode = 'auto',
   options?: ComparisonOptions
 ): ComparisonPeriod {
-  // Validate date range first
-  let start: Date
-  let end: Date
+  // Check cache first
+  const cacheKey = CalculationCache.createKey(range, mode, options)
+  const cached = comparisonCache.get(cacheKey)
+  if (cached) {
+    return cached
+  }
+  
+  performanceTracker.startTimer('calculateComparisonPeriod')
   
   try {
-    start = parseISO(range.start)
-    end = parseISO(range.end)
+    // Validate date range first
+    let start: Date
+    let end: Date
     
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new Error('Invalid date format')
+    try {
+      start = parseISO(range.start)
+      end = parseISO(range.end)
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        throw new Error('Invalid date format')
+      }
+    } catch (error) {
+      // Return a default comparison period for invalid dates
+      return {
+        start: '',
+        end: '',
+        type: PeriodType.CUSTOM,
+        label: 'Invalid date range',
+      }
     }
-  } catch (error) {
-    // Return a default comparison period for invalid dates
-    return {
-      start: '',
-      end: '',
-      type: PeriodType.CUSTOM,
-      label: 'Invalid date range',
-    }
-  }
-  
-  const periodType = detectPeriodType(range)
-  const duration = differenceInDays(end, start) + 1
+    
+    const periodType = detectPeriodType(range)
+    const duration = differenceInDays(end, start) + 1
 
-  // Handle auto mode by determining the best comparison based on period type
-  if (mode === 'auto') {
-    switch (periodType) {
-      case PeriodType.DAILY:
-        return calculateDailyComparison(range)
-      case PeriodType.WEEKLY:
-        return calculateWeeklyComparison(range)
-      case PeriodType.BI_WEEKLY:
-        return calculateBiWeeklyComparison(range)
-      case PeriodType.MONTHLY:
-        return calculateMonthlyComparison(range)
-      case PeriodType.QUARTERLY:
-        return calculateQuarterlyComparison(range)
-      case PeriodType.YEARLY:
-        return calculateYearlyComparison(range)
-      case PeriodType.CUSTOM:
-        return calculateCustomComparison(range, duration)
+    // Handle auto mode by determining the best comparison based on period type
+    if (mode === 'auto') {
+      switch (periodType) {
+        case PeriodType.DAILY:
+          return calculateDailyComparison(range)
+        case PeriodType.WEEKLY:
+          return calculateWeeklyComparison(range)
+        case PeriodType.BI_WEEKLY:
+          return calculateBiWeeklyComparison(range)
+        case PeriodType.MONTHLY:
+          return calculateMonthlyComparison(range)
+        case PeriodType.QUARTERLY:
+          return calculateQuarterlyComparison(range)
+        case PeriodType.YEARLY:
+          return calculateYearlyComparison(range)
+        case PeriodType.CUSTOM:
+          return calculateCustomComparison(range, duration)
+      }
     }
-  }
 
-  // Handle specific comparison modes
-  switch (mode) {
-    case 'period-over-period':
-      return calculatePeriodOverPeriod(range, periodType, duration)
-    case 'week-over-week':
-      return calculateWeekOverWeek(range, periodType)
-    case 'month-over-month':
-      return calculateMonthOverMonth(range, periodType)
-    case 'quarter-over-quarter':
-      return calculateQuarterOverQuarter(range, periodType)
-    case 'year-over-year':
-      return calculateYearOverYear(range, periodType)
-    default:
-      return calculatePeriodOverPeriod(range, periodType, duration)
+    // Handle specific comparison modes
+    let result: ComparisonPeriod
+    switch (mode) {
+      case 'period-over-period':
+        result = calculatePeriodOverPeriod(range, periodType, duration)
+        break
+      case 'week-over-week':
+        result = calculateWeekOverWeek(range, periodType)
+        break
+      case 'month-over-month':
+        result = calculateMonthOverMonth(range, periodType)
+        break
+      case 'quarter-over-quarter':
+        result = calculateQuarterOverQuarter(range, periodType)
+        break
+      case 'year-over-year':
+        result = calculateYearOverYear(range, periodType)
+        break
+      default:
+        result = calculatePeriodOverPeriod(range, periodType, duration)
+    }
+    
+    // Cache the result
+    comparisonCache.set(cacheKey, result)
+    return result
+  } finally {
+    performanceTracker.endTimer('calculateComparisonPeriod', { mode, range })
   }
 }
 

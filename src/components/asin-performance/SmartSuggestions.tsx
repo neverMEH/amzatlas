@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { Calendar, TrendingUp, Clock, AlertCircle, CheckCircle } from 'lucide-react'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { 
@@ -15,6 +15,7 @@ import {
 } from '@/lib/date-utils/comparison-period'
 import { parseISO, differenceInDays, isAfter } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { usePerformanceTracking } from '@/lib/monitoring/performance-tracker'
 
 interface SmartSuggestionsProps {
   dateRange: DateRange
@@ -45,8 +46,17 @@ export function SmartSuggestions({
   className,
 }: SmartSuggestionsProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const { trackRender, trackOperation } = usePerformanceTracking('SmartSuggestions')
+  
+  // Track component render time
+  useEffect(() => {
+    const cleanup = trackRender()
+    return cleanup
+  })
 
   const suggestions = useMemo(() => {
+    const endTracking = trackOperation('generateSuggestions')
+    
     try {
       const periodType = detectPeriodType(dateRange)
       const suggestionsWithMeta: SuggestionWithMetadata[] = []
@@ -118,8 +128,10 @@ export function SmartSuggestions({
     } catch (error) {
       console.error('Error generating suggestions:', error)
       return []
+    } finally {
+      endTracking()
     }
-  }, [dateRange, maxSuggestions])
+  }, [dateRange, maxSuggestions, trackOperation])
 
   if (isCalculating) {
     return (

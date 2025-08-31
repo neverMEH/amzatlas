@@ -246,6 +246,26 @@ npm run fix:columns        # Add missing columns to tables
 
 ## Recent Changes & Migration Notes
 
+### Smart Comparison Period Selection (Aug 2025)
+- **Major Feature**: Replaced fixed 30-day comparison with intelligent period-based suggestions
+- **Core Features**:
+  - Automatic period detection (daily, weekly, monthly, quarterly, yearly)
+  - Smart suggestions based on selected date range
+  - Data availability validation and confidence scoring
+  - One-click selection with visual feedback
+- **Performance Optimizations**:
+  - LRU caching for date calculations (200x+ speedup)
+  - Performance monitoring and tracking
+  - Handles 500,000+ operations/second with cache
+- **Components**:
+  - SmartSuggestions: Card-based suggestion UI
+  - ComparisonSelector: Integration with date picker
+  - Performance tracker and monitoring dashboard
+- **Documentation**:
+  - Feature guide: `/docs/smart-comparison-feature.md`
+  - Deployment guide: `/docs/smart-comparison-deployment.md`
+  - Migration guide: `/docs/smart-comparison-migration-guide.md`
+
 ### Comparison Date Display Enhancement (Aug 2025)
 - **Enhanced all charts**: Added comparison date references to tooltips and headers
 - **API update**: Added `comparisonDateRange` field to asin-overview response

@@ -13,56 +13,91 @@ import {
   isSameDay,
 } from 'date-fns'
 import { DateRange, PeriodType } from './types'
+import { performanceTracker } from '../monitoring/performance-tracker'
+import { periodDetectionCache, CalculationCache } from './calculation-cache'
 
 /**
  * Detects the type of period based on the date range
  */
 export function detectPeriodType(range: DateRange): PeriodType {
-  const start = parseISO(range.start)
-  const end = parseISO(range.end)
-  const daysDiff = differenceInDays(end, start) + 1 // Include both start and end days
-
-  // Check for exact period matches first
-  if (daysDiff === 1) {
-    return PeriodType.DAILY
+  // Check cache first
+  const cacheKey = CalculationCache.createKey('detectPeriodType', range)
+  const cached = periodDetectionCache.get(cacheKey)
+  if (cached) {
+    return cached
   }
+  
+  performanceTracker.startTimer('detectPeriodType')
+  
+  try {
+    const start = parseISO(range.start)
+    const end = parseISO(range.end)
+    const daysDiff = differenceInDays(end, start) + 1 // Include both start and end days
 
-  if (daysDiff === 7) {
-    return PeriodType.WEEKLY
+    // Check for exact period matches first
+    if (daysDiff === 1) {
+      const result = PeriodType.DAILY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (daysDiff === 7) {
+      const result = PeriodType.WEEKLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (daysDiff === 14) {
+      const result = PeriodType.BI_WEEKLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    // Check for full calendar periods
+    if (isFullMonth(start, end)) {
+      const result = PeriodType.MONTHLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (isFullQuarter(start, end)) {
+      const result = PeriodType.QUARTERLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (isFullYear(start, end)) {
+      const result = PeriodType.YEARLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    // Check for approximate periods
+    if (daysDiff >= 28 && daysDiff <= 31) {
+      const result = PeriodType.MONTHLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (daysDiff >= 89 && daysDiff <= 92) {
+      const result = PeriodType.QUARTERLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    if (daysDiff >= 364 && daysDiff <= 366) {
+      const result = PeriodType.YEARLY
+      periodDetectionCache.set(cacheKey, result)
+      return result
+    }
+
+    // Default to custom for any other period
+    const result = PeriodType.CUSTOM
+    periodDetectionCache.set(cacheKey, result)
+    return result
+  } finally {
+    performanceTracker.endTimer('detectPeriodType', { range })
   }
-
-  if (daysDiff === 14) {
-    return PeriodType.BI_WEEKLY
-  }
-
-  // Check for full calendar periods
-  if (isFullMonth(start, end)) {
-    return PeriodType.MONTHLY
-  }
-
-  if (isFullQuarter(start, end)) {
-    return PeriodType.QUARTERLY
-  }
-
-  if (isFullYear(start, end)) {
-    return PeriodType.YEARLY
-  }
-
-  // Check for approximate periods
-  if (daysDiff >= 28 && daysDiff <= 31) {
-    return PeriodType.MONTHLY
-  }
-
-  if (daysDiff >= 89 && daysDiff <= 92) {
-    return PeriodType.QUARTERLY
-  }
-
-  if (daysDiff >= 364 && daysDiff <= 366) {
-    return PeriodType.YEARLY
-  }
-
-  // Default to custom for any other period
-  return PeriodType.CUSTOM
 }
 
 /**
