@@ -45,6 +45,7 @@
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
     "@google-cloud/logging": "^11.2.0",
+    "@radix-ui/react-tooltip": "^1.2.8",
     "@sendgrid/mail": "^8.1.5",
     "@supabase/supabase-js": "^2.56.0",
     "@tailwindcss/forms": "^0.5.10",

@@ -10,6 +10,9 @@ import {
   formatComparisonLabel,
   ComparisonType,
 } from './utils/comparisonPeriod'
+import { SmartSuggestions } from './SmartSuggestions'
+import { calculateComparisonPeriod as calculateSmartComparison } from '@/lib/date-utils/comparison-period'
+import type { ComparisonPeriod } from '@/lib/date-utils/comparison-period'
 
 interface ComparisonSelectorProps {
   mainStartDate: string
@@ -36,6 +39,8 @@ export function ComparisonSelector({
   const [comparisonType, setComparisonType] = useState<ComparisonType>('previous')
   const [customOffset, setCustomOffset] = useState(1)
   const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [showSmartSuggestions, setShowSmartSuggestions] = useState(false)
+  const [selectedComparison, setSelectedComparison] = useState<ComparisonPeriod | null>(null)
 
   // Get comparison options for current period type
   const comparisonOptions = getComparisonOptions(periodType)
@@ -43,20 +48,22 @@ export function ComparisonSelector({
   // Calculate default comparison when enabled
   useEffect(() => {
     if (enabled && !compareStartDate && !compareEndDate) {
-      const defaultComparison = calculateComparisonPeriod({
-        startDate: mainStartDate,
-        endDate: mainEndDate,
-        periodType,
-        comparisonType: 'previous',
-      })
+      // Use smart comparison for initial default
+      const smartComparison = calculateSmartComparison(
+        { start: mainStartDate, end: mainEndDate },
+        'auto'
+      )
       
+      setSelectedComparison(smartComparison)
       onChange({
-        ...defaultComparison,
+        startDate: smartComparison.start,
+        endDate: smartComparison.end,
         enabled: true,
       })
       setComparisonType('previous')
+      setShowSmartSuggestions(true) // Show smart suggestions by default
     }
-  }, [enabled, mainStartDate, mainEndDate, periodType])
+  }, [enabled, mainStartDate, mainEndDate])
 
   // Validate initial comparison dates
   useEffect(() => {
@@ -166,20 +173,23 @@ export function ComparisonSelector({
 
   const handleToggle = () => {
     if (!enabled) {
-      // Enable with default comparison
-      const defaultComparison = calculateComparisonPeriod({
-        startDate: mainStartDate,
-        endDate: mainEndDate,
-        periodType,
-        comparisonType: 'previous',
-      })
+      // Enable with smart comparison
+      const smartComparison = calculateSmartComparison(
+        { start: mainStartDate, end: mainEndDate },
+        'auto'
+      )
       
+      setSelectedComparison(smartComparison)
       onChange({
-        ...defaultComparison,
+        startDate: smartComparison.start,
+        endDate: smartComparison.end,
         enabled: true,
       })
+      setShowSmartSuggestions(true)
     } else {
       // Disable comparison
+      setSelectedComparison(null)
+      setShowSmartSuggestions(false)
       onChange({
         startDate: '',
         endDate: '',
@@ -201,6 +211,17 @@ export function ComparisonSelector({
     }
   }
 
+  const handleSmartSuggestionSelect = (comparison: ComparisonPeriod) => {
+    setSelectedComparison(comparison)
+    onChange({
+      startDate: comparison.start,
+      endDate: comparison.end,
+      enabled: true,
+    })
+    setShowSmartSuggestions(false)
+    setValidationErrors([])
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center space-x-4">
@@ -212,11 +233,23 @@ export function ComparisonSelector({
             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
             aria-label="Enable comparison"
           />
-          <span className="text-sm text-gray-700">Compare to:</span>
+          <span className="text-sm font-medium text-gray-700">Compare to another period</span>
         </label>
 
         {enabled && (
           <div className="flex items-center space-x-2">
+            {!showSmartSuggestions && (
+              <>
+                <button
+                  onClick={() => setShowSmartSuggestions(true)}
+                  className="px-3 py-2 text-sm bg-blue-50 text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                >
+                  Use Smart Suggestions
+                </button>
+                <span className="text-sm text-gray-500">or</span>
+              </>
+            )}
+            
             <div className="relative">
               <button
                 onClick={() => setIsOpen(!isOpen)}
@@ -224,7 +257,8 @@ export function ComparisonSelector({
               >
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="text-gray-700">
-                  {compareStartDate && compareEndDate ? formatComparisonLabel({
+                  {selectedComparison ? selectedComparison.label : 
+                   compareStartDate && compareEndDate ? formatComparisonLabel({
                     startDate: compareStartDate,
                     endDate: compareEndDate,
                     periodType,
@@ -288,6 +322,28 @@ export function ComparisonSelector({
           </div>
         )}
       </div>
+
+      {/* Smart Suggestions */}
+      {enabled && showSmartSuggestions && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700">Smart comparison suggestions</h3>
+            <button
+              onClick={() => setShowSmartSuggestions(false)}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Use manual selection
+            </button>
+          </div>
+          <SmartSuggestions
+            dateRange={{ start: mainStartDate, end: mainEndDate }}
+            currentComparison={selectedComparison || undefined}
+            onSelect={handleSmartSuggestionSelect}
+            maxSuggestions={4}
+            className="max-w-2xl"
+          />
+        </div>
+      )}
 
       {/* Validation errors */}
       {validationErrors.length > 0 && (
