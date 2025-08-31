@@ -249,40 +249,46 @@ export function KeywordAnalysisModal({
 
               {/* Sparkline View for Popup Mode */}
               {shouldShowSparklines && data && (
-                <div className="grid grid-cols-1 gap-4">
-                  <MetricSparkline
-                    data={data.timeSeries}
-                    metric="impressions"
-                    label="Impressions"
-                    currentValue={data.summary.impressions}
-                    comparisonValue={data.comparisonSummary?.impressions}
-                    height={layout.chartHeight}
-                  />
-                  <MetricSparkline
-                    data={data.timeSeries}
-                    metric="clicks"
-                    label="Clicks"
-                    currentValue={data.summary.clicks}
-                    comparisonValue={data.comparisonSummary?.clicks}
-                    height={layout.chartHeight}
-                  />
-                  <MetricSparkline
-                    data={data.timeSeries}
-                    metric="purchases"
-                    label="Purchases"
-                    currentValue={data.summary.purchases}
-                    comparisonValue={data.comparisonSummary?.purchases}
-                    height={layout.chartHeight}
-                  />
-                  <MetricSparkline
-                    data={data.timeSeries}
-                    metric="cvr"
-                    label="Conversion Rate"
-                    currentValue={data.summary.cvr}
-                    comparisonValue={data.comparisonSummary?.cvr}
-                    formatValue={(v) => `${(v * 100).toFixed(2)}%`}
-                    height={layout.chartHeight}
-                  />
+                <div className="space-y-3">
+                  {/* Primary Metrics Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <MetricSparkline
+                      data={data.timeSeries}
+                      metric="impressions"
+                      label="Impressions"
+                      currentValue={data.summary.impressions}
+                      comparisonValue={data.comparisonSummary?.impressions}
+                      height={layout.chartHeight}
+                    />
+                    <MetricSparkline
+                      data={data.timeSeries}
+                      metric="clicks"
+                      label="Clicks"
+                      currentValue={data.summary.clicks}
+                      comparisonValue={data.comparisonSummary?.clicks}
+                      height={layout.chartHeight}
+                    />
+                  </div>
+                  {/* Conversion Metrics Row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <MetricSparkline
+                      data={data.timeSeries}
+                      metric="purchases"
+                      label="Purchases"
+                      currentValue={data.summary.purchases}
+                      comparisonValue={data.comparisonSummary?.purchases}
+                      height={layout.chartHeight}
+                    />
+                    <MetricSparkline
+                      data={data.timeSeries}
+                      metric="cvr"
+                      label="Conversion Rate"
+                      currentValue={data.summary.cvr}
+                      comparisonValue={data.comparisonSummary?.cvr}
+                      formatValue={(v) => `${(v * 100).toFixed(2)}%`}
+                      height={layout.chartHeight}
+                    />
+                  </div>
                 </div>
               )}
 

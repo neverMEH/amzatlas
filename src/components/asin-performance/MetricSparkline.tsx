@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 import { SparklineChart } from './SparklineChart'
 
 export interface MetricSparklineProps {
@@ -27,7 +27,7 @@ function formatChange(current: number, previous: number): string {
   return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`
 }
 
-export function MetricSparkline({
+function MetricSparklineComponent({
   data,
   metric,
   label,
@@ -85,3 +85,5 @@ export function MetricSparkline({
     </div>
   )
 }
+
+export const MetricSparkline = memo(MetricSparklineComponent)

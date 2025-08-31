@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -22,7 +22,7 @@ export interface SparklineChartProps {
   className?: string
 }
 
-export function SparklineChart({
+function SparklineChartComponent({
   data,
   dataKey,
   type = 'line',
@@ -98,3 +98,5 @@ export function SparklineChart({
     </div>
   )
 }
+
+export const SparklineChart = memo(SparklineChartComponent)
