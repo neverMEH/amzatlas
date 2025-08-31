@@ -5,6 +5,10 @@ import {
   aggregateSearchQueries, 
   transformSearchQueryData 
 } from './utils/keyword-aggregation'
+import { 
+  generateComparisonSuggestions, 
+  validateComparisonPeriod 
+} from './utils/suggestion-metadata'
 
 export async function GET(request: NextRequest) {
   try {
@@ -224,6 +228,22 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Generate comparison suggestions
+    const suggestions = await generateComparisonSuggestions(
+      asin,
+      { start: startDate, end: endDate }
+    )
+
+    // Validate current comparison if provided
+    let comparisonValidation = null
+    if (compareStartDate && compareEndDate) {
+      comparisonValidation = await validateComparisonPeriod(
+        asin,
+        { start: startDate, end: endDate },
+        { start: compareStartDate, end: compareEndDate }
+      )
+    }
+
     return NextResponse.json({
       asin,
       productTitle: asinData?.product_title || `ASIN: ${asin}`,
@@ -242,6 +262,8 @@ export async function GET(request: NextRequest) {
       comparisonTimeSeries,
       topQueries,
       topQueriesComparison,
+      comparisonSuggestions: suggestions,
+      comparisonValidation,
     })
   } catch (error) {
     console.error('Error in /api/dashboard/v2/asin-overview:', error)

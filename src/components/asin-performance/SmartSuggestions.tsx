@@ -23,6 +23,8 @@ interface SmartSuggestionsProps {
   maxSuggestions?: number
   isCalculating?: boolean
   className?: string
+  asin?: string // Optional ASIN for API-based suggestions
+  useApiSuggestions?: boolean // Whether to use API suggestions
 }
 
 interface SuggestionWithMetadata extends ComparisonPeriod {

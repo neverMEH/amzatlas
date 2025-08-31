@@ -6,6 +6,40 @@ export interface ASIN {
   brand: string
 }
 
+import type { ComparisonPeriod } from '@/lib/date-utils/comparison-period'
+
+export interface SuggestionMetadata {
+  period: ComparisonPeriod
+  dataAvailability: {
+    hasData: boolean
+    recordCount: number
+    coverage: number
+    dataQuality: 'high' | 'medium' | 'low'
+  }
+  confidence: {
+    score: number
+    factors: {
+      dataCompleteness: number
+      recency: number
+      periodAlignment: number
+      seasonalRelevance: number
+    }
+  }
+  warnings: string[]
+}
+
+export interface ComparisonSuggestions {
+  suggestions: SuggestionMetadata[]
+  selectedSuggestion?: SuggestionMetadata
+  recommendedMode: string
+}
+
+export interface ComparisonValidation {
+  isValid: boolean
+  metadata?: SuggestionMetadata
+  errors?: string[]
+}
+
 export interface ASINPerformanceData {
   asin: string
   productTitle: string
@@ -108,6 +142,8 @@ export interface ASINPerformanceData {
     cartAddShare?: number
     purchaseShare: number
   }>
+  comparisonSuggestions?: ComparisonSuggestions
+  comparisonValidation?: ComparisonValidation
 }
 
 export function useASINList() {
@@ -195,6 +231,64 @@ export function useSearchQueries(
       return response.json()
     },
     enabled: !!asin && !!startDate && !!endDate,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useComparisonSuggestions(params: {
+  asin: string
+  startDate: string
+  endDate: string
+} | null) {
+  return useQuery<ComparisonSuggestions>({
+    queryKey: ['comparison-suggestions', params],
+    queryFn: async () => {
+      if (!params) throw new Error('No parameters provided')
+      
+      const response = await fetch(
+        `/api/comparison-periods/suggestions?` + new URLSearchParams({
+          asin: params.asin,
+          startDate: params.startDate,
+          endDate: params.endDate,
+        })
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch comparison suggestions')
+      }
+      
+      return response.json()
+    },
+    enabled: !!params,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+}
+
+export function useComparisonValidation(params: {
+  asin: string
+  mainRange: { start: string; end: string }
+  comparisonRange: { start: string; end: string }
+} | null) {
+  return useQuery<ComparisonValidation>({
+    queryKey: ['comparison-validation', params],
+    queryFn: async () => {
+      if (!params) throw new Error('No parameters provided')
+      
+      const response = await fetch('/api/comparison-periods/validate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to validate comparison period')
+      }
+      
+      return response.json()
+    },
+    enabled: !!params,
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
