@@ -73,10 +73,10 @@ export async function GET(request: NextRequest) {
       .select(`
         start_date,
         search_query,
-        impressions,
-        clicks,
-        cart_adds,
-        purchases
+        asin_impression_count,
+        asin_click_count,
+        asin_cart_add_count,
+        asin_purchase_count
       `)
       .eq('asin', asin)
       .in('search_query', keywords)
@@ -101,60 +101,68 @@ export async function GET(request: NextRequest) {
         
         const dateEntry = timeSeriesMap.get(date)
         dateEntry[row.search_query] = {
-          impressions: row.impressions || 0,
-          clicks: row.clicks || 0,
-          purchases: row.purchases || 0,
+          impressions: row.asin_impression_count || 0,
+          clicks: row.asin_click_count || 0,
+          purchases: row.asin_purchase_count || 0,
         }
       })
     }
 
     const timeSeries = Array.from(timeSeriesMap.values())
 
-    // Fetch funnel totals for all keywords
-    const { data: funnelData, error: funnelError } = await supabase
-      .rpc('get_multiple_keyword_funnels', {
-        p_asin: asin,
-        p_keywords: keywords,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      })
-
-    if (funnelError) {
-      console.error('Error fetching funnel data:', funnelError)
-    }
-
-    // Transform funnel data
+    // Calculate funnel totals from time series data
     const funnels: KeywordComparisonData['funnels'] = {}
-    if (funnelData) {
-      funnelData.forEach((row: any) => {
-        funnels[row.search_query] = {
-          impressions: row.impressions || 0,
-          clicks: row.clicks || 0,
-          cartAdds: row.cart_adds || 0,
-          purchases: row.purchases || 0,
+    
+    // Group by keyword and sum the metrics
+    if (timeSeriesData) {
+      const keywordTotals = new Map<string, any>()
+      
+      timeSeriesData.forEach((row: any) => {
+        const keyword = row.search_query
+        if (!keywordTotals.has(keyword)) {
+          keywordTotals.set(keyword, {
+            impressions: 0,
+            clicks: 0,
+            cartAdds: 0,
+            purchases: 0,
+          })
         }
+        
+        const totals = keywordTotals.get(keyword)
+        totals.impressions += row.asin_impression_count || 0
+        totals.clicks += row.asin_click_count || 0
+        totals.cartAdds += row.asin_cart_add_count || 0
+        totals.purchases += row.asin_purchase_count || 0
+      })
+      
+      keywordTotals.forEach((totals, keyword) => {
+        funnels[keyword] = totals
       })
     }
 
-    // Fetch market share data for keywords
-    const { data: marketShareData, error: marketShareError } = await supabase
-      .rpc('get_keyword_impression_shares', {
-        p_asin: asin,
-        p_keywords: keywords,
-        p_start_date: startDate,
-        p_end_date: endDate,
-      })
-
-    if (marketShareError) {
-      console.error('Error fetching market share data:', marketShareError)
-    }
-
-    // Transform market share data
+    // Calculate market share data
     const marketShare: KeywordComparisonData['marketShare'] = {}
-    if (marketShareData) {
-      marketShareData.forEach((row: any) => {
-        marketShare[row.search_query] = row.impression_share || 0
-      })
+    
+    // Fetch total market data for each keyword
+    for (const keyword of keywords) {
+      const { data: allAsinData } = await supabase
+        .from('search_query_performance')
+        .select('asin_impression_count, total_query_impression_count')
+        .eq('search_query', keyword)
+        .eq('asin', asin)
+        .gte('start_date', startDate)
+        .lte('start_date', endDate)
+      
+      if (allAsinData && allAsinData.length > 0) {
+        // Sum impressions for this ASIN and total market
+        const asinImpressions = allAsinData.reduce((sum, row) => sum + (row.asin_impression_count || 0), 0)
+        const totalImpressions = allAsinData.reduce((sum, row) => sum + (row.total_query_impression_count || 0), 0)
+        
+        // Calculate impression share
+        marketShare[keyword] = totalImpressions > 0 ? asinImpressions / totalImpressions : 0
+      } else {
+        marketShare[keyword] = 0
+      }
     }
 
     const response: KeywordComparisonData = {
