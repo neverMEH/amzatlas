@@ -6,7 +6,6 @@ import { Activity, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PerformanceStats {
-  operation: string
   avg: number
   min: number
   max: number
