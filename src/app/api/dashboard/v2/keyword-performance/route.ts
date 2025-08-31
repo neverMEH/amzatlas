@@ -120,10 +120,10 @@ export async function GET(request: NextRequest) {
       .from('search_query_performance')
       .select(`
         start_date,
-        impressions,
-        clicks,
-        cart_adds,
-        purchases
+        asin_impression_count,
+        asin_click_count,
+        asin_cart_add_count,
+        asin_purchase_count
       `)
       .eq('asin', asin)
       .eq('search_query', keyword)
@@ -139,12 +139,12 @@ export async function GET(request: NextRequest) {
     // Transform time series data
     const timeSeries = (timeSeriesData || []).map((row: any) => ({
       date: row.start_date,
-      impressions: row.impressions || 0,
-      clicks: row.clicks || 0,
-      cartAdds: row.cart_adds || 0,
-      purchases: row.purchases || 0,
-      ctr: row.impressions > 0 ? (row.clicks / row.impressions) : 0,
-      cvr: row.impressions > 0 ? (row.purchases / row.impressions) : 0,
+      impressions: row.asin_impression_count || 0,
+      clicks: row.asin_click_count || 0,
+      cartAdds: row.asin_cart_add_count || 0,
+      purchases: row.asin_purchase_count || 0,
+      ctr: row.asin_impression_count > 0 ? (row.asin_click_count / row.asin_impression_count) : 0,
+      cvr: row.asin_impression_count > 0 ? (row.asin_purchase_count / row.asin_impression_count) : 0,
     }))
 
     // Calculate funnel totals
@@ -214,10 +214,10 @@ export async function GET(request: NextRequest) {
         .from('search_query_performance')
         .select(`
           start_date,
-          impressions,
-          clicks,
-          cart_adds,
-          purchases
+          asin_impression_count,
+          asin_click_count,
+          asin_cart_add_count,
+          asin_purchase_count
         `)
         .eq('asin', asin)
         .eq('search_query', keyword)
@@ -228,12 +228,12 @@ export async function GET(request: NextRequest) {
       if (comparisonTimeSeriesData) {
         response.comparisonTimeSeries = comparisonTimeSeriesData.map((row: any) => ({
           date: row.start_date,
-          impressions: row.impressions || 0,
-          clicks: row.clicks || 0,
-          cartAdds: row.cart_adds || 0,
-          purchases: row.purchases || 0,
-          ctr: row.impressions > 0 ? (row.clicks / row.impressions) : 0,
-          cvr: row.impressions > 0 ? (row.purchases / row.impressions) : 0,
+          impressions: row.asin_impression_count || 0,
+          clicks: row.asin_click_count || 0,
+          cartAdds: row.asin_cart_add_count || 0,
+          purchases: row.asin_purchase_count || 0,
+          ctr: row.asin_impression_count > 0 ? (row.asin_click_count / row.asin_impression_count) : 0,
+          cvr: row.asin_impression_count > 0 ? (row.asin_purchase_count / row.asin_impression_count) : 0,
         }))
       }
 
