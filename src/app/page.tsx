@@ -25,6 +25,7 @@ export default function Dashboard() {
   })
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
+  const [hasManualDateSelection, setHasManualDateSelection] = useState(false)
 
   // Fetch performance data
   const { data, isLoading, error } = useASINPerformance(
@@ -87,7 +88,11 @@ export default function Dashboard() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select ASIN
               </label>
-              <ASINSelector value={selectedASIN} onChange={setSelectedASIN} />
+              <ASINSelector value={selectedASIN} onChange={(asin) => {
+                setSelectedASIN(asin)
+                // Reset manual selection flag when ASIN changes
+                setHasManualDateSelection(false)
+              }} />
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -96,11 +101,17 @@ export default function Dashboard() {
               <DateRangePickerV2
                 startDate={dateRange.startDate}
                 endDate={dateRange.endDate}
-                onChange={setDateRange}
+                onChange={(range) => {
+                  setDateRange(range)
+                  // Mark as manual selection when user changes date
+                  setHasManualDateSelection(true)
+                }}
                 showComparison={true}
                 compareStartDate={compareRange.startDate}
                 compareEndDate={compareRange.endDate}
                 onCompareChange={setCompareRange}
+                asin={selectedASIN}
+                hasManualSelection={hasManualDateSelection}
               />
             </div>
           </div>

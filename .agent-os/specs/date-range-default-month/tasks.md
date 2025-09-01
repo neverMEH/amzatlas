@@ -22,12 +22,12 @@ Feature: When an ASIN is selected, have the date range default to the most recen
   - [x] 2.5 Handle loading states while fetching ASIN data availability
   - [x] 2.6 Verify all tests pass
 
-- [ ] 3. ASIN Selector Integration
-  - [ ] 3.1 Write tests for ASIN selector callback behavior
-  - [ ] 3.2 Update ASINSelector component to trigger date range update on selection
-  - [ ] 3.3 Implement proper event handling and state synchronization
-  - [ ] 3.4 Ensure smooth UX transition when switching ASINs
-  - [ ] 3.5 Verify all tests pass
+- [x] 3. ASIN Selector Integration
+  - [x] 3.1 Write tests for ASIN selector callback behavior
+  - [x] 3.2 Update ASINSelector component to trigger date range update on selection
+  - [x] 3.3 Implement proper event handling and state synchronization
+  - [x] 3.4 Ensure smooth UX transition when switching ASINs
+  - [x] 3.5 Verify all tests pass
 
 - [ ] 4. Dashboard Page Integration
   - [ ] 4.1 Write integration tests for ASIN selection and date range updates

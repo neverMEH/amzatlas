@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom'
 import { vi, beforeEach } from 'vitest'
+import React from 'react'
+
+// Make React globally available for tests
+// @ts-ignore
+global.React = React
 
 // Mock fetch for tests
 global.fetch = vi.fn()

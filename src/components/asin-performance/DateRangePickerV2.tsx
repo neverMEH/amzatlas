@@ -31,6 +31,7 @@ import { QuarterSelector } from './calendars/QuarterSelector'
 import { YearSelector } from './calendars/YearSelector'
 import { ComparisonSelector } from './ComparisonSelector'
 import { CustomDateRange } from './CustomDateRange'
+import { useASINDataAvailability } from '@/lib/api/asin-performance'
 
 interface DateRangePickerV2Props {
   startDate: string
@@ -40,6 +41,8 @@ interface DateRangePickerV2Props {
   compareStartDate?: string
   compareEndDate?: string
   onCompareChange?: (range: ComparisonRange) => void
+  asin?: string
+  hasManualSelection?: boolean
 }
 
 export function DateRangePickerV2({
@@ -50,11 +53,18 @@ export function DateRangePickerV2({
   compareStartDate,
   compareEndDate,
   onCompareChange,
+  asin,
+  hasManualSelection = false,
 }: DateRangePickerV2Props) {
   const [periodType, setPeriodType] = useState<PeriodType>('week')
   const [isOpen, setIsOpen] = useState(false)
   const [comparisonEnabled, setComparisonEnabled] = useState(false)
+  const [hasSetDefaultRange, setHasSetDefaultRange] = useState(false)
+  const [lastProcessedASIN, setLastProcessedASIN] = useState<string | undefined>(undefined)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Fetch ASIN data availability
+  const { data: dataAvailability, isLoading: isLoadingAvailability } = useASINDataAvailability(asin || null)
 
   // Get current period dates based on type
   const getCurrentPeriodDates = useCallback((type: PeriodType): DateRange => {
@@ -102,6 +112,8 @@ export function DateRangePickerV2({
     setPeriodType(newType)
     const newDates = getCurrentPeriodDates(newType)
     onChange(newDates)
+    // When user manually changes period type, mark as manual selection
+    setHasSetDefaultRange(true)
   }
 
 
@@ -133,6 +145,55 @@ export function DateRangePickerV2({
     }
   }
 
+
+  // Set default date range when ASIN data becomes available
+  useEffect(() => {
+    // Skip if manual selection was made or if we're loading or if no ASIN
+    if (hasManualSelection || !asin || isLoadingAvailability || !dataAvailability) {
+      return
+    }
+
+    // Skip if we already processed this ASIN
+    if (asin === lastProcessedASIN && hasSetDefaultRange) {
+      return
+    }
+
+    // Determine the date range to use
+    let newDateRange: DateRange | null = null
+    let shouldSetMonthPeriod = false
+
+    if (dataAvailability.mostRecentCompleteMonth) {
+      newDateRange = {
+        startDate: dataAvailability.mostRecentCompleteMonth.startDate,
+        endDate: dataAvailability.mostRecentCompleteMonth.endDate
+      }
+      shouldSetMonthPeriod = true
+    } else if (dataAvailability.fallbackRange) {
+      newDateRange = {
+        startDate: dataAvailability.fallbackRange.startDate,
+        endDate: dataAvailability.fallbackRange.endDate
+      }
+    }
+
+    if (newDateRange) {
+      // Update period type if we're setting a complete month
+      if (shouldSetMonthPeriod && periodType !== 'month') {
+        setPeriodType('month')
+      }
+      
+      // Set the date range
+      onChange(newDateRange)
+      setHasSetDefaultRange(true)
+      setLastProcessedASIN(asin)
+    }
+  }, [asin, dataAvailability, isLoadingAvailability, hasManualSelection, onChange, periodType, hasSetDefaultRange, lastProcessedASIN])
+
+  // Reset when ASIN changes
+  useEffect(() => {
+    if (asin !== lastProcessedASIN) {
+      setHasSetDefaultRange(false)
+    }
+  }, [asin, lastProcessedASIN])
 
   // Click outside handler
   useEffect(() => {
@@ -167,6 +228,13 @@ export function DateRangePickerV2({
             <span className="text-sm font-medium text-gray-700">{getDisplayText()}</span>
             <ChevronDown className="h-4 w-4 text-gray-500 ml-auto" />
           </button>
+          
+          {/* Loading indicator for ASIN data */}
+          {asin && isLoadingAvailability && (
+            <div className="absolute right-0 top-full mt-1 text-sm text-gray-500">
+              Loading ASIN data...
+            </div>
+          )}
 
           {isOpen && (
             <div className={`absolute z-10 mt-1 ${periodType === 'custom' ? '' : 'bg-white border border-gray-300 rounded-lg shadow-lg min-w-[350px]'}`} role="dialog">
