@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse and validate year
-    const year = parseInt(yearParam, 10);
+    const year = parseInt(yearParam!, 10); // yearParam is guaranteed to exist due to check above
     if (isNaN(year)) {
       return NextResponse.json(
         { error: 'Invalid year parameter' },
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Parse and validate month
-    const month = parseInt(monthParam, 10);
+    const month = parseInt(monthParam!, 10); // monthParam is guaranteed to exist due to check above
     if (isNaN(month) || month < 1 || month > 12) {
       return NextResponse.json(
         { error: 'Invalid month parameter. Must be between 1 and 12' },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch monthly data availability
-    const monthlyData = await getASINMonthlyDataAvailability(asin, year, month);
+    const monthlyData = await getASINMonthlyDataAvailability(asin!, year, month); // asin is guaranteed to exist due to check above
 
     // Add cache headers for better performance
     const response = NextResponse.json(monthlyData);
