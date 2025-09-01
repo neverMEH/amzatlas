@@ -98,7 +98,7 @@ export async function getASINDataAvailability(asin: string): Promise<DateRange[]
 
   // Group by date range and count records
   const dateRangeMap = new Map<string, number>();
-  (data || []).forEach(row => {
+  (data || []).forEach((row: { start_date: string; end_date: string }) => {
     const key = `${row.start_date}_${row.end_date}`;
     dateRangeMap.set(key, (dateRangeMap.get(key) || 0) + 1);
   });
