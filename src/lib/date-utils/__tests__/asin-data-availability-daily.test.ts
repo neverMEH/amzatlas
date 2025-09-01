@@ -57,7 +57,7 @@ describe('ASIN Daily Data Availability', () => {
         granularity: 'daily' as DataGranularity
       });
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('sqp.search_performance_summary');
+      expect(mockSupabase.from).toHaveBeenCalledWith('search_performance_summary');
       expect(mockSupabase.select).toHaveBeenCalledWith('start_date, end_date');
       expect(mockSupabase.eq).toHaveBeenCalledWith('asin', 'B08XVYZ1Y5');
       
@@ -158,7 +158,7 @@ describe('ASIN Daily Data Availability', () => {
 
       const result: DailyDataAvailability = await getASINMonthlyDataAvailability(asin, year, month);
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('sqp.search_performance_summary');
+      expect(mockSupabase.from).toHaveBeenCalledWith('search_performance_summary');
       expect(mockSupabase.select).toHaveBeenCalledWith('start_date, end_date');
       expect(mockSupabase.eq).toHaveBeenCalledWith('asin', asin);
       expect(mockSupabase.gte).toHaveBeenCalledWith('start_date', monthStart);

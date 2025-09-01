@@ -117,7 +117,7 @@ export async function getASINDataAvailability(
   
   // Build query
   let query = supabase
-    .from('sqp.search_performance_summary')
+    .from('search_performance_summary')
     .select('start_date, end_date')
     .eq('asin', asin);
     

@@ -51,7 +51,7 @@ describe('ASIN Data Availability', () => {
 
       const result = await getASINDataAvailability('B08XVYZ1Y5');
 
-      expect(mockSupabase.from).toHaveBeenCalledWith('sqp.search_performance_summary');
+      expect(mockSupabase.from).toHaveBeenCalledWith('search_performance_summary');
       expect(mockSupabase.select).toHaveBeenCalledWith('start_date, end_date');
       expect(mockSupabase.eq).toHaveBeenCalledWith('asin', 'B08XVYZ1Y5');
       // Our implementation adds record_count of 1 for each unique date range
