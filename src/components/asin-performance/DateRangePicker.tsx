@@ -1,11 +1,12 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Calendar, ChevronDown, Loader2 } from 'lucide-react'
 import { format, subDays, startOfWeek, startOfMonth, startOfYear, isValid, parseISO } from 'date-fns'
 import { SmartSuggestions } from './SmartSuggestions'
 import { calculateComparisonPeriod } from '@/lib/date-utils/comparison-period'
 import type { ComparisonPeriod } from '@/lib/date-utils/comparison-period'
+import { useASINDataAvailability } from '@/lib/api/asin-performance'
 
 interface DateRangePickerProps {
   startDate: string
@@ -15,6 +16,7 @@ interface DateRangePickerProps {
   compareStartDate?: string
   compareEndDate?: string
   onCompareChange?: (range: { startDate: string; endDate: string; enabled: boolean }) => void
+  asin?: string
 }
 
 interface PresetOption {
@@ -30,11 +32,17 @@ export function DateRangePicker({
   compareStartDate,
   compareEndDate,
   onCompareChange,
+  asin,
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [comparisonEnabled, setComparisonEnabled] = useState(false)
   const [selectedComparison, setSelectedComparison] = useState<ComparisonPeriod | null>(null)
+  const [hasSetDefaultRange, setHasSetDefaultRange] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const previousAsinRef = useRef<string | undefined>(asin)
+
+  // Fetch ASIN data availability
+  const { data: dataAvailability, isLoading: isLoadingAvailability } = useASINDataAvailability(asin || null)
 
   const today = new Date()
   
@@ -115,6 +123,35 @@ export function DateRangePicker({
     }
   }, [])
 
+  // Handle ASIN changes and set default date range
+  useEffect(() => {
+    // Check if ASIN has changed
+    if (asin && asin !== previousAsinRef.current) {
+      previousAsinRef.current = asin
+      setHasSetDefaultRange(false)
+    }
+
+    // Set default date range when data is available and ASIN has changed
+    if (asin && dataAvailability && !hasSetDefaultRange && !isLoadingAvailability) {
+      if (dataAvailability.mostRecentCompleteMonth) {
+        // Use the most recent complete month
+        onChange({
+          startDate: dataAvailability.mostRecentCompleteMonth.startDate,
+          endDate: dataAvailability.mostRecentCompleteMonth.endDate
+        })
+        setHasSetDefaultRange(true)
+      } else if (dataAvailability.fallbackRange) {
+        // Use fallback range if no complete month
+        onChange({
+          startDate: dataAvailability.fallbackRange.startDate,
+          endDate: dataAvailability.fallbackRange.endDate
+        })
+        setHasSetDefaultRange(true)
+      }
+      // If neither is available, don't change the date range
+    }
+  }, [asin, dataAvailability, hasSetDefaultRange, isLoadingAvailability, onChange])
+
   const handlePresetClick = (preset: PresetOption) => {
     const range = preset.getValue()
     onChange(range)
@@ -183,6 +220,12 @@ export function DateRangePicker({
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-4">
+        {isLoadingAvailability && asin && (
+          <div data-testid="date-range-loading" className="flex items-center space-x-2 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <span>Loading date availability...</span>
+          </div>
+        )}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsOpen(!isOpen)}

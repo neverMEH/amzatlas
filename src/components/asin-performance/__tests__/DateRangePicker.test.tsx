@@ -4,6 +4,15 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { DateRangePicker } from '../DateRangePicker'
 import { format, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns'
 
+// Mock the API module to prevent React Query issues
+vi.mock('@/lib/api/asin-performance', () => ({
+  useASINDataAvailability: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null
+  }))
+}))
+
 describe('DateRangePicker', () => {
   const mockOnChange = vi.fn()
   const today = new Date()
@@ -139,7 +148,7 @@ describe('DateRangePicker', () => {
       />
     )
 
-    expect(screen.getByText('Compare to:')).toBeInTheDocument()
+    expect(screen.getByText('Compare to another period')).toBeInTheDocument()
     expect(screen.getByLabelText('Enable comparison')).toBeInTheDocument()
   })
 

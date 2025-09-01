@@ -292,3 +292,49 @@ export function useComparisonValidation(params: {
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
+
+export interface ASINDataAvailability {
+  asin: string
+  dateRanges: Array<{
+    start_date: string
+    end_date: string
+    record_count: number
+  }>
+  mostRecentCompleteMonth: {
+    year: number
+    month: number
+    startDate: string
+    endDate: string
+  } | null
+  fallbackRange: {
+    startDate: string
+    endDate: string
+  } | null
+  summary: {
+    totalRecords: number
+    dateRangeCount: number
+    earliestDate: string | null
+    latestDate: string | null
+  }
+}
+
+export async function fetchASINDataAvailability(asin: string): Promise<ASINDataAvailability> {
+  const response = await fetch(`/api/dashboard/v2/asin-data-availability?asin=${encodeURIComponent(asin)}`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to fetch ASIN data availability')
+  }
+  
+  return response.json()
+}
+
+export function useASINDataAvailability(asin: string | null) {
+  return useQuery<ASINDataAvailability>({
+    queryKey: ['asin-data-availability', asin],
+    queryFn: () => fetchASINDataAvailability(asin!),
+    enabled: !!asin,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
