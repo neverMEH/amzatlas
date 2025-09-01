@@ -85,17 +85,29 @@ export async function getASINDataAvailability(asin: string): Promise<DateRange[]
 
   const supabase = createClient();
   
+  // Optimized query - select only needed columns and group by date range
   const { data, error } = await supabase
     .from('sqp.search_performance_summary')
-    .select('start_date, end_date, COUNT(*) as record_count')
+    .select('start_date, end_date')
     .eq('asin', asin)
     .order('start_date', { ascending: true });
-
+  
   if (error) {
     throw error;
   }
 
-  const dateRanges = data || [];
+  // Group by date range and count records
+  const dateRangeMap = new Map<string, number>();
+  (data || []).forEach(row => {
+    const key = `${row.start_date}_${row.end_date}`;
+    dateRangeMap.set(key, (dateRangeMap.get(key) || 0) + 1);
+  });
+
+  // Convert back to array format
+  const dateRanges = Array.from(dateRangeMap.entries()).map(([key, count]) => {
+    const [start_date, end_date] = key.split('_');
+    return { start_date, end_date, record_count: count };
+  }).sort((a, b) => a.start_date.localeCompare(b.start_date));
   
   // Cache the results
   dataAvailabilityCache.set(asin, dateRanges);

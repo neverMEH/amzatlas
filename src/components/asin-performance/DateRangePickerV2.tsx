@@ -235,6 +235,14 @@ export function DateRangePickerV2({
               Loading ASIN data...
             </div>
           )}
+          
+          {/* No data message */}
+          {asin && !isLoadingAvailability && dataAvailability && 
+           !dataAvailability.mostRecentCompleteMonth && !dataAvailability.fallbackRange && (
+            <div className="absolute right-0 top-full mt-1 text-sm text-amber-600">
+              No historical data available for this ASIN
+            </div>
+          )}
 
           {isOpen && (
             <div className={`absolute z-10 mt-1 ${periodType === 'custom' ? '' : 'bg-white border border-gray-300 rounded-lg shadow-lg min-w-[350px]'}`} role="dialog">

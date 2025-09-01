@@ -29,16 +29,16 @@ Feature: When an ASIN is selected, have the date range default to the most recen
   - [x] 3.4 Ensure smooth UX transition when switching ASINs
   - [x] 3.5 Verify all tests pass
 
-- [ ] 4. Dashboard Page Integration
-  - [ ] 4.1 Write integration tests for ASIN selection and date range updates
-  - [ ] 4.2 Update page.tsx to coordinate ASIN selection with date range defaults
-  - [ ] 4.3 Handle edge cases (no data available, partial month data)
-  - [ ] 4.4 Implement proper error handling and user feedback
-  - [ ] 4.5 Verify all integration tests pass
+- [x] 4. Dashboard Page Integration
+  - [x] 4.1 Write integration tests for ASIN selection and date range updates
+  - [x] 4.2 Update page.tsx to coordinate ASIN selection with date range defaults
+  - [x] 4.3 Handle edge cases (no data available, partial month data)
+  - [x] 4.4 Implement proper error handling and user feedback
+  - [x] 4.5 Verify all integration tests pass
 
-- [ ] 5. Performance and Edge Cases
-  - [ ] 5.1 Write tests for edge cases (new ASINs, sparse data, missing months)
-  - [ ] 5.2 Optimize data availability queries for performance
-  - [ ] 5.3 Add fallback behavior when no complete month is available
-  - [ ] 5.4 Test with various ASINs to ensure consistent behavior
-  - [ ] 5.5 Verify all tests pass
+- [x] 5. Performance and Edge Cases
+  - [x] 5.1 Write tests for edge cases (new ASINs, sparse data, missing months)
+  - [x] 5.2 Optimize data availability queries for performance
+  - [x] 5.3 Add fallback behavior when no complete month is available
+  - [x] 5.4 Test with various ASINs to ensure consistent behavior
+  - [x] 5.5 Verify all tests pass

@@ -35,7 +35,7 @@ describe('DateRangePickerV2 - ASIN Default Date Range', () => {
 
       render(<DateRangePickerV2 {...defaultProps} />)
       
-      expect(mockUseASINDataAvailability).toHaveBeenCalledWith(undefined)
+      expect(mockUseASINDataAvailability).toHaveBeenCalledWith(null)
     })
 
     it('should fetch data availability when ASIN is provided', () => {
