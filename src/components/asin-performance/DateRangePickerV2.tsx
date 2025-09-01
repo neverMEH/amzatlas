@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Calendar, ChevronDown } from 'lucide-react'
 import { 
   format, 
@@ -31,7 +31,7 @@ import { QuarterSelector } from './calendars/QuarterSelector'
 import { YearSelector } from './calendars/YearSelector'
 import { ComparisonSelector } from './ComparisonSelector'
 import { CustomDateRange } from './CustomDateRange'
-import { useASINDataAvailability } from '@/lib/api/asin-performance'
+import { useASINDataAvailability, useASINMonthlyDataAvailability } from '@/lib/api/asin-performance'
 
 interface DateRangePickerV2Props {
   startDate: string
@@ -61,10 +61,74 @@ export function DateRangePickerV2({
   const [comparisonEnabled, setComparisonEnabled] = useState(false)
   const [hasSetDefaultRange, setHasSetDefaultRange] = useState(false)
   const [lastProcessedASIN, setLastProcessedASIN] = useState<string | undefined>(undefined)
+  const [currentCalendarMonth, setCurrentCalendarMonth] = useState<{ year: number; month: number } | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fetch ASIN data availability
-  const { data: dataAvailability, isLoading: isLoadingAvailability } = useASINDataAvailability(asin || null)
+  const { data: dataAvailability, isLoading: isLoadingAvailability, error: availabilityError } = useASINDataAvailability(asin || null)
+  
+  // Fetch monthly data when in month view and calendar is open
+  const { data: monthlyDataAvailability } = useASINMonthlyDataAvailability(
+    asin || null,
+    currentCalendarMonth?.year || null,
+    currentCalendarMonth?.month || null
+  )
+
+  // Extract available weeks and months from data availability
+  const availableWeeks = React.useMemo(() => {
+    if (!dataAvailability?.dateRanges) return []
+    
+    // Get unique week start dates
+    const weekStarts = new Set<string>()
+    dataAvailability.dateRanges.forEach(range => {
+      const start = parseISO(range.start_date)
+      const weekStart = startOfWeek(start, { weekStartsOn: 0 })
+      weekStarts.add(format(weekStart, 'yyyy-MM-dd'))
+    })
+    
+    return Array.from(weekStarts)
+  }, [dataAvailability])
+
+  const availableMonths = React.useMemo(() => {
+    if (!dataAvailability?.dateRanges) return []
+    
+    // Get all dates that have data
+    const dates: string[] = []
+    dataAvailability.dateRanges.forEach(range => {
+      dates.push(range.start_date)
+      if (range.end_date !== range.start_date) {
+        dates.push(range.end_date)
+      }
+    })
+    
+    return dates
+  }, [dataAvailability])
+
+  // Calculate monthly data counts
+  const monthlyDataCounts = React.useMemo(() => {
+    if (!dataAvailability?.dateRanges) return {}
+    
+    const counts: Record<string, number> = {}
+    dataAvailability.dateRanges.forEach(range => {
+      const monthKey = range.start_date.substring(0, 7) // YYYY-MM
+      counts[monthKey] = (counts[monthKey] || 0) + range.record_count
+    })
+    
+    return counts
+  }, [dataAvailability])
+
+  // Update calendar month when opening calendar
+  React.useEffect(() => {
+    if (isOpen && startDate) {
+      const date = parseISO(startDate)
+      if (isValid(date)) {
+        setCurrentCalendarMonth({
+          year: date.getFullYear(),
+          month: date.getMonth() + 1
+        })
+      }
+    }
+  }, [isOpen, startDate])
 
   // Get current period dates based on type
   const getCurrentPeriodDates = useCallback((type: PeriodType): DateRange => {
@@ -229,15 +293,26 @@ export function DateRangePickerV2({
             <ChevronDown className="h-4 w-4 text-gray-500 ml-auto" />
           </button>
           
-          {/* Loading indicator for ASIN data */}
+          {/* Loading indicator */}
           {asin && isLoadingAvailability && (
-            <div className="absolute right-0 top-full mt-1 text-sm text-gray-500">
-              Loading ASIN data...
+            <div className="absolute right-0 top-full mt-1 text-sm text-gray-500 flex items-center space-x-2">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Loading data availability...</span>
+            </div>
+          )}
+          
+          {/* Error message */}
+          {asin && !isLoadingAvailability && availabilityError && (
+            <div className="absolute right-0 top-full mt-1 text-sm text-red-600">
+              Failed to load data availability
             </div>
           )}
           
           {/* No data message */}
-          {asin && !isLoadingAvailability && dataAvailability && 
+          {asin && !isLoadingAvailability && !availabilityError && dataAvailability && 
            !dataAvailability.mostRecentCompleteMonth && !dataAvailability.fallbackRange && (
             <div className="absolute right-0 top-full mt-1 text-sm text-amber-600">
               No historical data available for this ASIN
@@ -256,8 +331,13 @@ export function DateRangePickerV2({
                       setIsOpen(false)
                     }}
                     maxDate={format(new Date(), 'yyyy-MM-dd')}
+                    availableWeeks={availableWeeks}
+                    dailyData={monthlyDataAvailability?.dailyData}
                     compareStart={comparisonEnabled ? compareStartDate : undefined}
                     compareEnd={comparisonEnabled ? compareEndDate : undefined}
+                    onMonthChange={(year, month) => {
+                      setCurrentCalendarMonth({ year, month })
+                    }}
                   />
                 </div>
               )}
@@ -272,6 +352,10 @@ export function DateRangePickerV2({
                       setIsOpen(false)
                     }}
                     maxDate={format(new Date(), 'yyyy-MM-dd')}
+                    availableMonths={availableMonths}
+                    monthlyDataCounts={monthlyDataCounts}
+                    compareStart={comparisonEnabled ? compareStartDate : undefined}
+                    compareEnd={comparisonEnabled ? compareEndDate : undefined}
                   />
                 </div>
               )}

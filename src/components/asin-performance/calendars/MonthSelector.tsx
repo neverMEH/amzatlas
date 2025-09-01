@@ -15,6 +15,7 @@ import {
   getYear,
 } from 'date-fns'
 import { DateRange } from '../types'
+import { Tooltip } from './Tooltip'
 
 interface MonthSelectorProps {
   selectedStart: string
@@ -22,6 +23,7 @@ interface MonthSelectorProps {
   onSelect: (range: DateRange) => void
   maxDate?: string
   availableMonths?: string[]
+  monthlyDataCounts?: Record<string, number> // YYYY-MM -> record count
   compareStart?: string
   compareEnd?: string
 }
@@ -34,6 +36,7 @@ export function MonthSelector({
   onSelect,
   maxDate,
   availableMonths = [],
+  monthlyDataCounts = {},
   compareStart,
   compareEnd,
 }: MonthSelectorProps) {
@@ -102,6 +105,11 @@ export function MonthSelector({
   const hasAvailableData = (monthIndex: number) => {
     const monthStart = format(new Date(displayYear, monthIndex, 1), 'yyyy-MM-dd')
     return availableMonths.some(date => date.startsWith(monthStart.substring(0, 7)))
+  }
+
+  const getMonthDataCount = (monthIndex: number) => {
+    const monthKey = format(new Date(displayYear, monthIndex, 1), 'yyyy-MM')
+    return monthlyDataCounts[monthKey] || 0
   }
 
   const handleYearClick = () => {
@@ -180,9 +188,10 @@ export function MonthSelector({
           const isSelected = isMonthSelected(index)
           const isInComparison = isMonthInComparison(index)
           const hasData = hasAvailableData(index)
+          const dataCount = getMonthDataCount(index)
           const isCurrentYearMonth = displayYear === new Date().getFullYear() && index === new Date().getMonth()
           
-          return (
+          const button = (
             <button
               key={monthName}
               onClick={() => handleMonthClick(index)}
@@ -200,16 +209,29 @@ export function MonthSelector({
                 <span 
                   data-available
                   className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full"
+                  aria-label={`${dataCount} records available`}
                 />
               )}
               {isCurrentYearMonth && (
                 <span 
                   data-current
                   className="absolute bottom-1 right-1 w-1 h-1 bg-blue-500 rounded-full"
+                  aria-label="Current month"
                 />
               )}
             </button>
           )
+          
+          // Wrap with tooltip if there's data
+          if (dataCount > 0 && !isDisabled) {
+            return (
+              <Tooltip key={monthName} content={`${dataCount} record${dataCount !== 1 ? 's' : ''}`}>
+                {button}
+              </Tooltip>
+            )
+          }
+          
+          return button
         })}
       </div>
 

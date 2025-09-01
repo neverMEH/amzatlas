@@ -17,6 +17,27 @@ export interface DateRange {
   record_count: number;
 }
 
+export type DataGranularity = 'daily' | 'weekly';
+
+export interface DataAvailabilityOptions {
+  granularity?: DataGranularity;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface DailyDataAvailability {
+  asin: string;
+  year: number;
+  month: number;
+  dailyData: Record<string, number>; // date -> record count
+  summary: {
+    totalDays: number;
+    totalRecords: number;
+    density: number; // percentage of days with data
+    hasData: boolean;
+  };
+}
+
 export interface CompleteMonth {
   year: number;
   month: number;
@@ -65,6 +86,10 @@ class DataAvailabilityCache {
   setMaxSize(size: number): void {
     this.maxSize = size;
   }
+
+  static createKey(asin: string, options?: DataAvailabilityOptions): string {
+    return JSON.stringify({ asin, ...options });
+  }
 }
 
 const dataAvailabilityCache = new DataAvailabilityCache();
@@ -76,21 +101,37 @@ export function getDataAvailabilityCache(): DataAvailabilityCache {
 /**
  * Fetches data availability date ranges for a given ASIN
  */
-export async function getASINDataAvailability(asin: string): Promise<DateRange[]> {
+export async function getASINDataAvailability(
+  asin: string, 
+  options?: DataAvailabilityOptions
+): Promise<DateRange[]> {
+  const cacheKey = DataAvailabilityCache.createKey(asin, options);
+  
   // Check cache first
-  const cached = dataAvailabilityCache.get(asin);
+  const cached = dataAvailabilityCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
   const supabase = createClient();
   
-  // Optimized query - select only needed columns and group by date range
-  const { data, error } = await supabase
+  // Build query
+  let query = supabase
     .from('sqp.search_performance_summary')
     .select('start_date, end_date')
-    .eq('asin', asin)
-    .order('start_date', { ascending: true });
+    .eq('asin', asin);
+    
+  // Apply date filters if provided
+  if (options?.startDate) {
+    query = query.gte('start_date', options.startDate);
+  }
+  if (options?.endDate) {
+    query = query.lte('end_date', options.endDate);
+  }
+    
+  query = query.order('start_date', { ascending: true });
+  
+  const { data, error } = await query;
   
   if (error) {
     throw error;
@@ -98,21 +139,44 @@ export async function getASINDataAvailability(asin: string): Promise<DateRange[]
 
   // Group by date range and count records
   const dateRangeMap = new Map<string, number>();
-  (data || []).forEach((row: { start_date: string; end_date: string }) => {
-    const key = `${row.start_date}_${row.end_date}`;
-    dateRangeMap.set(key, (dateRangeMap.get(key) || 0) + 1);
-  });
+  
+  if (options?.granularity === 'daily') {
+    // For daily granularity, ensure each date is treated as a single day
+    (data || []).forEach((row: { start_date: string; end_date: string }) => {
+      // Extract just the date part (YYYY-MM-DD)
+      const dateKey = row.start_date.split('T')[0];
+      dateRangeMap.set(dateKey, (dateRangeMap.get(dateKey) || 0) + 1);
+    });
+    
+    // Convert to array with same date for start and end
+    const dateRanges = Array.from(dateRangeMap.entries()).map(([date, count]) => ({
+      start_date: date,
+      end_date: date,
+      record_count: count
+    })).sort((a, b) => a.start_date.localeCompare(b.start_date));
+    
+    // Cache the results
+    dataAvailabilityCache.set(cacheKey, dateRanges);
+    
+    return dateRanges;
+  } else {
+    // Default weekly granularity - group by date range
+    (data || []).forEach((row: { start_date: string; end_date: string }) => {
+      const key = `${row.start_date}_${row.end_date}`;
+      dateRangeMap.set(key, (dateRangeMap.get(key) || 0) + 1);
+    });
 
-  // Convert back to array format
-  const dateRanges = Array.from(dateRangeMap.entries()).map(([key, count]) => {
-    const [start_date, end_date] = key.split('_');
-    return { start_date, end_date, record_count: count };
-  }).sort((a, b) => a.start_date.localeCompare(b.start_date));
-  
-  // Cache the results
-  dataAvailabilityCache.set(asin, dateRanges);
-  
-  return dateRanges;
+    // Convert back to array format
+    const dateRanges = Array.from(dateRangeMap.entries()).map(([key, count]) => {
+      const [start_date, end_date] = key.split('_');
+      return { start_date, end_date, record_count: count };
+    }).sort((a, b) => a.start_date.localeCompare(b.start_date));
+    
+    // Cache the results
+    dataAvailabilityCache.set(cacheKey, dateRanges);
+    
+    return dateRanges;
+  }
 }
 
 /**
@@ -259,5 +323,67 @@ export function getFallbackDateRange(dateRanges: DateRange[]): { startDate: stri
   return {
     startDate: sortedRanges[0].start_date,
     endDate: sortedRanges[0].end_date
+  };
+}
+
+/**
+ * Fetches daily-level data availability for a specific month
+ */
+export async function getASINMonthlyDataAvailability(
+  asin: string,
+  year: number,
+  month: number
+): Promise<DailyDataAvailability> {
+  const monthStart = format(startOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
+  const monthEnd = format(endOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
+  const daysInMonth = getDaysInMonth(new Date(year, month - 1));
+  
+  // Create cache key for monthly data
+  const cacheKey = DataAvailabilityCache.createKey(asin, {
+    granularity: 'daily',
+    startDate: monthStart,
+    endDate: monthEnd
+  });
+  
+  // Check cache first
+  const cached = dataAvailabilityCache.get(cacheKey);
+  
+  let dateRanges: DateRange[];
+  
+  if (cached) {
+    dateRanges = cached;
+  } else {
+    // Fetch daily data for the month
+    dateRanges = await getASINDataAvailability(asin, {
+      granularity: 'daily',
+      startDate: monthStart,
+      endDate: monthEnd
+    });
+  }
+  
+  // Build daily data map
+  const dailyData: Record<string, number> = {};
+  let totalRecords = 0;
+  
+  dateRanges.forEach(range => {
+    const date = range.start_date; // For daily data, start_date === end_date
+    dailyData[date] = range.record_count;
+    totalRecords += range.record_count;
+  });
+  
+  const totalDays = Object.keys(dailyData).length;
+  const density = totalDays / daysInMonth;
+  
+  return {
+    asin,
+    year,
+    month,
+    dailyData,
+    summary: {
+      totalDays,
+      totalRecords,
+      density,
+      hasData: totalDays > 0
+    }
   };
 }

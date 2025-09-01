@@ -21,6 +21,7 @@ import {
   isEqual,
 } from 'date-fns'
 import { DateRange } from '../types'
+import { Tooltip } from './Tooltip'
 
 interface WeekSelectorProps {
   selectedStart: string
@@ -28,8 +29,10 @@ interface WeekSelectorProps {
   onSelect: (range: DateRange) => void
   maxDate?: string
   availableWeeks?: string[]
+  dailyData?: Record<string, number> // date -> record count
   compareStart?: string
   compareEnd?: string
+  onMonthChange?: (year: number, month: number) => void
 }
 
 export function WeekSelector({
@@ -38,13 +41,20 @@ export function WeekSelector({
   onSelect,
   maxDate,
   availableWeeks = [],
+  dailyData = {},
   compareStart,
   compareEnd,
+  onMonthChange,
 }: WeekSelectorProps) {
   const [currentMonth, setCurrentMonth] = useState(() => {
     const selected = parseISO(selectedStart)
     return isValid(selected) ? startOfMonth(selected) : startOfMonth(new Date())
   })
+
+  // Notify parent of initial month
+  React.useEffect(() => {
+    onMonthChange?.(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
+  }, [])
 
   const selectedStartDate = parseISO(selectedStart)
   const maxDateParsed = maxDate ? parseISO(maxDate) : null
@@ -52,11 +62,15 @@ export function WeekSelector({
   const compareEndDate = compareEnd ? parseISO(compareEnd) : null
 
   const handlePreviousMonth = () => {
-    setCurrentMonth(subMonths(currentMonth, 1))
+    const newMonth = subMonths(currentMonth, 1)
+    setCurrentMonth(newMonth)
+    onMonthChange?.(newMonth.getFullYear(), newMonth.getMonth() + 1)
   }
 
   const handleNextMonth = () => {
-    setCurrentMonth(addMonths(currentMonth, 1))
+    const newMonth = addMonths(currentMonth, 1)
+    setCurrentMonth(newMonth)
+    onMonthChange?.(newMonth.getFullYear(), newMonth.getMonth() + 1)
   }
 
   const handleToday = () => {
@@ -123,6 +137,11 @@ export function WeekSelector({
     return availableWeeks.includes(weekStart)
   }
 
+  const getDailyRecordCount = (date: Date) => {
+    const dateKey = format(date, 'yyyy-MM-dd')
+    return dailyData[dateKey] || 0
+  }
+
   return (
     <div className="p-4">
       {/* Header */}
@@ -185,8 +204,9 @@ export function WeekSelector({
                   const isCurrentMonth = isSameMonth(day, currentMonth)
                   const isTodayDate = isToday(day)
                   const hasData = hasAvailableData(day)
+                  const recordCount = getDailyRecordCount(day)
                   
-                  return (
+                  const button = (
                     <button
                       key={dayIndex}
                       onClick={() => handleDayClick(day)}
@@ -212,16 +232,29 @@ export function WeekSelector({
                         <span 
                           data-available
                           className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full"
+                          aria-label={`${recordCount} records available`}
                         />
                       )}
                       {isTodayDate && (
                         <span 
                           data-current
                           className="absolute top-1 right-1 w-1 h-1 bg-blue-500 rounded-full"
+                          aria-label="Today"
                         />
                       )}
                     </button>
                   )
+                  
+                  // Wrap with tooltip if there's data
+                  if (recordCount > 0 && !isDisabled) {
+                    return (
+                      <Tooltip key={dayIndex} content={`${recordCount} record${recordCount !== 1 ? 's' : ''}`}>
+                        {button}
+                      </Tooltip>
+                    )
+                  }
+                  
+                  return button
                 })}
               </React.Fragment>
             )

@@ -338,3 +338,51 @@ export function useASINDataAvailability(asin: string | null) {
     gcTime: 10 * 60 * 1000, // 10 minutes
   })
 }
+
+export interface ASINMonthlyDataAvailability {
+  asin: string
+  year: number
+  month: number
+  dailyData: Record<string, number> // date -> record count
+  summary: {
+    totalDays: number
+    totalRecords: number
+    density: number
+    hasData: boolean
+  }
+}
+
+export async function fetchASINMonthlyDataAvailability(
+  asin: string, 
+  year: number, 
+  month: number
+): Promise<ASINMonthlyDataAvailability> {
+  const params = new URLSearchParams({
+    asin,
+    year: year.toString(),
+    month: month.toString(),
+  })
+  
+  const response = await fetch(`/api/dashboard/v2/asin-monthly-availability?${params}`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to fetch monthly data availability')
+  }
+  
+  return response.json()
+}
+
+export function useASINMonthlyDataAvailability(
+  asin: string | null, 
+  year: number | null, 
+  month: number | null
+) {
+  return useQuery<ASINMonthlyDataAvailability>({
+    queryKey: ['asin-monthly-availability', asin, year, month],
+    queryFn: () => fetchASINMonthlyDataAvailability(asin!, year!, month!),
+    enabled: !!asin && year !== null && month !== null,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  })
+}
