@@ -14,9 +14,19 @@ import { useASINPerformance } from '@/lib/api/asin-performance'
 export default function Dashboard() {
   const router = useRouter()
   const [selectedASIN, setSelectedASIN] = useState<string>('')
-  const [dateRange, setDateRange] = useState({
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    endDate: new Date().toISOString().split('T')[0],
+  const [dateRange, setDateRange] = useState(() => {
+    // Default to current week
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
+    
+    return {
+      startDate: startOfWeek.toISOString().split('T')[0],
+      endDate: endOfWeek.toISOString().split('T')[0],
+    }
   })
   const [compareRange, setCompareRange] = useState({
     startDate: '',
