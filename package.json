@@ -16,6 +16,9 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:current-date": "vitest run current-date",
+    "test:date-utils": "vitest run src/lib/date-utils/__tests__",
+    "test:dashboard-dates": "vitest run src/app/__tests__/page.current-date.test.tsx src/app/keyword-analysis/__tests__/page.current-date.test.tsx",
     "cli": "node dist/cli/test-data-sync.js",
     "pipeline:run": "tsx src/scripts/run-pipeline.ts",
     "pipeline:test": "tsx src/scripts/test-pipeline.ts",
@@ -40,7 +43,8 @@
     "seed:db:typescript": "tsx scripts/seed-database.ts --typescript",
     "seed:simple": "tsx scripts/seed-simple.ts",
     "test:brand-extraction": "tsx src/scripts/test-brand-extraction.ts",
-    "test:period-calculations": "tsx src/scripts/test-period-calculations.ts"
+    "test:period-calculations": "tsx src/scripts/test-period-calculations.ts",
+    "validate:current-dates": "tsx src/scripts/validate-current-date-behavior.ts"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
