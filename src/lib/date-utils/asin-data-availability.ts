@@ -87,7 +87,7 @@ export async function getASINDataAvailability(asin: string): Promise<DateRange[]
   
   // Optimized query - select only needed columns and group by date range
   const { data, error } = await supabase
-    .from('sqp.search_performance_summary')
+    .from('search_performance_summary')
     .select('start_date, end_date')
     .eq('asin', asin)
     .order('start_date', { ascending: true });
