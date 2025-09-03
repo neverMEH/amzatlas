@@ -81,7 +81,7 @@ describe('Current Date Handling - September 2025', () => {
     it('should return last N days for custom period', () => {
       const range = getDefaultDateRange({ periodType: 'custom', days: 30 })
       expect(range).toEqual({
-        startDate: '2025-08-04',
+        startDate: '2025-08-05', // 30 days including end date
         endDate: '2025-09-03',
       })
     })
