@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Calendar, ChevronDown, AlertCircle } from 'lucide-react'
 import { 
   format, 
   startOfWeek, 
@@ -69,6 +69,9 @@ export function DateRangePickerV2({
 
   // Fetch ASIN data availability
   const { data: dataAvailability, isLoading: isLoadingAvailability } = useASINDataAvailability(asin || null)
+  
+  // Check if current selection has data
+  const [hasDataForCurrentPeriod, setHasDataForCurrentPeriod] = useState(true)
 
   // Get current period dates based on type
   const getCurrentPeriodDates = useCallback((type: PeriodType): DateRange => {
@@ -203,6 +206,9 @@ export function DateRangePickerV2({
         )
       })
       
+      // Update state to show no data indicator
+      setHasDataForCurrentPeriod(hasDataForCurrent)
+      
       // If there's no data for current selection but there is historical data, 
       // show a message instead of changing dates
       if (!hasDataForCurrent && dataAvailability.summary.latestDate) {
@@ -300,6 +306,19 @@ export function DateRangePickerV2({
           {asin && isLoadingAvailability && (
             <div className="absolute right-0 top-full mt-1 text-sm text-gray-500">
               Loading ASIN data...
+            </div>
+          )}
+          
+          {/* No data indicator */}
+          {asin && !isLoadingAvailability && !hasDataForCurrentPeriod && dataAvailability && (
+            <div className="absolute right-0 top-full mt-1 text-sm text-amber-600 flex items-center space-x-1">
+              <AlertCircle className="h-4 w-4" />
+              <span>No data available for this period</span>
+              {dataAvailability.summary.latestDate && (
+                <span className="text-gray-500">
+                  (Latest: {format(parseISO(dataAvailability.summary.latestDate), 'MMM d, yyyy')})
+                </span>
+              )}
             </div>
           )}
           

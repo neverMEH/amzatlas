@@ -13,7 +13,7 @@ import {
   isValidComparisonPeriod,
   detectPeriodType,
 } from '@/lib/date-utils/comparison-period'
-import { parseISO, differenceInDays, isAfter } from 'date-fns'
+import { parseISO, differenceInDays, isAfter, differenceInMonths } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { usePerformanceTracking } from '@/lib/monitoring/performance-tracker'
 
@@ -35,6 +35,20 @@ interface SuggestionWithMetadata extends ComparisonPeriod {
   icon: React.ReactNode
   periodLength?: number // Number of days in the period
   historicalContext?: string // e.g., "Holiday season", "Q4 2023"
+}
+
+// Helper function to calculate confidence based on recency
+function calculateRecencyConfidence(comparisonEnd: string): 'high' | 'medium' | 'low' {
+  const today = new Date()
+  const endDate = parseISO(comparisonEnd)
+  const monthsAgo = differenceInMonths(today, endDate)
+  
+  // Within 2 months = high confidence (very recent)
+  // 2-6 months = medium confidence (reasonably recent)
+  // Over 6 months = low confidence (historical)
+  if (monthsAgo <= 2) return 'high'
+  if (monthsAgo <= 6) return 'medium'
+  return 'low'
 }
 
 export function SmartSuggestions({
@@ -64,10 +78,13 @@ export function SmartSuggestions({
       // Previous period (period-over-period)
       const previousPeriod = calculateComparisonPeriod(dateRange, 'period-over-period')
       if (isValidComparisonPeriod(dateRange, previousPeriod)) {
+        const recencyConfidence = calculateRecencyConfidence(previousPeriod.end)
+        const monthsAgo = differenceInMonths(new Date(), parseISO(previousPeriod.end))
+        
         suggestionsWithMeta.push({
           ...previousPeriod,
-          confidence: 'high',
-          reason: 'Most recent comparable period',
+          confidence: recencyConfidence,
+          reason: monthsAgo <= 1 ? 'Most recent comparable period' : `Previous period (${monthsAgo} months ago)`,
           dataAvailability: getDataAvailability(previousPeriod),
           icon: <Clock className="h-4 w-4" />,
           periodLength: getPeriodLength(previousPeriod),
@@ -79,10 +96,12 @@ export function SmartSuggestions({
       if (periodType === PeriodType.WEEKLY || periodType === PeriodType.DAILY) {
         const lastMonth = calculateComparisonPeriod(dateRange, 'month-over-month')
         if (isValidComparisonPeriod(dateRange, lastMonth)) {
+          const recencyConfidence = calculateRecencyConfidence(lastMonth.end)
+          
           suggestionsWithMeta.push({
             ...lastMonth,
             label: `Same ${periodType === PeriodType.WEEKLY ? 'Week' : 'Days'} Last Month`,
-            confidence: 'high',
+            confidence: recencyConfidence,
             reason: 'Accounts for monthly seasonality',
             dataAvailability: getDataAvailability(lastMonth),
             icon: <Calendar className="h-4 w-4" />,
@@ -95,9 +114,15 @@ export function SmartSuggestions({
       // Same period last year
       const lastYear = calculateComparisonPeriod(dateRange, 'year-over-year')
       if (isValidComparisonPeriod(dateRange, lastYear)) {
+        // Year-over-year comparisons get lower confidence due to age
+        // but boost slightly for monthly/quarterly due to seasonal importance
+        const baseConfidence = calculateRecencyConfidence(lastYear.end)
+        const isSeasonalPeriod = periodType === PeriodType.MONTHLY || periodType === PeriodType.QUARTERLY
+        const adjustedConfidence = isSeasonalPeriod && baseConfidence === 'low' ? 'medium' : baseConfidence
+        
         suggestionsWithMeta.push({
           ...lastYear,
-          confidence: periodType === PeriodType.MONTHLY || periodType === PeriodType.QUARTERLY ? 'high' : 'medium',
+          confidence: adjustedConfidence,
           reason: 'Year-over-year comparison for seasonal trends',
           dataAvailability: getDataAvailability(lastYear),
           icon: <TrendingUp className="h-4 w-4" />,
@@ -124,7 +149,25 @@ export function SmartSuggestions({
         }
       }
 
-      return suggestionsWithMeta.slice(0, maxSuggestions)
+      // Sort suggestions by confidence (prefer recent dates)
+      const sortedSuggestions = suggestionsWithMeta.sort((a, b) => {
+        // Define confidence order
+        const confidenceOrder = { high: 3, medium: 2, low: 1 }
+        const aScore = confidenceOrder[a.confidence]
+        const bScore = confidenceOrder[b.confidence]
+        
+        // Sort by confidence first, then by recency if confidence is equal
+        if (aScore !== bScore) {
+          return bScore - aScore
+        }
+        
+        // If confidence is equal, prefer more recent dates
+        const aDate = parseISO(a.end)
+        const bDate = parseISO(b.end)
+        return bDate.getTime() - aDate.getTime()
+      })
+      
+      return sortedSuggestions.slice(0, maxSuggestions)
     } catch (error) {
       console.error('Error generating suggestions:', error)
       return []
