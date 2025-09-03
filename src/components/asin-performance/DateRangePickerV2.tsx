@@ -205,7 +205,7 @@ export function DateRangePickerV2({
       
       // If there's no data for current selection but there is historical data, 
       // show a message instead of changing dates
-      if (!hasDataForCurrent && dataAvailability.mostRecentData) {
+      if (!hasDataForCurrent && dataAvailability.summary.latestDate) {
         console.info('No data available for current date range. Historical data available.')
       }
       
