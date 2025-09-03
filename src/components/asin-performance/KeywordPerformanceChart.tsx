@@ -83,12 +83,12 @@ export function KeywordPerformanceChart({
   const chartData = useMemo(() => {
     if (!comparisonData) return data
 
-    // Create a map of dates to combined data
-    const dataMap = new Map<string, any>()
-
-    // Add current data
-    data.forEach((point) => {
-      dataMap.set(point.date, {
+    // For keyword performance, we want to align comparison data by index (same time offset)
+    // since we're comparing different time periods
+    return data.map((point, index) => {
+      const comparisonPoint = comparisonData[index]
+      
+      return {
         date: point.date,
         impressions: point.impressions,
         clicks: point.clicks,
@@ -97,28 +97,18 @@ export function KeywordPerformanceChart({
         clickRate: point.clickRate,
         cartAddRate: point.cartAddRate,
         purchaseRate: point.purchaseRate,
-      })
-    })
-
-    // Add comparison data with prefixed keys
-    comparisonData.forEach((point, index) => {
-      const currentPoint = data[index]
-      if (currentPoint) {
-        const existingData = dataMap.get(currentPoint.date) || {}
-        dataMap.set(currentPoint.date, {
-          ...existingData,
-          comparisonImpressions: point.impressions,
-          comparisonClicks: point.clicks,
-          comparisonCartAdds: point.cartAdds,
-          comparisonPurchases: point.purchases,
-          comparisonClickRate: point.clickRate,
-          comparisonCartAddRate: point.cartAddRate,
-          comparisonPurchaseRate: point.purchaseRate,
-        })
+        // Add comparison data if available
+        ...(comparisonPoint ? {
+          comparisonImpressions: comparisonPoint.impressions,
+          comparisonClicks: comparisonPoint.clicks,
+          comparisonCartAdds: comparisonPoint.cartAdds,
+          comparisonPurchases: comparisonPoint.purchases,
+          comparisonClickRate: comparisonPoint.clickRate,
+          comparisonCartAddRate: comparisonPoint.cartAddRate,
+          comparisonPurchaseRate: comparisonPoint.purchaseRate,
+        } : {})
       }
     })
-
-    return Array.from(dataMap.values())
   }, [data, comparisonData])
 
   const toggleMetric = (metricKey: string) => {
