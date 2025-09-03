@@ -65,7 +65,9 @@ describe('DateRangePickerV2 - Calendar State Management', () => {
       await user.click(outsideButton)
       
       // Calendar should be closed
-      expect(screen.queryByTestId('week-selector')).not.toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.queryByTestId('week-selector')).not.toBeInTheDocument()
+      })
     })
 
     it('should close calendar after selecting a date', async () => {
@@ -196,12 +198,15 @@ describe('DateRangePickerV2 - Calendar State Management', () => {
       const calendarButton = screen.getByTestId('calendar-trigger')
       await user.click(calendarButton)
       
+      // Reset the mock to clear the initial trigger click
+      containerClickHandler.mockClear()
+      
       // Click inside calendar
       const prevButton = screen.getByLabelText('Previous month')
       await user.click(prevButton)
       
       // Container click handler should not be called from calendar interaction
-      expect(containerClickHandler).toHaveBeenCalledTimes(1) // Only from opening calendar
+      expect(containerClickHandler).not.toHaveBeenCalled()
     })
 
     it('should properly handle rapid clicks on calendar trigger', async () => {

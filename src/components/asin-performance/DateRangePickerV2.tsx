@@ -197,23 +197,22 @@ export function DateRangePickerV2({
 
   // Click outside handler
   useEffect(() => {
+    if (!isOpen) return
+
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
     }
 
-    // Use 'click' instead of 'mousedown' to avoid timing issues
-    // Add a small delay to ensure the dropdown has rendered
-    if (isOpen) {
-      const timeoutId = setTimeout(() => {
-        document.addEventListener('click', handleClickOutside)
-      }, 0)
-      
-      return () => {
-        clearTimeout(timeoutId)
-        document.removeEventListener('click', handleClickOutside)
-      }
+    // Add listener after a small delay to avoid catching the opening click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 0)
+    
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isOpen])
 
@@ -256,7 +255,11 @@ export function DateRangePickerV2({
           )}
 
           {isOpen && (
-            <div className={`absolute z-10 mt-1 ${periodType === 'custom' ? '' : 'bg-white border border-gray-300 rounded-lg shadow-lg min-w-[350px]'}`} role="dialog">
+            <div 
+              className={`absolute z-10 mt-1 ${periodType === 'custom' ? '' : 'bg-white border border-gray-300 rounded-lg shadow-lg min-w-[350px]'}`} 
+              role="dialog"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}>
               {periodType === 'week' && (
                 <div data-testid="week-selector">
                   <WeekSelector

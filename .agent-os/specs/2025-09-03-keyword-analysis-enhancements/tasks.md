@@ -7,7 +7,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [x] 1. Fix Date Range Selection in KeywordAnalysisPage
+- [x] 1. Fix Date Range Selection in KeywordAnalysisPage ✅ (Fixed on 2025-09-03)
   - [x] 1.1 Write tests for DateRangePickerV2 calendar state management
   - [x] 1.2 Debug and fix calendar dropdown closing issue in DateRangePickerV2 component
   - [x] 1.3 Ensure proper onChange event propagation to parent component
@@ -15,7 +15,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.5 Verify ASIN-based auto-date selection still works correctly
   - [x] 1.6 Verify all tests pass
 
-- [x] 2. Enhance Market Share Module with Top Converting ASINs
+- [x] 2. Enhance Market Share Module with Top Converting ASINs ✅ (Completed on 2025-09-03)
   - [x] 2.1 Write tests for enhanced KeywordMarketShare component
   - [x] 2.2 Modify market share data sorting to prioritize conversion rate (purchases/clicks)
   - [x] 2.3 Limit display to top 5 converting ASINs
