@@ -1,6 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 // Types
+export interface ASINKeywordsParams {
+  asin: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface ASINKeywordsData {
+  keywords: Array<{
+    keyword: string
+    impressions: number
+  }>
+  totalCount: number
+}
 export interface KeywordPerformanceParams {
   asin: string
   keyword: string
@@ -15,6 +28,8 @@ export interface KeywordComparisonParams {
   keywords: string[]
   startDate: string
   endDate: string
+  compareStartDate?: string
+  compareEndDate?: string
 }
 
 export interface KeywordPerformanceData {
@@ -112,9 +127,42 @@ export interface KeywordComparisonData {
   marketShare: {
     [keyword: string]: number
   }
+  comparisonData?: {
+    [keyword: string]: {
+      current: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+      previous: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+    }
+  }
 }
 
 // API functions
+async function fetchASINKeywords(params: ASINKeywordsParams): Promise<ASINKeywordsData> {
+  const searchParams = new URLSearchParams({
+    asin: params.asin,
+  })
+
+  if (params.startDate) searchParams.append('startDate', params.startDate)
+  if (params.endDate) searchParams.append('endDate', params.endDate)
+
+  const response = await fetch(`/api/dashboard/v2/asin-keywords?${searchParams}`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to fetch ASIN keywords')
+  }
+
+  return response.json()
+}
 async function fetchKeywordPerformance(params: KeywordPerformanceParams): Promise<KeywordPerformanceData> {
   const searchParams = new URLSearchParams({
     asin: params.asin,
@@ -146,6 +194,11 @@ async function fetchKeywordComparison(params: KeywordComparisonParams): Promise<
     endDate: params.endDate,
   })
 
+  if (params.compareStartDate && params.compareEndDate) {
+    searchParams.append('compareStartDate', params.compareStartDate)
+    searchParams.append('compareEndDate', params.compareEndDate)
+  }
+
   const response = await fetch(`/api/dashboard/v2/keyword-comparison?${searchParams}`)
   
   if (!response.ok) {
@@ -159,6 +212,8 @@ async function fetchKeywordComparison(params: KeywordComparisonParams): Promise<
 // Query key factories
 export const keywordQueryKeys = {
   all: ['keyword-analysis'] as const,
+  keywords: (params: ASINKeywordsParams) =>
+    [...keywordQueryKeys.all, 'keywords', params] as const,
   performance: (params: KeywordPerformanceParams) => 
     [...keywordQueryKeys.all, 'performance', params] as const,
   comparison: (params: KeywordComparisonParams) => 
@@ -166,6 +221,16 @@ export const keywordQueryKeys = {
 }
 
 // React Query hooks
+export function useASINKeywords(params: ASINKeywordsParams | null) {
+  return useQuery({
+    queryKey: params ? keywordQueryKeys.keywords(params) : ['asin-keywords-disabled'],
+    queryFn: () => params ? fetchASINKeywords(params) : Promise.reject('No params'),
+    enabled: !!params?.asin,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+  })
+}
 export function useKeywordPerformance(params: KeywordPerformanceParams | null) {
   return useQuery({
     queryKey: params ? keywordQueryKeys.performance(params) : ['keyword-analysis-disabled'],

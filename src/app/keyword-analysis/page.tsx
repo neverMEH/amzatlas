@@ -11,7 +11,7 @@ import { KeywordMarketShare } from '@/components/asin-performance/KeywordMarketS
 import { MultiKeywordSelector } from '@/components/asin-performance/MultiKeywordSelector'
 import { KeywordComparisonView } from '@/components/asin-performance/KeywordComparisonView'
 import { Breadcrumb } from '@/components/asin-performance/Breadcrumb'
-import { useKeywordPerformance, useKeywordComparison } from '@/lib/api/keyword-analysis'
+import { useKeywordPerformance, useKeywordComparison, useASINKeywords } from '@/lib/api/keyword-analysis'
 
 type ViewMode = 'single' | 'comparison'
 
@@ -81,8 +81,10 @@ export default function KeywordAnalysisPage() {
       keywords: selectedKeywords,
       startDate,
       endDate,
+      compareStartDate: compareStartDate || undefined,
+      compareEndDate: compareEndDate || undefined,
     }
-  }, [asin, selectedKeywords, startDate, endDate, viewMode, hasRequiredParams])
+  }, [asin, selectedKeywords, startDate, endDate, compareStartDate, compareEndDate, viewMode, hasRequiredParams])
 
   // Fetch data
   const { data: performanceData, isLoading: performanceLoading, error: performanceError } = 
@@ -90,6 +92,10 @@ export default function KeywordAnalysisPage() {
   
   const { data: comparisonData, isLoading: comparisonLoading, error: comparisonError } = 
     useKeywordComparison(comparisonParams)
+    
+  const { data: keywordsData } = useASINKeywords(
+    asin && startDate && endDate ? { asin, startDate, endDate } : null
+  )
 
   // Handle date range changes
   const handleDateRangeChange = useCallback((range: { startDate: string; endDate: string }) => {
@@ -396,7 +402,7 @@ export default function KeywordAnalysisPage() {
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-1">
               <MultiKeywordSelector
-                availableKeywords={['knife sharpener', 'electric knife sharpener', 'manual knife sharpener']} // TODO: Get from API
+                availableKeywords={keywordsData?.keywords.map(k => k.keyword) || []}
                 selectedKeywords={selectedKeywords}
                 onSelectionChange={handleKeywordSelectionChange}
                 maxKeywords={10}

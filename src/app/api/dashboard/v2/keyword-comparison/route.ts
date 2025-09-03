@@ -17,6 +17,22 @@ interface KeywordComparisonData {
   marketShare: {
     [keyword: string]: number
   }
+  comparisonData?: {
+    [keyword: string]: {
+      current: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+      previous: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+    }
+  }
 }
 
 function validateDate(dateStr: string): boolean {
@@ -31,6 +47,8 @@ export async function GET(request: NextRequest) {
     const keywordsParam = searchParams.get('keywords')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const compareStartDate = searchParams.get('compareStartDate')
+    const compareEndDate = searchParams.get('compareEndDate')
 
     // Validate required parameters
     if (!asin) {
@@ -165,10 +183,48 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Add comparison data if comparison dates are provided
+    let comparisonData: KeywordComparisonData['comparisonData'] = undefined
+    
+    if (compareStartDate && compareEndDate && validateDate(compareStartDate) && validateDate(compareEndDate)) {
+      comparisonData = {}
+      
+      // Fetch comparison period data for each keyword
+      for (const keyword of keywords) {
+        const { data: comparisonFunnelData } = await supabase
+          .from('search_query_performance')
+          .select(`
+            asin_impression_count,
+            asin_click_count,
+            asin_cart_add_count,
+            asin_purchase_count
+          `)
+          .eq('asin', asin)
+          .eq('search_query', keyword)
+          .gte('start_date', compareStartDate)
+          .lte('start_date', compareEndDate)
+        
+        if (comparisonFunnelData && comparisonFunnelData.length > 0) {
+          const previous = {
+            impressions: comparisonFunnelData.reduce((sum: number, row: any) => sum + (row.asin_impression_count || 0), 0),
+            clicks: comparisonFunnelData.reduce((sum: number, row: any) => sum + (row.asin_click_count || 0), 0),
+            cartAdds: comparisonFunnelData.reduce((sum: number, row: any) => sum + (row.asin_cart_add_count || 0), 0),
+            purchases: comparisonFunnelData.reduce((sum: number, row: any) => sum + (row.asin_purchase_count || 0), 0)
+          }
+          
+          comparisonData[keyword] = {
+            current: funnels[keyword] || { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 },
+            previous
+          }
+        }
+      }
+    }
+
     const response: KeywordComparisonData = {
       timeSeries,
       funnels,
       marketShare,
+      ...(comparisonData && { comparisonData })
     }
 
     return NextResponse.json(response)
