@@ -22,16 +22,16 @@ describe('Current Date Handling - September 2025', () => {
     it('should return current week for September 2025', () => {
       const range = getCurrentWeekRange()
       expect(range).toEqual({
-        startDate: '2025-08-31', // Sunday
-        endDate: '2025-09-06',   // Saturday
+        start: '2025-08-31', // Sunday
+        end: '2025-09-06',   // Saturday
       })
     })
 
     it('should handle week starting on Monday', () => {
       const range = getCurrentWeekRange({ weekStartsOn: 1 })
       expect(range).toEqual({
-        startDate: '2025-09-01', // Monday
-        endDate: '2025-09-07',   // Sunday
+        start: '2025-09-01', // Monday
+        end: '2025-09-07',   // Sunday
       })
     })
 
@@ -39,8 +39,8 @@ describe('Current Date Handling - September 2025', () => {
       const customDate = new Date('2025-09-15T12:00:00Z')
       const range = getCurrentWeekRange({ date: customDate })
       expect(range).toEqual({
-        startDate: '2025-09-14', // Sunday
-        endDate: '2025-09-20',   // Saturday
+        start: '2025-09-14', // Sunday
+        end: '2025-09-20',   // Saturday
       })
     })
   })
@@ -49,40 +49,40 @@ describe('Current Date Handling - September 2025', () => {
     it('should return current week by default', () => {
       const range = getDefaultDateRange()
       expect(range).toEqual({
-        startDate: '2025-08-31',
-        endDate: '2025-09-06',
+        start: '2025-08-31',
+        end: '2025-09-06',
       })
     })
 
     it('should return current month when period is month', () => {
       const range = getDefaultDateRange({ periodType: 'month' })
       expect(range).toEqual({
-        startDate: '2025-09-01',
-        endDate: '2025-09-30',
+        start: '2025-09-01',
+        end: '2025-09-30',
       })
     })
 
     it('should return current quarter when period is quarter', () => {
       const range = getDefaultDateRange({ periodType: 'quarter' })
       expect(range).toEqual({
-        startDate: '2025-07-01', // Q3 2025
-        endDate: '2025-09-30',
+        start: '2025-07-01', // Q3 2025
+        end: '2025-09-30',
       })
     })
 
     it('should return current year when period is year', () => {
       const range = getDefaultDateRange({ periodType: 'year' })
       expect(range).toEqual({
-        startDate: '2025-01-01',
-        endDate: '2025-12-31',
+        start: '2025-01-01',
+        end: '2025-12-31',
       })
     })
 
     it('should return last N days for custom period', () => {
       const range = getDefaultDateRange({ periodType: 'custom', days: 30 })
       expect(range).toEqual({
-        startDate: '2025-08-05', // 30 days including end date
-        endDate: '2025-09-03',
+        start: '2025-08-05', // 30 days including end date
+        end: '2025-09-03',
       })
     })
   })
@@ -190,8 +190,8 @@ describe('Current Date Handling - September 2025', () => {
       
       const range = getCurrentWeekRange()
       expect(range).toEqual({
-        startDate: '2025-08-31', // Sunday Aug 31
-        endDate: '2025-09-06',   // Saturday Sep 6
+        start: '2025-08-31', // Sunday Aug 31
+        end: '2025-09-06',   // Saturday Sep 6
       })
     })
 
@@ -201,8 +201,8 @@ describe('Current Date Handling - September 2025', () => {
       
       const range = getCurrentWeekRange()
       expect(range).toEqual({
-        startDate: '2025-12-28', // Sunday Dec 28
-        endDate: '2026-01-03',   // Saturday Jan 3
+        start: '2025-12-28', // Sunday Dec 28
+        end: '2026-01-03',   // Saturday Jan 3
       })
     })
 
@@ -212,8 +212,8 @@ describe('Current Date Handling - September 2025', () => {
       
       const monthRange = getDefaultDateRange({ periodType: 'month' })
       expect(monthRange).toEqual({
-        startDate: '2024-02-01',
-        endDate: '2024-02-29',
+        start: '2024-02-01',
+        end: '2024-02-29',
       })
     })
   })

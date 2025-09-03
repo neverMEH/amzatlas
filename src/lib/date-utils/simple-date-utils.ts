@@ -39,8 +39,8 @@ export function getCurrentWeekRange(options?: WeekRangeOptions): DateRange {
   const end = endOfWeek(date, { weekStartsOn })
   
   return {
-    startDate: format(start, 'yyyy-MM-dd'),
-    endDate: format(end, 'yyyy-MM-dd'),
+    start: format(start, 'yyyy-MM-dd'),
+    end: format(end, 'yyyy-MM-dd'),
   }
 }
 
@@ -57,20 +57,20 @@ export function getDefaultDateRange(options?: DefaultDateRangeOptions): DateRang
     
     case 'month':
       return {
-        startDate: format(startOfMonth(date), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(date), 'yyyy-MM-dd'),
+        start: format(startOfMonth(date), 'yyyy-MM-dd'),
+        end: format(endOfMonth(date), 'yyyy-MM-dd'),
       }
     
     case 'quarter':
       return {
-        startDate: format(startOfQuarter(date), 'yyyy-MM-dd'),
-        endDate: format(endOfQuarter(date), 'yyyy-MM-dd'),
+        start: format(startOfQuarter(date), 'yyyy-MM-dd'),
+        end: format(endOfQuarter(date), 'yyyy-MM-dd'),
       }
     
     case 'year':
       return {
-        startDate: format(startOfYear(date), 'yyyy-MM-dd'),
-        endDate: format(endOfYear(date), 'yyyy-MM-dd'),
+        start: format(startOfYear(date), 'yyyy-MM-dd'),
+        end: format(endOfYear(date), 'yyyy-MM-dd'),
       }
     
     case 'custom':
@@ -78,8 +78,8 @@ export function getDefaultDateRange(options?: DefaultDateRangeOptions): DateRang
       const end = date
       const start = subDays(end, days - 1)
       return {
-        startDate: format(start, 'yyyy-MM-dd'),
-        endDate: format(end, 'yyyy-MM-dd'),
+        start: format(start, 'yyyy-MM-dd'),
+        end: format(end, 'yyyy-MM-dd'),
       }
     
     default:
@@ -96,7 +96,7 @@ export function isDateRangeRecent(
 ): boolean {
   const threshold = options?.monthsThreshold || 2
   const today = new Date()
-  const startDate = parseISO(range.start || range.startDate)
+  const startDate = parseISO(range.start)
   
   const monthsDiff = differenceInMonths(today, startDate)
   
@@ -117,8 +117,8 @@ export function shouldOverrideDateWithHistorical(
   }
   
   // Parse dates
-  const currentStart = parseISO(currentSelection.start || currentSelection.startDate)
-  const historicalEnd = parseISO(historicalDataRange.end || historicalDataRange.endDate)
+  const currentStart = parseISO(currentSelection.start)
+  const historicalEnd = parseISO(historicalDataRange.end)
   
   // Don't override if historical data is older than current selection
   if (isBefore(historicalEnd, currentStart)) {
@@ -135,15 +135,15 @@ export function hasDataOverlap(
   dateRange: DateRange,
   dataRange: { start_date: string; end_date: string }
 ): boolean {
-  const rangeStart = parseISO(dateRange.start || dateRange.startDate)
-  const rangeEnd = parseISO(dateRange.end || dateRange.endDate)
+  const rangeStart = parseISO(dateRange.start)
+  const rangeEnd = parseISO(dateRange.end)
   const dataStart = parseISO(dataRange.start_date)
   const dataEnd = parseISO(dataRange.end_date)
   
   // Check for any overlap
   return (
-    (isAfter(dataEnd, rangeStart) || format(dataEnd, 'yyyy-MM-dd') === (dateRange.start || dateRange.startDate)) &&
-    (isBefore(dataStart, rangeEnd) || format(dataStart, 'yyyy-MM-dd') === (dateRange.end || dateRange.endDate))
+    (isAfter(dataEnd, rangeStart) || format(dataEnd, 'yyyy-MM-dd') === dateRange.start) &&
+    (isBefore(dataStart, rangeEnd) || format(dataStart, 'yyyy-MM-dd') === dateRange.end)
   )
 }
 

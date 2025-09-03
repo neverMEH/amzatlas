@@ -23,7 +23,7 @@ console.log(`Expected: September 3, 2025 (or your actual current date)`)
 // Test 1: Get current week
 console.log('\n## Test 1: Current Week Calculation')
 const currentWeek = getCurrentWeekRange()
-console.log(`Current Week: ${currentWeek.startDate} to ${currentWeek.endDate}`)
+console.log(`Current Week: ${currentWeek.start} to ${currentWeek.end}`)
 console.log(`Expected for Sept 3, 2025: 2025-08-31 to 2025-09-06`)
 
 // Test 2: Get default ranges for different periods
@@ -37,7 +37,7 @@ const ranges = {
 }
 
 for (const [type, range] of Object.entries(ranges)) {
-  console.log(`${type.padEnd(10)}: ${range.startDate} to ${range.endDate}`)
+  console.log(`${type.padEnd(10)}: ${range.start} to ${range.end}`)
 }
 
 // Test 3: Recent date detection
