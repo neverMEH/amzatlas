@@ -58,10 +58,12 @@ export function DateRangePickerV2({
 }: DateRangePickerV2Props) {
   const [periodType, setPeriodType] = useState<PeriodType>('week')
   const [isOpen, setIsOpen] = useState(false)
-  const [comparisonEnabled, setComparisonEnabled] = useState(false)
   const [hasSetDefaultRange, setHasSetDefaultRange] = useState(false)
   const [lastProcessedASIN, setLastProcessedASIN] = useState<string | undefined>(undefined)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Derive comparison enabled state from props
+  const comparisonEnabled = Boolean(compareStartDate && compareEndDate)
 
   // Fetch ASIN data availability
   const { data: dataAvailability, isLoading: isLoadingAvailability } = useASINDataAvailability(asin || null)
@@ -349,7 +351,6 @@ export function DateRangePickerV2({
           compareEndDate={compareEndDate || ''}
           enabled={comparisonEnabled}
           onChange={(range) => {
-            setComparisonEnabled(range.enabled)
             onCompareChange?.(range)
           }}
           maxDate={format(new Date(), 'yyyy-MM-dd')}

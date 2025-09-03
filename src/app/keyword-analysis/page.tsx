@@ -294,6 +294,7 @@ export default function KeywordAnalysisPage() {
             compareStartDate={compareStartDate || undefined}
             compareEndDate={compareEndDate || undefined}
             onCompareChange={handleCompareRangeChange}
+            asin={asin}
           />
         </div>
 
