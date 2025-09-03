@@ -36,6 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **BigQuery Client**: Connection pool and query management
 - **Sync Engine**: Automated data synchronization with error handling
 - **Dashboard**: Single-page ASIN performance dashboard with comprehensive metrics
+- **Keyword Analysis**: Full-screen keyword analysis with comparison capabilities
 - **Reporting**: Automated report generation and performance analysis
 - **Brand Management**: Automatic ASIN-to-brand mapping with pattern matching
 
@@ -103,7 +104,7 @@ asin_performance_data (start_date, end_date, asin)
 - `period_comparisons` - Week/month/quarter comparison view
 - `weekly_summary`, `monthly_summary`, `quarterly_summary`, `yearly_summary` - Aggregated metrics
 - `daily_sqp_data` - Daily performance tracking
-- `search_performance_summary` - Optimized materialized view
+- `search_performance_summary` - Optimized materialized view (in public schema)
 
 ## Available Scripts
 
@@ -114,6 +115,7 @@ npm run build            # Production build
 npm run build:debug     # Debug build issues
 npm run start           # Start production server
 npm run lint            # Run ESLint
+npm run typecheck       # Run TypeScript type checking
 ```
 
 ### Testing
@@ -172,6 +174,10 @@ npm run fix:columns        # Add missing columns to tables
 - `GET /api/dashboard/v2/funnel-analysis` - Conversion funnel data
 - `GET /api/dashboard/v2/price-analysis` - Price competitiveness metrics
 - `GET /api/dashboard/v2/top-queries` - Top performing search queries
+- `GET /api/dashboard/v2/asin-overview` - Complete ASIN performance overview
+- `GET /api/dashboard/v2/keyword-performance` - Single keyword detailed analysis
+- `GET /api/dashboard/v2/keyword-comparison` - Multiple keyword comparison data
+- `GET /api/dashboard/v2/asin-keywords` - Available keywords for an ASIN
 
 ### Performance Reports
 - `GET /api/reports/performance/market-share` - Market share reports
@@ -200,12 +206,15 @@ npm run fix:columns        # Add missing columns to tables
 - `/src/components/dashboard/` - Legacy dashboard UI components (removed)
 - `/src/components/asin-performance/` - New single-page ASIN performance dashboard components
   - `ASINSelector.tsx` - ASIN selection dropdown
-  - `DateRangePicker.tsx` - Date range and comparison period selector
+  - `DateRangePickerV2.tsx` - Enhanced date range and comparison period selector
   - `MetricsCards.tsx` - Key performance indicator cards
   - `PerformanceChart.tsx` - Time series chart with metric toggles
   - `FunnelChart.tsx` - Conversion funnel visualization
   - `SearchQueryTable.tsx` - Sortable, searchable keyword performance table
+  - `WaterfallChart.tsx` - Waterfall chart for keyword comparison changes
+  - `KeywordComparisonView.tsx` - Multi-keyword comparison with waterfall visualization
 - `/src/app/page.tsx` - Main dashboard page (single-page application)
+- `/src/app/keyword-analysis/page.tsx` - Full-screen keyword analysis page
 
 ### Data Processing
 - `/src/lib/bigquery/transformers/` - Data transformation utilities
@@ -245,6 +254,18 @@ npm run fix:columns        # Add missing columns to tables
 - Maintain test coverage for critical paths
 
 ## Recent Changes & Migration Notes
+
+### Keyword Analysis Enhancements (Sep 2025)
+- **Market Share Panel**: Enhanced to show top 5 converting ASINs with CVR, CTR, and purchases columns
+- **Waterfall Chart**: Added comprehensive waterfall visualization for keyword performance comparison
+- **Date Range Fixes**: Fixed calendar dropdown issues and infinite re-rendering problems
+- **API Enhancements**: 
+  - Added comparison data support to keyword-comparison endpoint
+  - Created asin-keywords endpoint for fetching available keywords
+- **Components**:
+  - `WaterfallChart.tsx` - Interactive waterfall chart with sorting and metric selection
+  - Enhanced `KeywordMarketShare.tsx` with conversion-focused metrics
+  - Fixed `DateRangePickerV2.tsx` for stable date selection
 
 ### Smart Comparison Period Selection (Aug 2025)
 - **Major Feature**: Replaced fixed 30-day comparison with intelligent period-based suggestions
@@ -347,7 +368,7 @@ npm run fix:columns        # Add missing columns to tables
 - **Total Records**: 204,515 search query performance records
 - **Unique ASINs**: 85 (all available ASINs)
 - **Unique Queries**: 40,731 search terms
-- **Date Range**: August 18, 2024 to August 3, 2025 (51 weeks)
+- **Date Range**: August 18, 2024 to September 3, 2025 (current date)
 - **Sync Status**: Full data successfully synced to Supabase
 
 ### Backwards Compatibility
@@ -372,6 +393,8 @@ npm run fix:columns        # Add missing columns to tables
 5. **Permission Errors**: Run migration 017 to fix table permissions
 6. **ON CONFLICT Errors**: Normal for views with rules - data still syncs correctly
 7. **Date Format Issues**: BigQuery returns dates as `{value: "2024-01-01T00:00:00.000Z"}` objects
+8. **Table Reference Errors**: Use `search_performance_summary` not `sqp.search_performance_summary`
+9. **Infinite Re-rendering**: Set `hasManualSelection={true}` on DateRangePickerV2 for keyword analysis
 
 ### Debug Commands
 ```bash

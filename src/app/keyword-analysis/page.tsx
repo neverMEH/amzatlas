@@ -35,14 +35,44 @@ export default function KeywordAnalysisPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [showExportMenu, setShowExportMenu] = useState(false)
 
-  // Get URL parameters
+  // Calculate default dates for current week if not provided
+  const getDefaultDates = useCallback(() => {
+    const today = new Date()
+    const dayOfWeek = today.getDay()
+    const startOfWeek = new Date(today)
+    startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
+    const endOfWeek = new Date(startOfWeek)
+    endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
+    
+    return {
+      startDate: startOfWeek.toISOString().split('T')[0],
+      endDate: endOfWeek.toISOString().split('T')[0],
+    }
+  }, [])
+
+  // Get URL parameters with defaults
   const asin = searchParams.get('asin')
   const singleKeyword = searchParams.get('keyword')
   const multipleKeywords = searchParams.get('keywords')
-  const startDate = searchParams.get('startDate')
-  const endDate = searchParams.get('endDate')
+  const urlStartDate = searchParams.get('startDate')
+  const urlEndDate = searchParams.get('endDate')
   const compareStartDate = searchParams.get('compareStartDate')
   const compareEndDate = searchParams.get('compareEndDate')
+  
+  // Use URL dates or default to current week
+  const defaultDates = getDefaultDates()
+  const startDate = urlStartDate || defaultDates.startDate
+  const endDate = urlEndDate || defaultDates.endDate
+
+  // Redirect with default dates if dates are missing from URL
+  useEffect(() => {
+    if ((asin && (singleKeyword || multipleKeywords)) && (!urlStartDate || !urlEndDate)) {
+      const params = new URLSearchParams(searchParams.toString())
+      if (!urlStartDate) params.set('startDate', startDate)
+      if (!urlEndDate) params.set('endDate', endDate)
+      router.replace(`${pathname}?${params.toString()}`)
+    }
+  }, [asin, singleKeyword, multipleKeywords, urlStartDate, urlEndDate, startDate, endDate, pathname, router, searchParams])
 
   // Determine initial view mode and keywords based on URL
   useEffect(() => {

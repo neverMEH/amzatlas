@@ -21,7 +21,9 @@ import {
   addDays,
   isSameWeek,
   getWeek,
-  getYear
+  getYear,
+  isAfter,
+  isBefore
 } from 'date-fns'
 import { PeriodTypeSelector } from './PeriodTypeSelector'
 import { PeriodType, DateRange, ComparisonRange } from './types'
@@ -181,6 +183,38 @@ export function DateRangePickerV2({
       return
     }
 
+    // Check if the selected dates are recent (within last 2 months)
+    const today = new Date()
+    const twoMonthsAgo = subMonths(today, 2)
+    const selectedStart = parseISO(startDate)
+    
+    // If current selection is recent, don't override with older data
+    if (isAfter(selectedStart, twoMonthsAgo)) {
+      // Check if there's data for the current selection
+      const hasDataForCurrent = dataAvailability.dateRanges?.some(range => {
+        const rangeStart = parseISO(range.start_date)
+        const rangeEnd = parseISO(range.end_date)
+        const currentStart = parseISO(startDate)
+        const currentEnd = parseISO(endDate)
+        
+        return (
+          (isAfter(rangeEnd, currentStart) || format(rangeEnd, 'yyyy-MM-dd') === startDate) &&
+          (isBefore(rangeStart, currentEnd) || format(rangeStart, 'yyyy-MM-dd') === endDate)
+        )
+      })
+      
+      // If there's no data for current selection but there is historical data, 
+      // show a message instead of changing dates
+      if (!hasDataForCurrent && dataAvailability.mostRecentData) {
+        console.info('No data available for current date range. Historical data available.')
+      }
+      
+      setHasSetDefaultRange(true)
+      setLastProcessedASIN(asin)
+      return
+    }
+
+    // Only set historical dates if current dates are already old
     // Determine the date range to use
     let newDateRange: DateRange | null = null
     let shouldSetMonthPeriod = false
