@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { ArrowLeft, Download, BarChart2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -92,15 +92,15 @@ export default function KeywordAnalysisPage() {
     useKeywordComparison(comparisonParams)
 
   // Handle date range changes
-  const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
+  const handleDateRangeChange = useCallback((range: { startDate: string; endDate: string }) => {
     const params = new URLSearchParams(searchParams.toString())
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
     
     router.push(`${pathname}?${params.toString()}`)
-  }
+  }, [pathname, router, searchParams])
 
-  const handleCompareRangeChange = (range: { startDate: string; endDate: string; enabled: boolean }) => {
+  const handleCompareRangeChange = useCallback((range: { startDate: string; endDate: string; enabled: boolean }) => {
     const params = new URLSearchParams(searchParams.toString())
     
     if (range.enabled && range.startDate && range.endDate) {
@@ -112,7 +112,7 @@ export default function KeywordAnalysisPage() {
     }
     
     router.push(`${pathname}?${params.toString()}`)
-  }
+  }, [pathname, router, searchParams])
 
   // Handle view mode changes
   const handleViewModeChange = (mode: ViewMode) => {
@@ -295,6 +295,7 @@ export default function KeywordAnalysisPage() {
             compareEndDate={compareEndDate || undefined}
             onCompareChange={handleCompareRangeChange}
             asin={asin}
+            hasManualSelection={true}
           />
         </div>
 

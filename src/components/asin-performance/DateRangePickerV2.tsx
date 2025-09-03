@@ -162,6 +162,25 @@ export function DateRangePickerV2({
       return
     }
 
+    // Check if current dates match what we would set
+    const currentMatchesAvailable = () => {
+      if (dataAvailability.mostRecentCompleteMonth) {
+        return startDate === dataAvailability.mostRecentCompleteMonth.startDate && 
+               endDate === dataAvailability.mostRecentCompleteMonth.endDate
+      } else if (dataAvailability.fallbackRange) {
+        return startDate === dataAvailability.fallbackRange.startDate && 
+               endDate === dataAvailability.fallbackRange.endDate
+      }
+      return false
+    }
+
+    // Skip if dates already match
+    if (currentMatchesAvailable()) {
+      setHasSetDefaultRange(true)
+      setLastProcessedASIN(asin)
+      return
+    }
+
     // Determine the date range to use
     let newDateRange: DateRange | null = null
     let shouldSetMonthPeriod = false
@@ -190,7 +209,7 @@ export function DateRangePickerV2({
       setHasSetDefaultRange(true)
       setLastProcessedASIN(asin)
     }
-  }, [asin, dataAvailability, isLoadingAvailability, hasManualSelection, onChange, periodType, hasSetDefaultRange, lastProcessedASIN])
+  }, [asin, dataAvailability, isLoadingAvailability, hasManualSelection, onChange, periodType, hasSetDefaultRange, lastProcessedASIN, startDate, endDate])
 
   // Reset when ASIN changes
   useEffect(() => {
