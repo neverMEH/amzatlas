@@ -4,6 +4,11 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { DateRangePickerV2 } from '../DateRangePickerV2'
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns'
 
+// Mock the API hook to prevent ASIN data fetching during tests
+vi.mock('@/lib/api/asin-performance', () => ({
+  useASINDataAvailability: vi.fn(() => ({ data: null, isLoading: false }))
+}))
+
 describe('DateRangePickerV2', () => {
   const mockOnChange = vi.fn()
   const mockOnCompareChange = vi.fn()

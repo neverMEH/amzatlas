@@ -203,11 +203,19 @@ export function DateRangePickerV2({
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
+    // Use 'click' instead of 'mousedown' to avoid timing issues
+    // Add a small delay to ensure the dropdown has rendered
+    if (isOpen) {
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside)
+      }, 0)
+      
+      return () => {
+        clearTimeout(timeoutId)
+        document.removeEventListener('click', handleClickOutside)
+      }
     }
-  }, [])
+  }, [isOpen])
 
   return (
     <div className="space-y-4">
@@ -221,7 +229,10 @@ export function DateRangePickerV2({
           <button
             data-testid="calendar-trigger"
             aria-label="Select date range"
-            onClick={() => setIsOpen(!isOpen)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsOpen(!isOpen)
+            }}
             className="flex items-center space-x-2 px-4 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-w-[200px]"
           >
             <Calendar className="h-5 w-5 text-gray-500" />

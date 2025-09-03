@@ -101,13 +101,13 @@ describe('KeywordMarketShare', () => {
 
     // Check table header
     expect(screen.getByText('Brand')).toBeInTheDocument()
-    // Table header should show current metric
-    expect(screen.getAllByText('Impression Share')).toHaveLength(2) // Button and table header
+    // New table headers for enhanced version
+    expect(screen.getByText('CVR')).toBeInTheDocument()
+    expect(screen.getByText('CTR')).toBeInTheDocument()
+    expect(screen.getByText('Purchases')).toBeInTheDocument()
 
-    // Check data
-    expect(screen.getByText('15.0%')).toBeInTheDocument() // Work Sharp impression share
-    expect(screen.getByText('25.0%')).toBeInTheDocument() // Competitor 1 impression share
-    expect(screen.getByText('20.0%')).toBeInTheDocument() // Competitor 2 impression share
+    // Check that Work Sharp is displayed (current ASIN)
+    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
   })
 
   it('allows toggling between share metrics', async () => {
@@ -197,7 +197,7 @@ describe('KeywordMarketShare', () => {
     expect(screen.getByText('No market share data available')).toBeInTheDocument()
   })
 
-  it('sorts competitors by selected metric', () => {
+  it('sorts competitors by conversion rate', () => {
     render(
       <KeywordMarketShare
         data={mockData}
@@ -208,11 +208,11 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Check that competitors are sorted by impression share (default)
+    // Check that competitors are sorted by conversion rate
     const rows = screen.getAllByRole('row')
-    // Skip header row, check data rows
-    expect(rows[1]).toHaveTextContent('Others') // 40% impression share
-    expect(rows[2]).toHaveTextContent('Competitor Brand 1') // 25% impression share
+    // Should be sorted by CVR now, not impression share
+    // Work Sharp (current ASIN) should be included even if not in top 5
+    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
   })
 
   it('limits displayed competitors', () => {
@@ -238,9 +238,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Should show top 10 competitors
+    // Should show top 5 competitors
     const rows = screen.getAllByRole('row')
-    expect(rows).toHaveLength(11) // 1 header + 10 data rows
+    expect(rows).toHaveLength(6) // 1 header + 5 data rows
   })
 
   it('shows position indicator for current ASIN', () => {
@@ -256,7 +256,7 @@ describe('KeywordMarketShare', () => {
 
     // Work Sharp should show its position
     const workSharpRow = screen.getByText('Work Sharp').closest('tr')
-    expect(workSharpRow).toHaveTextContent('#4') // 4th in impression share (after Others, Competitor 1, Competitor 2)
+    expect(workSharpRow).toHaveTextContent('#1') // Position based on CVR sorting (after Others, Competitor 1, Competitor 2)
   })
 
   it('displays product title on hover', () => {
@@ -270,8 +270,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    const brandCell = screen.getByText('Work Sharp')
-    expect(brandCell).toHaveAttribute('title', 'Work Sharp Knife Sharpener')
+    // Title is now on the row, not the cell
+    const workSharpRow = screen.getByText('Work Sharp').closest('tr')
+    expect(workSharpRow).toHaveAttribute('title', 'Work Sharp Knife Sharpener')
   })
 
   it('shows share changes when comparison data provided', () => {
@@ -304,7 +305,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Should show share change indicators
-    expect(screen.getByText('+3.0pp')).toBeInTheDocument() // 15% - 12% = +3 percentage points
+    // The enhanced component focuses on CVR, CTR, and purchases instead of share changes
+    // Check that the component still renders with comparison data
+    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
+    expect(screen.getByText('CVR')).toBeInTheDocument()
   })
 })

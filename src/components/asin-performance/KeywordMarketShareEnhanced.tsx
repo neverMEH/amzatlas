@@ -287,7 +287,7 @@ export function KeywordMarketShare({
           </ResponsiveContainer>
         </div>
 
-        {/* Table */}
+        {/* Enhanced Table */}
         <div className="overflow-hidden">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">

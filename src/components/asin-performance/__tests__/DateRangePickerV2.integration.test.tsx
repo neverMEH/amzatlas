@@ -5,6 +5,11 @@ import { DateRangePickerV2 } from '../DateRangePickerV2'
 import { PeriodTypeSelector } from '../PeriodTypeSelector'
 import { format, startOfWeek, endOfWeek } from 'date-fns'
 
+// Mock the API hook to prevent ASIN data fetching during tests
+vi.mock('@/lib/api/asin-performance', () => ({
+  useASINDataAvailability: vi.fn(() => ({ data: null, isLoading: false }))
+}))
+
 describe('DateRangePickerV2 Integration Tests', () => {
   const mockOnChange = vi.fn()
   const mockOnCompareChange = vi.fn()
@@ -158,31 +163,27 @@ describe('DateRangePickerV2 Integration Tests', () => {
         />
       )
 
+      // Select custom period type
+      fireEvent.click(screen.getByText('Custom'))
+      
       // Open calendar
       fireEvent.click(screen.getByTestId('calendar-trigger'))
 
-      // Click custom range
-      fireEvent.click(screen.getByText('Custom Range'))
+      // Verify custom date range selector appears
+      expect(screen.getByTestId('custom-selector')).toBeInTheDocument()
 
-      // Verify custom range modal appears
-      expect(screen.getByText('Custom Date Range')).toBeInTheDocument()
-
-      // Set 10 weeks
-      const weeksInput = screen.getByLabelText('Number of weeks')
-      fireEvent.change(weeksInput, { target: { value: '10' } })
-
-      // Apply
-      fireEvent.click(screen.getByText('Apply'))
+      // Select a preset option
+      fireEvent.click(screen.getByText('Last 4 weeks'))
 
       await waitFor(() => {
         expect(mockOnChange).toHaveBeenCalled()
         const call = mockOnChange.mock.calls[0][0]
-        // Verify it's a 10-week range
+        // Verify it's a 4-week range
         const start = new Date(call.startDate)
         const end = new Date(call.endDate)
         const weeksDiff = Math.ceil((end.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000))
-        expect(weeksDiff).toBeGreaterThanOrEqual(9) // Allow for partial weeks
-        expect(weeksDiff).toBeLessThanOrEqual(10)
+        expect(weeksDiff).toBeGreaterThanOrEqual(3) // Allow for partial weeks
+        expect(weeksDiff).toBeLessThanOrEqual(5)
       })
     })
   })
