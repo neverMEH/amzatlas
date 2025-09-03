@@ -408,6 +408,8 @@ export default function KeywordAnalysisPage() {
                   keywords={selectedKeywords}
                   data={comparisonData}
                   dateRange={{ start: startDate, end: endDate }}
+                  comparisonDateRange={compareStartDate && compareEndDate ? 
+                    { start: compareStartDate, end: compareEndDate } : undefined}
                   isLoading={false}
                   error={null}
                 />

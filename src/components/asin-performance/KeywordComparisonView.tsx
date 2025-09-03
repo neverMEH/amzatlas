@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo } from 'react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp, BarChart2, PieChartIcon, AlertCircle } from 'lucide-react'
+import { TrendingUp, BarChart2, PieChartIcon, AlertCircle, TrendingDown } from 'lucide-react'
 import { format } from 'date-fns'
+import { WaterfallChart, WaterfallDataPoint } from './WaterfallChart'
 
 interface KeywordPerformanceData {
   impressions: number
@@ -27,17 +28,34 @@ interface ComparisonData {
       purchases: number
     }
   }
+  comparisonData?: {
+    [keyword: string]: {
+      current: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+      previous: {
+        impressions: number
+        clicks: number
+        cartAdds: number
+        purchases: number
+      }
+    }
+  }
 }
 
 interface KeywordComparisonViewProps {
   keywords: string[]
   data: ComparisonData | null
   dateRange: { start: string; end: string }
+  comparisonDateRange?: { start: string; end: string }
   isLoading: boolean
   error: Error | null
 }
 
-type TabType = 'trends' | 'funnels' | 'market-share'
+type TabType = 'trends' | 'funnels' | 'market-share' | 'waterfall'
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#a855f7']
 
@@ -57,10 +75,12 @@ export function KeywordComparisonView({
   keywords,
   data,
   dateRange,
+  comparisonDateRange,
   isLoading,
   error,
 }: KeywordComparisonViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('trends')
+  const [selectedMetric, setSelectedMetric] = useState<'impressions' | 'clicks' | 'cartAdds' | 'purchases'>('impressions')
   const displayKeywords = keywords.slice(0, 10)
   const remainingCount = keywords.length - 10
 
@@ -82,6 +102,33 @@ export function KeywordComparisonView({
 
     return { totalImpressions, totalClicks, totalPurchases }
   }, [data, displayKeywords])
+
+  // Transform data for waterfall chart
+  const waterfallData = useMemo(() => {
+    if (!data?.comparisonData || !comparisonDateRange) return []
+
+    const waterfallPoints: WaterfallDataPoint[] = []
+
+    displayKeywords.forEach(keyword => {
+      const comparisonInfo = data.comparisonData?.[keyword]
+      if (comparisonInfo) {
+        const current = comparisonInfo.current[selectedMetric]
+        const previous = comparisonInfo.previous[selectedMetric]
+        const change = current - previous
+        const changePercent = previous > 0 ? ((change / previous) * 100) : 0
+
+        waterfallPoints.push({
+          keyword,
+          current,
+          previous,
+          change,
+          changePercent
+        })
+      }
+    })
+
+    return waterfallPoints
+  }, [data?.comparisonData, displayKeywords, selectedMetric, comparisonDateRange])
 
   if (isLoading) {
     return (
@@ -129,6 +176,7 @@ export function KeywordComparisonView({
     { id: 'trends' as TabType, label: 'Performance Trends', icon: TrendingUp },
     { id: 'funnels' as TabType, label: 'Conversion Funnels', icon: BarChart2 },
     { id: 'market-share' as TabType, label: 'Market Share', icon: PieChartIcon },
+    { id: 'waterfall' as TabType, label: 'Change Analysis', icon: TrendingDown },
   ]
 
   return (
@@ -300,6 +348,51 @@ export function KeywordComparisonView({
               )
             })}
           </div>
+        </div>
+      )}
+
+      {activeTab === 'waterfall' && (
+        <div data-testid="waterfall-content">
+          {comparisonDateRange ? (
+            <div>
+              {/* Metric Selection */}
+              <div className="mb-6">
+                <div className="flex items-center space-x-4">
+                  <label htmlFor="metric-select" className="text-sm font-medium text-gray-700">
+                    Compare metric:
+                  </label>
+                  <select
+                    id="metric-select"
+                    value={selectedMetric}
+                    onChange={(e) => setSelectedMetric(e.target.value as 'impressions' | 'clicks' | 'cartAdds' | 'purchases')}
+                    className="text-sm border border-gray-300 rounded px-3 py-1"
+                  >
+                    <option value="impressions">Impressions</option>
+                    <option value="clicks">Clicks</option>
+                    <option value="cartAdds">Cart Adds</option>
+                    <option value="purchases">Purchases</option>
+                  </select>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Comparing {formatDateRange(dateRange.start, dateRange.end)} vs {formatDateRange(comparisonDateRange.start, comparisonDateRange.end)}
+                </p>
+              </div>
+
+              <WaterfallChart
+                data={waterfallData}
+                metric={selectedMetric}
+                title={`Keyword Performance Changes - ${selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}`}
+                isLoading={false}
+                error={null}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              <TrendingDown className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <p className="font-medium">No comparison period selected</p>
+              <p className="text-sm">Enable comparison in the date picker to see keyword performance changes</p>
+            </div>
+          )}
         </div>
       )}
     </div>
