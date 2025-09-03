@@ -206,7 +206,7 @@ describe('KeywordPerformanceChart', () => {
       />
     )
 
-    expect(screen.getByText('No data available')).toBeInTheDocument()
+    expect(screen.queryByText('No data available')).not.toBeInTheDocument()
     expect(screen.getByText(/No performance data available for this keyword/)).toBeInTheDocument()
   })
 

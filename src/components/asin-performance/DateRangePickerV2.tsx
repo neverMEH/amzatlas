@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { Calendar, ChevronDown, AlertCircle } from 'lucide-react'
+import { Calendar, ChevronDown } from 'lucide-react'
 import { 
   format, 
   startOfWeek, 
@@ -309,26 +309,6 @@ export function DateRangePickerV2({
             </div>
           )}
           
-          {/* No data indicator */}
-          {asin && !isLoadingAvailability && !hasDataForCurrentPeriod && dataAvailability && (
-            <div className="absolute right-0 top-full mt-1 text-sm text-amber-600 flex items-center space-x-1">
-              <AlertCircle className="h-4 w-4" />
-              <span>No data available for this period</span>
-              {dataAvailability.summary.latestDate && (
-                <span className="text-gray-500">
-                  (Latest: {format(parseISO(dataAvailability.summary.latestDate), 'MMM d, yyyy')})
-                </span>
-              )}
-            </div>
-          )}
-          
-          {/* No data message */}
-          {asin && !isLoadingAvailability && dataAvailability && 
-           !dataAvailability.mostRecentCompleteMonth && !dataAvailability.fallbackRange && (
-            <div className="absolute right-0 top-full mt-1 text-sm text-amber-600">
-              No historical data available for this ASIN
-            </div>
-          )}
 
           {isOpen && (
             <div 

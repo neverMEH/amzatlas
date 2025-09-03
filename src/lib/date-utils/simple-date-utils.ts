@@ -147,24 +147,6 @@ export function hasDataOverlap(
   )
 }
 
-/**
- * Get a user-friendly message about data availability
- */
-export function getDataAvailabilityMessage(
-  hasData: boolean,
-  latestAvailableDate?: string
-): string {
-  if (hasData) {
-    return ''
-  }
-  
-  if (latestAvailableDate) {
-    const formattedDate = format(parseISO(latestAvailableDate), 'MMM d, yyyy')
-    return `No data available for this period. Latest data: ${formattedDate}`
-  }
-  
-  return 'No data available for this period'
-}
 
 /**
  * Calculate confidence score for a date range based on recency

@@ -144,13 +144,13 @@ describe('Home Page - Current Date Handling (September 2025)', () => {
       )
     })
 
-    it('should show no data indicator for current period without data', async () => {
+    it('should not show data availability indicators anymore', async () => {
       renderPage()
       
       await waitFor(() => {
-        // Should show the no data indicator
-        expect(screen.getByText('No data available for this period')).toBeInTheDocument()
-        expect(screen.getByText('(Latest: Oct 31, 2024)')).toBeInTheDocument()
+        // No data indicators should not be displayed
+        expect(screen.queryByText('No data available for this period')).not.toBeInTheDocument()
+        expect(screen.queryByText('(Latest: Oct 31, 2024)')).not.toBeInTheDocument()
       })
     })
 

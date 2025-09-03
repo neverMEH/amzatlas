@@ -96,9 +96,9 @@ describe('DateRangePickerV2 - Current Date Handling (September 2025)', () => {
       // Should not call onChange since current dates are recent
       expect(mockOnChange).not.toHaveBeenCalled()
       
-      // Should show no data indicator
-      expect(screen.getByText('No data available for this period')).toBeInTheDocument()
-      expect(screen.getByText('(Latest: Oct 31, 2024)')).toBeInTheDocument()
+      // No data indicators should not be shown anymore
+      expect(screen.queryByText('No data available for this period')).not.toBeInTheDocument()
+      expect(screen.queryByText('(Latest: Oct 31, 2024)')).not.toBeInTheDocument()
     })
 
     it('should preserve current month selection for September 2025', async () => {
@@ -190,7 +190,7 @@ describe('DateRangePickerV2 - Current Date Handling (September 2025)', () => {
         asin: 'B001234567',
       })
       
-      expect(screen.getByText('No data available for this period')).toBeInTheDocument()
+      expect(screen.queryByText('No data available for this period')).not.toBeInTheDocument()
     })
 
     it('should not show no data indicator when data exists', async () => {

@@ -114,7 +114,7 @@ describe('PerformanceChart', () => {
       />
     )
 
-    expect(screen.getByText('No data available')).toBeInTheDocument()
+    expect(screen.queryByText('No data available')).not.toBeInTheDocument()
     expect(screen.getByText('Select an ASIN and date range to view performance data')).toBeInTheDocument()
   })
 
