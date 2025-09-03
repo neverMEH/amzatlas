@@ -110,10 +110,15 @@ export function DateRangePickerV2({
   // Handle period type change
   const handlePeriodTypeChange = (newType: PeriodType) => {
     setPeriodType(newType)
-    const newDates = getCurrentPeriodDates(newType)
-    onChange(newDates)
     // When user manually changes period type, mark as manual selection
     setHasSetDefaultRange(true)
+    
+    // Auto-select the current period for the new type
+    const newDates = getCurrentPeriodDates(newType)
+    onChange(newDates)
+    
+    // Also open the dropdown in case they want to select a different period
+    setIsOpen(true)
   }
 
 

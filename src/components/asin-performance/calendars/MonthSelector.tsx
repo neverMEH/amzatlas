@@ -13,6 +13,7 @@ import {
   setYear,
   getMonth,
   getYear,
+  isValid,
 } from 'date-fns'
 import { DateRange } from '../types'
 
