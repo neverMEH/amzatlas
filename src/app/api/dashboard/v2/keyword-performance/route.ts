@@ -174,11 +174,7 @@ export async function GET(request: NextRequest) {
     // Fetch market share data - aggregate by ASIN for the keyword
     const { data: marketShareData, error: marketShareError } = await supabase
       .from('search_query_performance')
-      .select(`
-        asin,
-        asin_performance_data!search_query_performance_asin_performance_id_fkey(product_title),
-        asin_brand_mapping(brands(brand_name))
-      `)
+      .select('asin')
       .eq('search_query', keyword)
       .gte('start_date', startDate)
       .lte('start_date', endDate)
@@ -235,14 +231,45 @@ export async function GET(request: NextRequest) {
       purchases: acc.purchases + metrics.purchases,
     }), { impressions: 0, clicks: 0, purchases: 0 })
 
+    // Fetch product titles and brand data separately for market share data
+    const asinSet = new Set(marketShareData?.map((row: any) => row.asin) || [])
+    const uniqueAsins = Array.from(asinSet)
+    
+    // Fetch product titles
+    const { data: asinTitles } = uniqueAsins.length > 0 ? await supabase
+      .from('asin_performance_data')
+      .select('asin, product_title')
+      .in('asin', uniqueAsins) : { data: [] }
+    
+    // Fetch brand mappings
+    const { data: brandMappings } = uniqueAsins.length > 0 ? await supabase
+      .from('asin_brand_mapping')
+      .select('asin, brand_id')
+      .in('asin', uniqueAsins) : { data: [] }
+    
+    // Fetch brand names for the brand IDs
+    const brandIds = brandMappings?.map((mapping: any) => mapping.brand_id).filter(Boolean) || []
+    const { data: brandData } = brandIds.length > 0 ? await supabase
+      .from('brands')
+      .select('id, brand_name')
+      .in('id', brandIds) : { data: [] }
+    
+    // Create lookup maps
+    const titleMap = new Map(asinTitles?.map((item: any) => [item.asin, item.product_title]) || [])
+    const brandIdMap = new Map(brandMappings?.map((item: any) => [item.asin, item.brand_id]) || [])
+    const brandNameMap = new Map(brandData?.map((item: any) => [item.id, item.brand_name]) || [])
+    
     // Transform market share data
     const asinDataMap = new Map()
     marketShareData?.forEach((row: any) => {
       if (!asinDataMap.has(row.asin)) {
+        const brandId = brandIdMap.get(row.asin)
+        const brandName = brandId ? brandNameMap.get(brandId) : null
+        
         asinDataMap.set(row.asin, {
           asin: row.asin,
-          title: row.asin_performance_data?.product_title || 'Unknown Product',
-          brand: row.asin_brand_mapping?.brands?.brand_name || 'Unknown',
+          title: titleMap.get(row.asin) || 'Unknown Product',
+          brand: brandName || 'Unknown',
         })
       }
     })
@@ -341,9 +368,7 @@ export async function GET(request: NextRequest) {
           asin,
           asin_impression_count,
           asin_click_count,
-          asin_purchase_count,
-          asin_performance_data!search_query_performance_asin_performance_id_fkey(product_title),
-          asin_brand_mapping(brands(brand_name))
+          asin_purchase_count
         `)
         .eq('search_query', keyword)
         .gte('start_date', compareStartDate)
@@ -363,14 +388,46 @@ export async function GET(request: NextRequest) {
           clicks: currentMetrics.clicks + (row.asin_click_count || 0),
           purchases: currentMetrics.purchases + (row.asin_purchase_count || 0),
         })
+      })
+      
+      // Fetch product titles and brand data for comparison period ASINs
+      const comparisonAsinSet = new Set(comparisonRecords?.map((row: any) => row.asin) || [])
+      const comparisonUniqueAsins = Array.from(comparisonAsinSet)
+      
+      // Fetch comparison product titles
+      const { data: comparisonAsinTitles } = comparisonUniqueAsins.length > 0 ? await supabase
+        .from('asin_performance_data')
+        .select('asin, product_title')
+        .in('asin', comparisonUniqueAsins) : { data: [] }
+      
+      // Fetch comparison brand mappings
+      const { data: comparisonBrandMappings } = comparisonUniqueAsins.length > 0 ? await supabase
+        .from('asin_brand_mapping')
+        .select('asin, brand_id')
+        .in('asin', comparisonUniqueAsins) : { data: [] }
+      
+      // Fetch comparison brand names for the brand IDs
+      const comparisonBrandIds = comparisonBrandMappings?.map((mapping: any) => mapping.brand_id).filter(Boolean) || []
+      const { data: comparisonBrandData } = comparisonBrandIds.length > 0 ? await supabase
+        .from('brands')
+        .select('id, brand_name')
+        .in('id', comparisonBrandIds) : { data: [] }
+      
+      // Create comparison lookup maps
+      const comparisonTitleMap = new Map(comparisonAsinTitles?.map((item: any) => [item.asin, item.product_title]) || [])
+      const comparisonBrandIdMap = new Map(comparisonBrandMappings?.map((item: any) => [item.asin, item.brand_id]) || [])
+      const comparisonBrandNameMap = new Map(comparisonBrandData?.map((item: any) => [item.id, item.brand_name]) || [])
+      
+      // Build comparison ASIN data map
+      comparisonUniqueAsins.forEach((asin) => {
+        const brandId = comparisonBrandIdMap.get(asin)
+        const brandName = brandId ? comparisonBrandNameMap.get(brandId) : null
         
-        if (!comparisonAsinData.has(row.asin)) {
-          comparisonAsinData.set(row.asin, {
-            asin: row.asin,
-            title: row.asin_performance_data?.product_title || 'Unknown Product',
-            brand: row.asin_brand_mapping?.brands?.brand_name || 'Unknown',
-          })
-        }
+        comparisonAsinData.set(asin, {
+          asin: asin,
+          title: comparisonTitleMap.get(asin) || 'Unknown Product',
+          brand: brandName || 'Unknown',
+        })
       })
       
       // Calculate comparison total market

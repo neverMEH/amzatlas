@@ -34,6 +34,7 @@ describe('GET /api/dashboard/v2/keyword-performance', () => {
       lte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
+      in: vi.fn().mockReturnThis(),
       rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
     }
     
@@ -84,80 +85,141 @@ describe('GET /api/dashboard/v2/keyword-performance', () => {
     const mockTimeSeries = [
       {
         start_date: '2024-01-01',
-        impressions: 1000,
-        clicks: 50,
-        cart_adds: 15,
-        purchases: 7,
+        asin_impression_count: 1000,
+        asin_click_count: 50,
+        asin_cart_add_count: 15,
+        asin_purchase_count: 7,
       },
       {
         start_date: '2024-01-08',
-        impressions: 1200,
-        clicks: 60,
-        cart_adds: 18,
-        purchases: 9,
+        asin_impression_count: 1200,
+        asin_click_count: 60,
+        asin_cart_add_count: 18,
+        asin_purchase_count: 9,
       },
     ]
 
     const mockFunnelData = {
       impressions: 2200,
       clicks: 110,
-      cart_adds: 33,
+      cartAdds: 33,
       purchases: 16,
     }
 
-    const mockMarketShare = [
-      {
-        asin: 'B001',
-        brand: 'Brand A',
-        title: 'Product A',
-        impression_share: 0.25,
-        click_share: 0.30,
-        purchase_share: 0.35,
-      },
-      {
-        asin: 'B002',
-        brand: 'Brand B',
-        title: 'Product B',
-        impression_share: 0.20,
-        click_share: 0.18,
-        purchase_share: 0.15,
-      },
-    ]
-
-    // Mock time series query
-    mockSupabase.from.mockReturnValueOnce({
-      ...mockSupabase,
-      select: vi.fn().mockReturnValue({
-        ...mockSupabase,
-        eq: vi.fn().mockReturnValue({
-          ...mockSupabase,
-          eq: vi.fn().mockReturnValue({
-            ...mockSupabase,
-            gte: vi.fn().mockReturnValue({
-              ...mockSupabase,
-              lte: vi.fn().mockReturnValue({
-                ...mockSupabase,
-                order: vi.fn().mockResolvedValue({
-                  data: mockTimeSeries,
+    // Mock time series query - the API method
+    let queryCallCount = 0
+    mockSupabase.from.mockImplementation((table: string) => {
+      queryCallCount++
+      
+      if (table === 'search_query_performance' && queryCallCount === 1) {
+        // First call: time series data
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                gte: () => ({
+                  lte: () => ({
+                    order: () => Promise.resolve({
+                      data: mockTimeSeries,
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      
+      if (table === 'search_query_performance' && queryCallCount === 2) {
+        // Second call: market share data (ASINs)
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lte: () => Promise.resolve({
+                  data: [{ asin: 'B001' }, { asin: 'B002' }],
                   error: null,
                 }),
               }),
             }),
           }),
+        }
+      }
+
+      if (table === 'search_query_performance' && queryCallCount === 3) {
+        // Third call: manual aggregation data
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lte: () => Promise.resolve({
+                  data: [
+                    { asin: 'B001', asin_impression_count: 1500, asin_click_count: 75, asin_purchase_count: 10 },
+                    { asin: 'B002', asin_impression_count: 700, asin_click_count: 35, asin_purchase_count: 6 },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+
+      if (table === 'asin_performance_data') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({
+              data: [
+                { asin: 'B001', product_title: 'Product A' },
+                { asin: 'B002', product_title: 'Product B' }
+              ],
+              error: null,
+            }),
+          }),
+        }
+      }
+
+      if (table === 'asin_brand_mapping') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({
+              data: [
+                { asin: 'B001', brand_id: 'brand-1' },
+                { asin: 'B002', brand_id: 'brand-2' }
+              ],
+              error: null,
+            }),
+          }),
+        }
+      }
+
+      if (table === 'brands') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({
+              data: [
+                { id: 'brand-1', brand_name: 'Brand A' },
+                { id: 'brand-2', brand_name: 'Brand B' }
+              ],
+              error: null,
+            }),
+          }),
+        }
+      }
+
+      // Default empty response
+      return {
+        select: () => ({
+          eq: () => ({
+            gte: () => ({
+              lte: () => ({
+                order: () => Promise.resolve({ data: [], error: null }),
+              }),
+            }),
+          }),
         }),
-      }),
-    })
-
-    // Mock funnel data RPC
-    mockSupabase.rpc.mockResolvedValueOnce({
-      data: [mockFunnelData],
-      error: null,
-    })
-
-    // Mock market share RPC
-    mockSupabase.rpc.mockResolvedValueOnce({
-      data: mockMarketShare,
-      error: null,
+      }
     })
 
     const request = new MockNextRequest(
@@ -177,63 +239,138 @@ describe('GET /api/dashboard/v2/keyword-performance', () => {
   })
 
   it('handles comparison date range', async () => {
-    const mockTimeSeries = [{ start_date: '2024-01-01', impressions: 1000 }]
-    const mockComparisonTimeSeries = [{ start_date: '2023-12-01', impressions: 800 }]
+    const mockTimeSeries = [{ 
+      start_date: '2024-01-01', 
+      asin_impression_count: 1000,
+      asin_click_count: 50,
+      asin_cart_add_count: 15,
+      asin_purchase_count: 7
+    }]
+    const mockComparisonTimeSeries = [{ 
+      start_date: '2023-12-01', 
+      asin_impression_count: 800,
+      asin_click_count: 40,
+      asin_cart_add_count: 12,
+      asin_purchase_count: 6
+    }]
 
-    // Mock current period
-    mockSupabase.from.mockReturnValueOnce({
-      ...mockSupabase,
-      select: vi.fn().mockReturnValue({
-        ...mockSupabase,
-        eq: vi.fn().mockReturnValue({
-          ...mockSupabase,
-          eq: vi.fn().mockReturnValue({
-            ...mockSupabase,
-            gte: vi.fn().mockReturnValue({
-              ...mockSupabase,
-              lte: vi.fn().mockReturnValue({
-                ...mockSupabase,
-                order: vi.fn().mockResolvedValue({
-                  data: mockTimeSeries,
+    let queryCallCount = 0
+    mockSupabase.from.mockImplementation((table: string) => {
+      queryCallCount++
+      
+      if (table === 'search_query_performance' && queryCallCount === 1) {
+        // First call: time series data (current period)
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                gte: () => ({
+                  lte: () => ({
+                    order: () => Promise.resolve({
+                      data: mockTimeSeries,
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+      
+      if (table === 'search_query_performance' && queryCallCount === 2) {
+        // Second call: market share ASINs
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lte: () => Promise.resolve({
+                  data: [],
                   error: null,
                 }),
               }),
             }),
           }),
-        }),
-      }),
-    })
+        }
+      }
 
-    // Mock comparison period
-    mockSupabase.from.mockReturnValueOnce({
-      ...mockSupabase,
-      select: vi.fn().mockReturnValue({
-        ...mockSupabase,
-        eq: vi.fn().mockReturnValue({
-          ...mockSupabase,
-          eq: vi.fn().mockReturnValue({
-            ...mockSupabase,
-            gte: vi.fn().mockReturnValue({
-              ...mockSupabase,
-              lte: vi.fn().mockReturnValue({
-                ...mockSupabase,
-                order: vi.fn().mockResolvedValue({
-                  data: mockComparisonTimeSeries,
+      if (table === 'search_query_performance' && queryCallCount === 3) {
+        // Third call: aggregation data
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lte: () => Promise.resolve({
+                  data: [],
                   error: null,
                 }),
               }),
             }),
           }),
-        }),
-      }),
-    })
+        }
+      }
 
-    // Mock RPC calls in order: funnel data, market share, comparison funnel, comparison market share
-    mockSupabase.rpc
-      .mockResolvedValueOnce({ data: [{ impressions: 1000, clicks: 50, cartAdds: 15, purchases: 7 }], error: null })
-      .mockResolvedValueOnce({ data: [], error: null })
-      .mockResolvedValueOnce({ data: [{ impressions: 800, clicks: 40, cartAdds: 12, purchases: 6 }], error: null })
-      .mockResolvedValueOnce({ data: [], error: null })
+      if (table === 'search_query_performance' && queryCallCount === 4) {
+        // Fourth call: comparison time series
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                gte: () => ({
+                  lte: () => ({
+                    order: () => Promise.resolve({
+                      data: mockComparisonTimeSeries,
+                      error: null,
+                    }),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+
+      if (table === 'search_query_performance' && queryCallCount === 5) {
+        // Fifth call: comparison period aggregation
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lte: () => Promise.resolve({
+                  data: [],
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }
+      }
+
+      // Mock other table queries
+      if (table === 'asin_performance_data' || table === 'asin_brand_mapping' || table === 'brands') {
+        return {
+          select: () => ({
+            in: () => Promise.resolve({
+              data: [],
+              error: null,
+            }),
+          }),
+        }
+      }
+
+      // Default
+      return {
+        select: () => ({
+          eq: () => ({
+            gte: () => ({
+              lte: () => ({
+                order: () => Promise.resolve({ data: [], error: null }),
+              }),
+            }),
+          }),
+        }),
+      }
+    })
 
     const request = new MockNextRequest(
       'http://localhost:3000/api/dashboard/v2/keyword-performance?asin=B001&keyword=test&startDate=2024-01-01&endDate=2024-01-31&compareStartDate=2023-12-01&compareEndDate=2023-12-31'
