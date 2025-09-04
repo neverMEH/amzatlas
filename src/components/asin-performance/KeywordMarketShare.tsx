@@ -59,6 +59,12 @@ function getShareChange(current: number, previous: number): number {
   return (current - previous) * 100 // Convert to percentage points
 }
 
+function truncateProductName(title: string, maxLength: number = 35): string {
+  if (!title) return '[No product name]'
+  if (title.length <= maxLength) return title
+  return title.substring(0, maxLength) + '...'
+}
+
 // Utility function to generate dashboard URL
 function getDashboardUrl(asin: string, params?: URLSearchParams): string {
   const baseUrl = '/'
@@ -151,7 +157,7 @@ export function KeywordMarketShare({
 
   const pieData = useMemo(() => {
     return topCompetitors.map((competitor, index) => ({
-      name: competitor.brand,
+      name: competitor.asin,
       value: competitor[selectedMetric] * 100,
       isCurrentAsin: competitor.asin === asin,
     }))
@@ -259,9 +265,9 @@ export function KeywordMarketShare({
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Pie chart */}
-        <div className="h-64">
+        <div className="h-64 lg:col-span-1">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -288,12 +294,12 @@ export function KeywordMarketShare({
         </div>
 
         {/* Table */}
-        <div className="overflow-hidden">
+        <div className="overflow-hidden lg:col-span-2">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Brand
+                  ASIN / Product
                 </th>
                 <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   CVR
@@ -323,18 +329,20 @@ export function KeywordMarketShare({
                         : 'hover:bg-gray-50 cursor-pointer'
                     } transition-colors`}
                     onClick={() => !isCurrentAsin && handleAsinClick(competitor.asin)}
-                    title={competitor.title}
                   >
-                    <td className="px-3 py-2 whitespace-nowrap text-sm">
-                      <div className="flex items-center justify-between">
-                        <div>
+                    <td className="px-3 py-2 text-sm" title={competitor.title}>
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
                           {isCurrentAsin && (
                             <span className="text-xs text-gray-500 mr-2">#{getCurrentPosition()}</span>
                           )}
                           <span className="font-medium text-gray-900">
-                            {competitor.brand}
+                            {competitor.asin}
                           </span>
                         </div>
+                        <span className="text-xs text-gray-600 mt-1">
+                          {truncateProductName(competitor.title)}
+                        </span>
                       </div>
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap text-sm text-right">

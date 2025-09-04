@@ -83,9 +83,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Check that Work Sharp is highlighted in the table
-    const workSharpRow = screen.getByText('Work Sharp').closest('tr')
-    expect(workSharpRow).toHaveClass('bg-blue-50')
+    // Check that the current ASIN is highlighted in the table
+    const currentAsinRow = screen.getByText('B001CZKJYA').closest('tr')
+    expect(currentAsinRow).toHaveClass('bg-blue-50')
   })
 
   it('displays share metrics in table', () => {
@@ -100,14 +100,14 @@ describe('KeywordMarketShare', () => {
     )
 
     // Check table header
-    expect(screen.getByText('Brand')).toBeInTheDocument()
+    expect(screen.getByText('ASIN / Product')).toBeInTheDocument()
     // New table headers for enhanced version
     expect(screen.getByText('CVR')).toBeInTheDocument()
     expect(screen.getByText('CTR')).toBeInTheDocument()
     expect(screen.getByText('Purchases')).toBeInTheDocument()
 
-    // Check that Work Sharp is displayed (current ASIN)
-    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
+    // Check that the current ASIN is displayed
+    expect(screen.getByText('B001CZKJYA')).toBeInTheDocument()
   })
 
   it('allows toggling between share metrics', async () => {
@@ -211,8 +211,8 @@ describe('KeywordMarketShare', () => {
     // Check that competitors are sorted by conversion rate
     const rows = screen.getAllByRole('row')
     // Should be sorted by CVR now, not impression share
-    // Work Sharp (current ASIN) should be included even if not in top 5
-    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
+    // Current ASIN should be included even if not in top 5
+    expect(screen.getByText('B001CZKJYA')).toBeInTheDocument()
   })
 
   it('limits displayed competitors', () => {
@@ -254,9 +254,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Work Sharp should show its position
-    const workSharpRow = screen.getByText('Work Sharp').closest('tr')
-    expect(workSharpRow).toHaveTextContent('#1') // Position based on CVR sorting (after Others, Competitor 1, Competitor 2)
+    // Current ASIN should show its position
+    const currentAsinRow = screen.getByText('B001CZKJYA').closest('tr')
+    expect(currentAsinRow).toHaveTextContent('#1') // Position based on CVR sorting
   })
 
   it('displays product title on hover', () => {
@@ -270,9 +270,9 @@ describe('KeywordMarketShare', () => {
       />
     )
 
-    // Title is now on the row, not the cell
-    const workSharpRow = screen.getByText('Work Sharp').closest('tr')
-    expect(workSharpRow).toHaveAttribute('title', 'Work Sharp Knife Sharpener')
+    // Title is now on the cell containing the ASIN
+    const asinCell = screen.getByText('B001CZKJYA').closest('td')
+    expect(asinCell).toHaveAttribute('title', 'Work Sharp Knife Sharpener')
   })
 
   it('shows share changes when comparison data provided', () => {
@@ -307,7 +307,196 @@ describe('KeywordMarketShare', () => {
 
     // The enhanced component focuses on CVR, CTR, and purchases instead of share changes
     // Check that the component still renders with comparison data
-    expect(screen.getByText('Work Sharp')).toBeInTheDocument()
+    expect(screen.getByText('B001CZKJYA')).toBeInTheDocument()
     expect(screen.getByText('CVR')).toBeInTheDocument()
+  })
+
+  describe('ASIN and Product Name Display', () => {
+    it('displays ASIN instead of brand name in table header', () => {
+      render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show "ASIN / Product" instead of "Brand"
+      expect(screen.getByText('ASIN / Product')).toBeInTheDocument()
+      expect(screen.queryByText('Brand')).not.toBeInTheDocument()
+    })
+
+    it('displays ASIN and product name in table cells', () => {
+      render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show ASIN
+      expect(screen.getByText('B001CZKJYA')).toBeInTheDocument()
+      // Should show truncated product name
+      expect(screen.getByText(/Work Sharp Knife.../)).toBeInTheDocument()
+    })
+
+    it('shows full product name in tooltip', () => {
+      render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Find the cell containing the ASIN
+      const asinCell = screen.getByText('B001CZKJYA').closest('td')
+      expect(asinCell).toHaveAttribute('title', 'Work Sharp Knife Sharpener')
+    })
+
+    it('truncates long product names appropriately', () => {
+      const longTitleData = {
+        ...mockData,
+        competitors: [
+          {
+            asin: 'B001LONGASIN',
+            brand: 'Test Brand',
+            title: 'This is a very long product title that should be truncated for display purposes to maintain table readability',
+            impressionShare: 0.25,
+            clickShare: 0.30,
+            purchaseShare: 0.35,
+          },
+          ...mockData.competitors,
+        ],
+      }
+
+      render(
+        <KeywordMarketShare
+          data={longTitleData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show truncated title
+      const truncatedTitle = screen.getByText(/This is a very long product title.../)
+      expect(truncatedTitle).toBeInTheDocument()
+      
+      // Full title should be in tooltip
+      const cell = truncatedTitle.closest('td')
+      expect(cell).toHaveAttribute('title', 'This is a very long product title that should be truncated for display purposes to maintain table readability')
+    })
+
+    it('handles missing product titles gracefully', () => {
+      const missingTitleData = {
+        ...mockData,
+        competitors: [
+          {
+            asin: 'B001NOTITLE',
+            brand: 'No Title Brand',
+            title: '', // Empty title
+            impressionShare: 0.20,
+            clickShare: 0.25,
+            purchaseShare: 0.30,
+          },
+          ...mockData.competitors,
+        ],
+      }
+
+      render(
+        <KeywordMarketShare
+          data={missingTitleData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Should show ASIN even without title
+      expect(screen.getByText('B001NOTITLE')).toBeInTheDocument()
+      // Should show placeholder for missing title
+      expect(screen.getByText('[No product name]')).toBeInTheDocument()
+    })
+  })
+
+  describe('Full-width layout tests', () => {
+    it('uses full width container', () => {
+      const { container } = render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Check that the main container is full width
+      const mainContainer = container.firstChild
+      expect(mainContainer).toHaveClass('bg-white', 'rounded-lg', 'shadow', 'p-6')
+      // Should not have width constraints
+      expect(mainContainer).not.toHaveClass('max-w-md', 'max-w-lg', 'max-w-xl')
+    })
+
+    it('uses optimized grid layout for full width', () => {
+      render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Find the grid container
+      const gridContainer = screen.getByTestId('pie-chart').closest('.grid')
+      expect(gridContainer).toHaveClass('lg:grid-cols-3') // Should use 3 columns on large screens
+      expect(gridContainer).toHaveClass('gap-8') // Increased gap for full width
+    })
+
+    it('adjusts table width for better readability', () => {
+      render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // Check that table container spans appropriate columns
+      const tableContainer = screen.getByRole('table').closest('div')
+      expect(tableContainer).toHaveClass('lg:col-span-2') // Table should span 2 columns on large screens
+    })
+
+    it('maintains responsive behavior at different widths', () => {
+      const { container } = render(
+        <KeywordMarketShare
+          data={mockData}
+          keyword="knife sharpener"
+          asin="B001CZKJYA"
+          isLoading={false}
+          error={null}
+        />
+      )
+
+      // The component should be responsive-ready even at full width
+      const gridContainer = container.querySelector('.grid')
+      expect(gridContainer).toBeDefined()
+      // Should have responsive classes for smaller screens
+      expect(gridContainer).toHaveClass('lg:grid-cols-3')
+    })
   })
 })

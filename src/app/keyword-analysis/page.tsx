@@ -381,27 +381,25 @@ export default function KeywordAnalysisPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              {/* Funnel chart */}
-              <KeywordFunnelChart
-                data={performanceData.funnelData}
-                comparisonData={performanceData.comparisonFunnelData}
-                keyword={singleKeyword!}
-                dateRange={{ start: startDate, end: endDate }}
-                isLoading={false}
-                error={null}
-              />
+            {/* Funnel chart */}
+            <KeywordFunnelChart
+              data={performanceData.funnelData}
+              comparisonData={performanceData.comparisonFunnelData}
+              keyword={singleKeyword!}
+              dateRange={{ start: startDate, end: endDate }}
+              isLoading={false}
+              error={null}
+            />
 
-              {/* Market share */}
-              <KeywordMarketShare
-                data={performanceData.marketShare}
-                comparisonData={performanceData.comparisonMarketShare}
-                keyword={singleKeyword!}
-                asin={asin}
-                isLoading={false}
-                error={null}
-              />
-            </div>
+            {/* Market share - Full width */}
+            <KeywordMarketShare
+              data={performanceData.marketShare}
+              comparisonData={performanceData.comparisonMarketShare}
+              keyword={singleKeyword!}
+              asin={asin}
+              isLoading={false}
+              error={null}
+            />
 
             {/* Comparison info */}
             {compareStartDate && compareEndDate && (
