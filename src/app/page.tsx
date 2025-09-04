@@ -91,8 +91,24 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation */}
+      <div className="bg-gray-900 text-white">
+        <div className="max-w-[1920px] mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <h2 className="text-lg font-semibold">SQP Intelligence</h2>
+              <nav className="flex items-center space-x-4">
+                <a href="/" className="text-sm hover:text-gray-300">ASIN Performance</a>
+                <span className="text-gray-500">|</span>
+                <a href="/brand-dashboard" className="text-sm hover:text-gray-300">Brand Dashboard</a>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <header className="bg-white border-b border-gray-200 sticky top-12 z-10">
         <div className="max-w-[1920px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-gray-900">ASIN Performance Dashboard</h1>
