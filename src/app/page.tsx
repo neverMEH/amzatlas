@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePickerV2 } from '@/components/asin-performance/DateRangePickerV2'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
@@ -13,7 +13,16 @@ import { useASINPerformance } from '@/lib/api/asin-performance'
 
 export default function Dashboard() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [selectedASIN, setSelectedASIN] = useState<string>('')
+  
+  // Check for ASIN in URL params on mount
+  useEffect(() => {
+    const asinParam = searchParams.get('asin')
+    if (asinParam && !selectedASIN) {
+      setSelectedASIN(asinParam)
+    }
+  }, [searchParams, selectedASIN])
   const [dateRange, setDateRange] = useState(() => {
     // Default to current week
     const today = new Date()

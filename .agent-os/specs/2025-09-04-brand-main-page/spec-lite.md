@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Transform the current single-ASIN dashboard into a brand-centric performance dashboard with a header brand selector dropdown, displaying all brand products in a comprehensive table with metrics including impressions, clicks, cart adds, purchases, CTR, CVR, and share metrics. The dashboard includes KPI summary cards with sparklines, a search query performance table, comparison mode toggle, and clickable product rows linking to detailed ASIN dashboards.
