@@ -186,14 +186,6 @@ export function KeywordComparisonView({
           <p className="text-gray-500 text-sm mt-1">
             Select keywords to compare their performance
           </p>
-          <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-left">
-            <p><strong>Debug info:</strong></p>
-            <p>Keywords array: {JSON.stringify(keywords)}</p>
-            <p>Keywords length: {keywords.length}</p>
-            <p>Data available: {data ? 'Yes' : 'No'}</p>
-            <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
-            <p>Error: {error ? error.message : 'None'}</p>
-          </div>
         </div>
       </div>
     )
