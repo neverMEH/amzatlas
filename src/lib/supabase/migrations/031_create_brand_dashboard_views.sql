@@ -60,7 +60,6 @@ SELECT
     b.display_name as brand_name,
     apd.asin,
     apd.product_title,
-    apd.product_image_url,
     -- Current period metrics (aggregated from all dates)
     COALESCE(SUM(asm.asin_impressions), 0) as impressions,
     COALESCE(SUM(asm.asin_clicks), 0) as clicks,
@@ -85,7 +84,7 @@ FROM sqp.brands b
 JOIN sqp.asin_brand_mapping abm ON b.id = abm.brand_id
 JOIN sqp.asin_performance_data apd ON abm.asin = apd.asin
 LEFT JOIN sqp.asin_share_metrics asm ON apd.asin = asm.asin
-GROUP BY b.id, b.display_name, apd.asin, apd.product_title, apd.product_image_url;
+GROUP BY b.id, b.display_name, apd.asin, apd.product_title;
 
 -- Create materialized view for brand search query metrics
 CREATE MATERIALIZED VIEW IF NOT EXISTS sqp.brand_search_query_metrics AS
