@@ -267,6 +267,20 @@ npm run fix:columns        # Add missing columns to tables
   - Enhanced `KeywordMarketShare.tsx` with conversion-focused metrics
   - Fixed `DateRangePickerV2.tsx` for stable date selection
 
+### Keyword Market Share Enhancement (Sep 2025)
+- **Full-Width Layout**: Market share component now uses full page width for better data visualization
+- **ASIN Display**: Replaced brand names with ASIN and product names for clearer identification
+- **Layout Changes**:
+  - Changed from 2-column to 3-column grid (pie chart: 1 col, table: 2 cols)
+  - Removed grid wrapper in parent page for full-width display
+  - Increased spacing for better visual separation
+- **Display Improvements**:
+  - Table header shows "ASIN / Product" instead of "Brand"
+  - ASINs shown as primary identifier with product names below
+  - Product names truncated at 35 characters with full text in tooltips
+  - Pie chart legend updated to show ASINs
+- **Documentation**: See `/docs/keyword-market-share-enhancement.md` for implementation details
+
 ### Smart Comparison Period Selection (Aug 2025)
 - **Major Feature**: Replaced fixed 30-day comparison with intelligent period-based suggestions
 - **Core Features**:
