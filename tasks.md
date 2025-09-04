@@ -38,46 +38,51 @@ These are the tasks to be completed for enhancing the keyword comparison functio
 - Enhanced responsive grid in KeywordComparisonView (lines 289)
 - Updated error state container from max-w-4xl to max-w-6xl
 
-### Task 2: Enhance MultiKeywordSelector with KPIs
+### Task 2: Enhance MultiKeywordSelector with KPIs ✅
 **Priority:** High  
-**Estimated Time:** 6-8 hours
+**Estimated Time:** 6-8 hours  
+**Status:** COMPLETED (2025-09-04)
 
-#### 2.1 Add KPI Data to Keyword Selector
-- [ ] Create API endpoint to fetch keyword performance metrics
-- [ ] Extend `useASINKeywords` hook to include performance data
-- [ ] Add KPI display to each keyword item in selector
-- [ ] Include metrics: impressions, clicks, purchases, CTR, CVR
+#### 2.1 Add KPI Data to Keyword Selector ✅
+- [x] Create API endpoint to fetch keyword performance metrics
+- [x] Extend `useASINKeywords` hook to include performance data
+- [x] Add KPI display to each keyword item in selector
+- [x] Include metrics: impressions, clicks, purchases, CTR, CVR
 
-**Files to create/modify:**
-- `/src/app/api/dashboard/v2/keyword-metrics/route.ts` (new API endpoint)
-- `/src/lib/api/keyword-analysis.ts` (extend existing hook)
-- `/src/components/asin-performance/MultiKeywordSelector.tsx`
+**Files created/modified:**
+- `/src/app/api/dashboard/v2/keyword-metrics/route.ts` (created new API endpoint)
+- `/src/lib/api/keyword-analysis.ts` (added KeywordKPI types, fetchKeywordMetrics function, and useKeywordMetrics hook)
+- `/src/components/asin-performance/MultiKeywordSelector.tsx` (completely redesigned)
 
-**KPI metrics to display:**
+**KPI metrics implemented:**
 ```typescript
 interface KeywordKPI {
   keyword: string
   impressions: number
   clicks: number
+  cartAdds: number
   purchases: number
   ctr: number
   cvr: number
-  marketShare: number
+  cartAddRate: number
+  purchaseShare: number
 }
 ```
 
-#### 2.2 Update Selector UI Design
-- [ ] Add KPI cards/badges to each keyword item
-- [ ] Include sortable options: performance, alphabetical, market share
-- [ ] Add filter options: minimum impressions, minimum purchases
-- [ ] Make selector full-width when in comparison mode
-- [ ] Add loading states for KPI data
+#### 2.2 Update Selector UI Design ✅
+- [x] Add KPI cards/badges to each keyword item
+- [x] Include sortable options: performance, alphabetical, market share
+- [x] Add filter options: minimum impressions, minimum purchases
+- [x] Make selector full-width when in comparison mode
+- [x] Add loading states for KPI data
 
-**UI enhancements:**
-- Color-coded performance indicators
-- Compact metric display with tooltips
-- Search functionality with KPI filtering
-- Maximum keyword limit with smart suggestions
+**UI enhancements implemented:**
+- 5-column KPI grid for each keyword (impressions, clicks, purchases, CTR, CVR)
+- Sortable dropdown with 6 sort options
+- Collapsible filter panel with min impressions/purchases inputs
+- Full-width design with improved spacing
+- Loading spinner and skeleton states
+- Updated tests with React Query support
 
 ### Task 3: Replace Funnel Chart with Filterable Bar Chart
 **Priority:** Medium  

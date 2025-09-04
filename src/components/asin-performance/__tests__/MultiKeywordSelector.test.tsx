@@ -2,7 +2,20 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi, describe, it, expect } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MultiKeywordSelector } from '../MultiKeywordSelector'
+
+// Mock the keyword metrics hook
+vi.mock('@/lib/api/keyword-analysis', () => ({
+  useKeywordMetrics: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  type: {
+    KeywordKPI: {},
+  }
+}))
 
 const mockKeywords = [
   'knife sharpener',
@@ -19,6 +32,22 @@ const mockKeywords = [
   'diamond knife sharpener',
 ]
 
+// Test wrapper with QueryClient
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  })
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  )
+}
+
 describe('MultiKeywordSelector', () => {
   it('renders keyword selector with search', () => {
     render(
@@ -27,7 +56,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByPlaceholderText('Search keywords...')).toBeInTheDocument()
@@ -41,7 +71,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText('knife sharpener')).toBeInTheDocument()
@@ -58,7 +89,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const searchInput = screen.getByPlaceholderText('Search keywords...')
@@ -79,7 +111,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={onSelectionChange}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const keyword = screen.getByText('knife sharpener')
@@ -95,7 +128,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['knife sharpener', 'whetstone']}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText('2 / 10 keywords selected')).toBeInTheDocument()
@@ -115,7 +149,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['knife sharpener']}
         onSelectionChange={onSelectionChange}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const keyword = screen.getByText('knife sharpener')
@@ -134,7 +169,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['keyword1', 'keyword2', 'keyword3']}
         onSelectionChange={onSelectionChange}
         maxKeywords={3}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText('3 / 3 keywords selected')).toBeInTheDocument()
@@ -153,7 +189,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['keyword1', 'keyword2', 'keyword3']}
         onSelectionChange={() => {}}
         maxKeywords={3}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText('Maximum keywords selected')).toBeInTheDocument()
@@ -169,7 +206,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['knife sharpener', 'whetstone']}
         onSelectionChange={onSelectionChange}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const clearButton = screen.getByRole('button', { name: /clear all/i })
@@ -188,7 +226,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={onSelectionChange}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const keywordItem = screen.getByText('knife sharpener').closest('[data-testid="keyword-item"]') as HTMLElement
@@ -205,7 +244,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['whetstone', 'ceramic knife sharpener']}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const keywords = screen.getAllByTestId('keyword-item')
@@ -220,7 +260,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText(`${mockKeywords.length} keywords available`)).toBeInTheDocument()
@@ -233,7 +274,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     expect(screen.getByText('No keywords available')).toBeInTheDocument()
@@ -246,7 +288,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={['knife sharpener']}
         onSelectionChange={() => {}}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     const selectedKeyword = screen.getByText('knife sharpener').closest('[data-testid="keyword-item"]')
@@ -263,7 +306,8 @@ describe('MultiKeywordSelector', () => {
         selectedKeywords={[]}
         onSelectionChange={onSelectionChange}
         maxKeywords={10}
-      />
+      />,
+      { wrapper: TestWrapper }
     )
 
     // Search for electric

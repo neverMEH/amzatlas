@@ -420,6 +420,9 @@ export default function KeywordAnalysisPage() {
                 selectedKeywords={selectedKeywords}
                 onSelectionChange={handleKeywordSelectionChange}
                 maxKeywords={10}
+                asin={asin}
+                startDate={startDate}
+                endDate={endDate}
               />
             </div>
             

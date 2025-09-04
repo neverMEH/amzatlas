@@ -14,6 +14,30 @@ export interface ASINKeywordsData {
   }>
   totalCount: number
 }
+
+export interface KeywordKPI {
+  keyword: string
+  impressions: number
+  clicks: number
+  cartAdds: number
+  purchases: number
+  ctr: number
+  cvr: number
+  cartAddRate: number
+  purchaseShare: number
+}
+
+export interface KeywordMetricsParams {
+  asin: string
+  startDate: string
+  endDate: string
+}
+
+export interface KeywordMetricsData {
+  keywords: KeywordKPI[]
+  totalKeywords: number
+  dateRange: { start: string; end: string }
+}
 export interface KeywordPerformanceParams {
   asin: string
   keyword: string
@@ -163,6 +187,23 @@ async function fetchASINKeywords(params: ASINKeywordsParams): Promise<ASINKeywor
 
   return response.json()
 }
+
+async function fetchKeywordMetrics(params: KeywordMetricsParams): Promise<KeywordMetricsData> {
+  const searchParams = new URLSearchParams({
+    asin: params.asin,
+    startDate: params.startDate,
+    endDate: params.endDate,
+  })
+
+  const response = await fetch(`/api/dashboard/v2/keyword-metrics?${searchParams}`)
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to fetch keyword metrics')
+  }
+
+  return response.json()
+}
 async function fetchKeywordPerformance(params: KeywordPerformanceParams): Promise<KeywordPerformanceData> {
   const searchParams = new URLSearchParams({
     asin: params.asin,
@@ -214,6 +255,8 @@ export const keywordQueryKeys = {
   all: ['keyword-analysis'] as const,
   keywords: (params: ASINKeywordsParams) =>
     [...keywordQueryKeys.all, 'keywords', params] as const,
+  metrics: (params: KeywordMetricsParams) =>
+    [...keywordQueryKeys.all, 'metrics', params] as const,
   performance: (params: KeywordPerformanceParams) => 
     [...keywordQueryKeys.all, 'performance', params] as const,
   comparison: (params: KeywordComparisonParams) => 
@@ -226,6 +269,17 @@ export function useASINKeywords(params: ASINKeywordsParams | null) {
     queryKey: params ? keywordQueryKeys.keywords(params) : ['asin-keywords-disabled'],
     queryFn: () => params ? fetchASINKeywords(params) : Promise.reject('No params'),
     enabled: !!params?.asin,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    retry: 2,
+  })
+}
+
+export function useKeywordMetrics(params: KeywordMetricsParams | null) {
+  return useQuery({
+    queryKey: params ? keywordQueryKeys.metrics(params) : ['keyword-metrics-disabled'],
+    queryFn: () => params ? fetchKeywordMetrics(params) : Promise.reject('No params'),
+    enabled: !!params?.asin && !!params?.startDate && !!params?.endDate,
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
