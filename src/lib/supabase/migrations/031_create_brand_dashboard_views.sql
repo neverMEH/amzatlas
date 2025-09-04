@@ -90,29 +90,29 @@ GROUP BY b.id, b.display_name, apd.asin, apd.product_title;
 CREATE MATERIALIZED VIEW IF NOT EXISTS sqp.brand_search_query_metrics AS
 SELECT 
     b.id as brand_id,
-    sqp.search_query,
-    SUM(sqp.impressions) as impressions,
-    SUM(sqp.clicks) as clicks,
-    SUM(sqp.cart_adds) as cart_adds,
-    SUM(sqp.purchases) as purchases,
-    CASE WHEN SUM(sqp.clicks) > 0 
-        THEN ROUND((SUM(sqp.purchases)::numeric / SUM(sqp.clicks)::numeric) * 100, 1)
+    sqp_table.search_query,
+    SUM(sqp_table.impressions) as impressions,
+    SUM(sqp_table.clicks) as clicks,
+    SUM(sqp_table.cart_adds) as cart_adds,
+    SUM(sqp_table.purchases) as purchases,
+    CASE WHEN SUM(sqp_table.clicks) > 0 
+        THEN ROUND((SUM(sqp_table.purchases)::numeric / SUM(sqp_table.clicks)::numeric) * 100, 1)
         ELSE 0 
     END as cvr,
-    CASE WHEN SUM(sqp.impressions) > 0 
-        THEN ROUND((SUM(sqp.clicks)::numeric / SUM(sqp.impressions)::numeric) * 100, 1)
+    CASE WHEN SUM(sqp_table.impressions) > 0 
+        THEN ROUND((SUM(sqp_table.clicks)::numeric / SUM(sqp_table.impressions)::numeric) * 100, 1)
         ELSE 0 
     END as ctr,
     -- Calculate share metrics at query level within brand
-    ROUND((SUM(sqp.impressions)::numeric / SUM(SUM(sqp.impressions)) OVER (PARTITION BY b.id) * 100), 1) as impression_share,
-    ROUND((SUM(sqp.clicks)::numeric / SUM(SUM(sqp.clicks)) OVER (PARTITION BY b.id) * 100), 1) as ctr_share,
-    ROUND((SUM(sqp.purchases)::numeric / SUM(SUM(sqp.purchases)) OVER (PARTITION BY b.id) * 100), 1) as cvr_share,
-    ROUND((SUM(sqp.cart_adds)::numeric / SUM(SUM(sqp.cart_adds)) OVER (PARTITION BY b.id) * 100), 1) as cart_add_share,
-    ROUND((SUM(sqp.purchases)::numeric / SUM(SUM(sqp.purchases)) OVER (PARTITION BY b.id) * 100), 1) as purchase_share
+    ROUND((SUM(sqp_table.impressions)::numeric / SUM(SUM(sqp_table.impressions)) OVER (PARTITION BY b.id) * 100), 1) as impression_share,
+    ROUND((SUM(sqp_table.clicks)::numeric / SUM(SUM(sqp_table.clicks)) OVER (PARTITION BY b.id) * 100), 1) as ctr_share,
+    ROUND((SUM(sqp_table.purchases)::numeric / SUM(SUM(sqp_table.purchases)) OVER (PARTITION BY b.id) * 100), 1) as cvr_share,
+    ROUND((SUM(sqp_table.cart_adds)::numeric / SUM(SUM(sqp_table.cart_adds)) OVER (PARTITION BY b.id) * 100), 1) as cart_add_share,
+    ROUND((SUM(sqp_table.purchases)::numeric / SUM(SUM(sqp_table.purchases)) OVER (PARTITION BY b.id) * 100), 1) as purchase_share
 FROM sqp.brands b
 JOIN sqp.asin_brand_mapping abm ON b.id = abm.brand_id
-JOIN sqp.search_query_performance sqp ON abm.asin = sqp.asin
-GROUP BY b.id, sqp.search_query;
+JOIN sqp.search_query_performance sqp_table ON abm.asin = sqp_table.asin
+GROUP BY b.id, sqp_table.search_query;
 
 -- Create index for performance
 CREATE INDEX idx_brand_search_query_metrics_brand_id ON sqp.brand_search_query_metrics(brand_id);
