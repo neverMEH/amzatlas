@@ -426,10 +426,10 @@ export default function KeywordAnalysisPage() {
                 keywordsWithMetrics={keywordsData?.keywords.map(k => ({
                   keyword: k.keyword,
                   impressions: k.impressions,
-                  clicks: Math.floor(k.impressions * 0.05), // Simulate 5% CTR
-                  purchases: Math.floor(k.impressions * 0.002), // Simulate 0.2% conversion
-                  ctr: 5.0,
-                  cvr: 4.0
+                  clicks: k.clicks || 0,
+                  purchases: k.purchases || 0,
+                  ctr: k.ctr || 0,
+                  cvr: k.cvr || 0
                 }))}
                 metricsLoading={keywordsLoading}
               />
