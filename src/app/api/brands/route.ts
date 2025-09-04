@@ -20,8 +20,8 @@ export async function GET() {
       )
     }
 
-    // Return brands in the expected format
-    return NextResponse.json({ data: brands || [] })
+    // Return brands array directly
+    return NextResponse.json(brands || [])
   } catch (error) {
     console.error('Unexpected error in brands API:', error)
     return NextResponse.json(
