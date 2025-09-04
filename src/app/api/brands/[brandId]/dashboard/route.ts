@@ -52,7 +52,7 @@ export async function GET(
       throw asinsError
     }
     
-    const asinList = brandAsins?.map(ba => ba.asin) || []
+    const asinList = brandAsins?.map((ba: { asin: string }) => ba.asin) || []
     
     if (asinList.length === 0) {
       // Return empty dashboard data if no ASINs
@@ -88,7 +88,7 @@ export async function GET(
     
     // Aggregate KPI totals
     const kpiTotals = (currentKpis || []).reduce(
-      (acc, row) => ({
+      (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
         impressions: acc.impressions + (row.impressions || 0),
         clicks: acc.clicks + (row.clicks || 0),
         cartAdds: acc.cartAdds + (row.cart_adds || 0),
@@ -111,7 +111,7 @@ export async function GET(
     }
     
     // Aggregate daily data by date
-    const dailyAggregates = (dailyData || []).reduce((acc, row) => {
+    const dailyAggregates = (dailyData || []).reduce((acc: Record<string, any>, row: any) => {
       const date = row.date
       if (!acc[date]) {
         acc[date] = { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
@@ -153,7 +153,7 @@ export async function GET(
         .lte('end_date', comparisonDateTo)
       
       const comparisonTotals = (comparisonKpis || []).reduce(
-        (acc, row) => ({
+        (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
           impressions: acc.impressions + (row.impressions || 0),
           clicks: acc.clicks + (row.clicks || 0),
           cartAdds: acc.cartAdds + (row.cart_adds || 0),
@@ -183,7 +183,7 @@ export async function GET(
     }
     
     // Format products data
-    const formattedProducts = (products || []).map((product, index) => ({
+    const formattedProducts = (products || []).map((product: any, index: number) => ({
       id: product.asin,
       name: product.product_title || product.asin,
       childAsin: product.asin,
@@ -225,7 +225,7 @@ export async function GET(
     }
     
     // Format search queries data
-    const formattedQueries = (searchQueries || []).map((query, index) => ({
+    const formattedQueries = (searchQueries || []).map((query: any, index: number) => ({
       id: index + 1,
       query: query.search_query,
       impressions: query.impressions || 0,

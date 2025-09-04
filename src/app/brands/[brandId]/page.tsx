@@ -67,17 +67,15 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
   }
 
   // Handle date range change
-  const handleDateRangeChange = (
-    startDate: string, 
-    endDate: string,
-    comparisonStart?: string,
-    comparisonEnd?: string
-  ) => {
-    setDateRange({ startDate, endDate })
-    if (comparisonStart && comparisonEnd) {
+  const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
+    setDateRange(range)
+  }
+  
+  const handleCompareChange = (range: { enabled: boolean; startDate?: string; endDate?: string }) => {
+    if (range.enabled && range.startDate && range.endDate) {
       setCompareRange({
-        startDate: comparisonStart,
-        endDate: comparisonEnd,
+        startDate: range.startDate,
+        endDate: range.endDate,
         enabled: true,
       })
     } else {
@@ -103,9 +101,11 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
             <DateRangePickerV2
               startDate={dateRange.startDate}
               endDate={dateRange.endDate}
-              comparisonStartDate={compareRange.startDate}
-              comparisonEndDate={compareRange.endDate}
-              onDateChange={handleDateRangeChange}
+              onChange={handleDateRangeChange}
+              showComparison={true}
+              compareStartDate={compareRange.startDate}
+              compareEndDate={compareRange.endDate}
+              onCompareChange={handleCompareChange}
               hasManualSelection={true}
             />
             
@@ -133,10 +133,10 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
 
         {/* KPI Cards */}
         <KpiModules
-          data={data?.data.kpis}
+          data={data ? { kpis: data.data.kpis } : null}
           showComparison={showComparison}
           loading={isLoading}
-          error={error}
+          error={error?.message}
         />
 
         {/* Product List */}
@@ -145,7 +145,7 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
             products={data?.data.products}
             showComparison={showComparison}
             loading={isLoading}
-            error={error}
+            error={error?.message}
             onProductClick={handleProductClick}
           />
         </div>
@@ -155,7 +155,7 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
           queries={data?.data.searchQueries}
           showComparison={showComparison}
           loading={isLoading}
-          error={error}
+          error={error?.message}
         />
       </main>
     </div>

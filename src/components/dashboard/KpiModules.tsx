@@ -5,22 +5,22 @@ interface KpiData {
     impressions: {
       value: number
       trend: number[]
-      comparison?: number
+      comparison?: number | null
     }
     clicks: {
       value: number
       trend: number[]
-      comparison?: number
+      comparison?: number | null
     }
     cartAdds: {
       value: number
       trend: number[]
-      comparison?: number
+      comparison?: number | null
     }
     purchases: {
       value: number
       trend: number[]
-      comparison?: number
+      comparison?: number | null
     }
   }
 }
