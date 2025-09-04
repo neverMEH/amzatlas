@@ -1,8 +1,7 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
-import { Search, X, Check, AlertCircle, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react'
-import { useKeywordMetrics, type KeywordKPI } from '@/lib/api/keyword-analysis'
+import React, { useState, useMemo, useEffect } from 'react'
+import { Search, X, Check, AlertCircle, ChevronUp, ChevronDown, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface MultiKeywordSelectorProps {
   availableKeywords: string[]
@@ -12,10 +11,22 @@ interface MultiKeywordSelectorProps {
   asin?: string
   startDate?: string
   endDate?: string
+  keywordsWithMetrics?: Array<{
+    keyword: string
+    impressions: number
+    clicks?: number
+    cartAdds?: number
+    purchases?: number
+    ctr?: number
+    cvr?: number
+  }>
+  metricsLoading?: boolean
 }
 
 type SortOption = 'keyword' | 'impressions' | 'clicks' | 'purchases' | 'ctr' | 'cvr'
 type SortDirection = 'asc' | 'desc'
+
+const ITEMS_PER_PAGE = 25
 
 export function MultiKeywordSelector({
   availableKeywords,
@@ -25,6 +36,8 @@ export function MultiKeywordSelector({
   asin,
   startDate,
   endDate,
+  keywordsWithMetrics,
+  metricsLoading = false,
 }: MultiKeywordSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('impressions')
@@ -32,22 +45,32 @@ export function MultiKeywordSelector({
   const [showFilters, setShowFilters] = useState(false)
   const [minImpressions, setMinImpressions] = useState('')
   const [minPurchases, setMinPurchases] = useState('')
-
-  // Fetch keyword metrics if we have the required params
-  const { data: metricsData, isLoading: metricsLoading } = useKeywordMetrics(
-    asin && startDate && endDate ? { asin, startDate, endDate } : null
-  )
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Create a map of keyword to metrics
   const metricsMap = useMemo(() => {
-    const map = new Map<string, KeywordKPI>()
-    if (metricsData?.keywords) {
-      metricsData.keywords.forEach(metric => {
-        map.set(metric.keyword, metric)
+    const map = new Map<string, {
+      impressions: number
+      clicks: number
+      cartAdds: number
+      purchases: number
+      ctr: number
+      cvr: number
+    }>()
+    if (keywordsWithMetrics) {
+      keywordsWithMetrics.forEach(metric => {
+        map.set(metric.keyword, {
+          impressions: metric.impressions,
+          clicks: metric.clicks || 0,
+          cartAdds: metric.cartAdds || 0,
+          purchases: metric.purchases || 0,
+          ctr: metric.ctr || 0,
+          cvr: metric.cvr || 0,
+        })
       })
     }
     return map
-  }, [metricsData])
+  }, [keywordsWithMetrics])
 
   const filteredKeywords = useMemo(() => {
     const term = searchTerm.toLowerCase()
@@ -123,6 +146,17 @@ export function MultiKeywordSelector({
     return sorted
   }, [filteredKeywords, sortBy, sortDirection, metricsMap])
 
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedKeywords.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedKeywords = sortedKeywords.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, minImpressions, minPurchases, sortBy, sortDirection])
+
   const handleKeywordToggle = (keyword: string) => {
     if (selectedKeywords.includes(keyword)) {
       // Deselect
@@ -136,8 +170,10 @@ export function MultiKeywordSelector({
   }
 
   const handleSelectAll = () => {
-    const visibleKeywords = sortedKeywords.slice(0, maxKeywords)
-    onSelectionChange(visibleKeywords)
+    // Select all visible keywords on current page
+    const visibleKeywords = paginatedKeywords.slice(0, maxKeywords - selectedKeywords.length)
+    const newSelection = [...new Set([...selectedKeywords, ...visibleKeywords])]
+    onSelectionChange(newSelection.slice(0, maxKeywords))
   }
 
   const handleClearAll = () => {
@@ -193,12 +229,12 @@ export function MultiKeywordSelector({
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            {selectedKeywords.length < maxKeywords && sortedKeywords.length > 0 && (
+            {selectedKeywords.length < maxKeywords && paginatedKeywords.length > 0 && (
               <button
                 onClick={handleSelectAll}
                 className="text-sm text-blue-600 hover:text-blue-700 font-medium"
               >
-                Select visible ({Math.min(sortedKeywords.length, maxKeywords - selectedKeywords.length)})
+                Select visible ({Math.min(paginatedKeywords.length, maxKeywords - selectedKeywords.length)})
               </button>
             )}
             {selectedKeywords.length > 0 && (
@@ -305,21 +341,25 @@ export function MultiKeywordSelector({
                 <div className="flex items-center space-x-1">
                   <input
                     type="checkbox"
-                    checked={selectedKeywords.length === sortedKeywords.length && sortedKeywords.length > 0}
+                    checked={selectedKeywords.length === paginatedKeywords.length && paginatedKeywords.length > 0}
                     ref={(el) => {
                       if (el) {
-                        el.indeterminate = selectedKeywords.length > 0 && selectedKeywords.length < sortedKeywords.length
+                        el.indeterminate = selectedKeywords.filter(k => paginatedKeywords.includes(k)).length > 0 && 
+                                           selectedKeywords.filter(k => paginatedKeywords.includes(k)).length < paginatedKeywords.length
                       }
                     }}
                     onChange={() => {
-                      if (selectedKeywords.length === sortedKeywords.length) {
-                        handleClearAll()
+                      const pageSelected = paginatedKeywords.filter(k => selectedKeywords.includes(k))
+                      if (pageSelected.length === paginatedKeywords.length) {
+                        // Deselect all on this page
+                        onSelectionChange(selectedKeywords.filter(k => !paginatedKeywords.includes(k)))
                       } else {
+                        // Select all on this page
                         handleSelectAll()
                       }
                     }}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    disabled={sortedKeywords.length === 0}
+                    disabled={paginatedKeywords.length === 0}
                   />
                 </div>
               </th>
@@ -396,7 +436,7 @@ export function MultiKeywordSelector({
               </tr>
             )}
 
-            {!metricsLoading && sortedKeywords.length === 0 && (
+            {!metricsLoading && paginatedKeywords.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                   No keywords match your filters
@@ -404,7 +444,7 @@ export function MultiKeywordSelector({
               </tr>
             )}
 
-            {!metricsLoading && sortedKeywords.map((keyword) => {
+            {!metricsLoading && paginatedKeywords.map((keyword) => {
               const isSelected = selectedKeywords.includes(keyword)
               const isDisabled = !isSelected && isAtMax
               const metrics = metricsMap.get(keyword)
@@ -459,10 +499,31 @@ export function MultiKeywordSelector({
         </table>
       </div>
 
-      {/* Pagination or load more could go here if needed */}
-      {sortedKeywords.length > 100 && (
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
-          Showing first 100 keywords
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <span className="text-sm text-gray-700">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          <span className="text-sm text-gray-600">
+            Showing {startIndex + 1}-{Math.min(endIndex, sortedKeywords.length)} of {sortedKeywords.length} keywords
+          </span>
         </div>
       )}
     </div>

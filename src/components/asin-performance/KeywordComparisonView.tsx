@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { TrendingUp, BarChart2, PieChartIcon, AlertCircle, TrendingDown } from 'lucide-react'
 import { format } from 'date-fns'
-import { WaterfallChart, WaterfallDataPoint } from './WaterfallChart'
+import { WaterfallChartEnhanced, WaterfallDataPoint } from './WaterfallChartEnhanced'
 
 interface KeywordPerformanceData {
   impressions: number
@@ -103,32 +103,46 @@ export function KeywordComparisonView({
     return { totalImpressions, totalClicks, totalPurchases }
   }, [data, displayKeywords])
 
-  // Transform data for waterfall chart
-  const waterfallData = useMemo(() => {
-    if (!data?.comparisonData || !comparisonDateRange) return []
+  // Transform data for waterfall chart - create data for each metric
+  const waterfallMetrics = useMemo(() => {
+    if (!data?.comparisonData || !comparisonDateRange) return null
 
-    const waterfallPoints: WaterfallDataPoint[] = []
+    const metrics: Record<string, WaterfallDataPoint[]> = {
+      impressions: [],
+      clicks: [],
+      cartAdds: [],
+      purchases: []
+    }
 
-    displayKeywords.forEach(keyword => {
-      const comparisonInfo = data.comparisonData?.[keyword]
-      if (comparisonInfo) {
-        const current = comparisonInfo.current[selectedMetric]
-        const previous = comparisonInfo.previous[selectedMetric]
-        const change = current - previous
-        const changePercent = previous > 0 ? ((change / previous) * 100) : 0
+    const metricKeys = ['impressions', 'clicks', 'cartAdds', 'purchases'] as const
 
-        waterfallPoints.push({
-          keyword,
-          current,
-          previous,
-          change,
-          changePercent
-        })
-      }
+    metricKeys.forEach(metric => {
+      displayKeywords.forEach(keyword => {
+        const comparisonInfo = data.comparisonData?.[keyword]
+        if (comparisonInfo) {
+          const current = comparisonInfo.current[metric]
+          const previous = comparisonInfo.previous[metric]
+          const change = current - previous
+          const changePercent = previous > 0 ? ((change / previous) * 100) : 0
+
+          metrics[metric].push({
+            keyword,
+            current,
+            previous,
+            change,
+            changePercent
+          })
+        }
+      })
     })
 
-    return waterfallPoints
-  }, [data?.comparisonData, displayKeywords, selectedMetric, comparisonDateRange])
+    return metrics
+  }, [data?.comparisonData, displayKeywords, comparisonDateRange])
+
+  // Get waterfall data for selected metric
+  const waterfallData = useMemo(() => {
+    return waterfallMetrics?.[selectedMetric] || []
+  }, [waterfallMetrics, selectedMetric])
 
   if (isLoading) {
     return (
@@ -378,12 +392,14 @@ export function KeywordComparisonView({
                 </p>
               </div>
 
-              <WaterfallChart
+              <WaterfallChartEnhanced
                 data={waterfallData}
                 metric={selectedMetric}
                 title={`Keyword Performance Changes - ${selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}`}
                 isLoading={false}
                 error={null}
+                metrics={waterfallMetrics || undefined}
+                onMetricChange={(metric) => setSelectedMetric(metric)}
               />
             </div>
           ) : (
