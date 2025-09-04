@@ -435,20 +435,18 @@ export default function KeywordAnalysisPage() {
               />
             </div>
             
-            {/* Full-width comparison view below */}
-            {selectedKeywords.length > 0 && comparisonData && (
-              <div className="w-full">
-                <KeywordComparisonView
-                  keywords={selectedKeywords}
-                  data={comparisonData}
-                  dateRange={{ start: startDate, end: endDate }}
-                  comparisonDateRange={compareStartDate && compareEndDate ? 
-                    { start: compareStartDate, end: compareEndDate } : undefined}
-                  isLoading={false}
-                  error={null}
-                />
-              </div>
-            )}
+            {/* Full-width comparison view below - always show for debugging */}
+            <div className="w-full">
+              <KeywordComparisonView
+                keywords={selectedKeywords}
+                data={comparisonData || null}
+                dateRange={{ start: startDate, end: endDate }}
+                comparisonDateRange={compareStartDate && compareEndDate ? 
+                  { start: compareStartDate, end: compareEndDate } : undefined}
+                isLoading={comparisonLoading}
+                error={comparisonError}
+              />
+            </div>
           </div>
         )}
       </div>
