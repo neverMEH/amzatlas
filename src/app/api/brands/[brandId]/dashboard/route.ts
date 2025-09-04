@@ -99,7 +99,7 @@ export async function GET(
     
     // Fetch daily data for sparkline trends
     const { data: dailyData, error: dailyError } = await supabase
-      .from('daily_sqp_data')
+      .from('sqp.daily_sqp_data')
       .select('date, impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('date', dateFrom)
@@ -214,7 +214,7 @@ export async function GET(
     
     // Fetch search query performance
     const { data: searchQueries, error: queriesError } = await supabase
-      .from('brand_search_query_metrics')
+      .from('sqp.brand_search_query_metrics')
       .select('*')
       .eq('brand_id', brandId)
       .order('impressions', { ascending: false })
