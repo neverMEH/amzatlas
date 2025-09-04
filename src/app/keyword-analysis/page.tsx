@@ -113,18 +113,13 @@ export default function KeywordAnalysisPage() {
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [showExportMenu, setShowExportMenu] = useState(false)
 
-  // Calculate default dates for current week if not provided
+  // Calculate default dates - returns stable values during SSR
   const getDefaultDates = useCallback(() => {
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
-    
+    // Return stable default dates to avoid hydration mismatches
+    // The actual current week will be calculated after mount
     return {
-      startDate: startOfWeek.toISOString().split('T')[0],
-      endDate: endOfWeek.toISOString().split('T')[0],
+      startDate: '2025-09-01',
+      endDate: '2025-09-07',
     }
   }, [])
 
@@ -208,16 +203,16 @@ export default function KeywordAnalysisPage() {
   // Handle date range changes - using stable callbacks without searchParams in deps
   const handleDateRangeChange = useCallback((range: { startDate: string; endDate: string }) => {
     // Get current searchParams at execution time
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(searchParams.toString())
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
     
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [pathname, router])
+  }, [pathname, router, searchParams])
 
   const handleCompareRangeChange = useCallback((range: { startDate: string; endDate: string; enabled: boolean }) => {
     // Get current searchParams at execution time
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(searchParams.toString())
     
     if (range.enabled && range.startDate && range.endDate) {
       params.set('compareStartDate', range.startDate)
@@ -228,14 +223,14 @@ export default function KeywordAnalysisPage() {
     }
     
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [pathname, router])
+  }, [pathname, router, searchParams])
 
   // Handle view mode changes
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)
     
     // Get current searchParams at execution time
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(searchParams.toString())
     if (mode === 'single' && selectedKeywords.length > 0) {
       params.set('keyword', selectedKeywords[0])
       params.delete('keywords')
@@ -253,11 +248,11 @@ export default function KeywordAnalysisPage() {
     
     if (viewMode === 'comparison' && keywords.length > 0) {
       // Get current searchParams at execution time
-      const params = new URLSearchParams(window.location.search)
+      const params = new URLSearchParams(searchParams.toString())
       params.set('keywords', keywords.join(','))
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
-  }, [viewMode, pathname, router])
+  }, [viewMode, pathname, router, searchParams])
 
   // Export functionality
   const handleExport = (format: 'csv' | 'excel') => {

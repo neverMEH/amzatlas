@@ -59,11 +59,15 @@ export function ComparisonSelector({
       
       setSelectedComparison(smartComparison)
       setHasSetDefault(true)
-      onChange({
-        startDate: smartComparison.start,
-        endDate: smartComparison.end,
-        enabled: true,
-      })
+      // Use a timeout to defer the onChange to the next tick
+      // This prevents infinite loops when the parent component updates URL params
+      setTimeout(() => {
+        onChange({
+          startDate: smartComparison.start,
+          endDate: smartComparison.end,
+          enabled: true,
+        })
+      }, 0)
       setComparisonType('previous')
       setShowSmartSuggestions(true) // Show smart suggestions by default
     }
@@ -93,7 +97,7 @@ export function ComparisonSelector({
 
   // Update comparison when main period changes
   useEffect(() => {
-    if (enabled) {
+    if (enabled && compareStartDate && compareEndDate) {
       const newComparison = calculateComparisonPeriod({
         startDate: mainStartDate,
         endDate: mainEndDate,
@@ -109,17 +113,21 @@ export function ComparisonSelector({
         compareEnd: newComparison.endDate,
       })
       
-      if (validation.isValid) {
+      // Only update if the dates have actually changed
+      const hasChanged = newComparison.startDate !== compareStartDate || 
+                        newComparison.endDate !== compareEndDate
+      
+      if (validation.isValid && hasChanged) {
         onChange({
           ...newComparison,
           enabled: true,
         })
         setValidationErrors([])
-      } else {
+      } else if (!validation.isValid) {
         setValidationErrors(validation.errors)
       }
     }
-  }, [mainStartDate, mainEndDate, periodType, comparisonType])
+  }, [mainStartDate, mainEndDate, periodType, comparisonType, compareStartDate, compareEndDate, customOffset])
 
   const handleComparisonTypeChange = (type: ComparisonType) => {
     setComparisonType(type)
