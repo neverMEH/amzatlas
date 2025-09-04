@@ -303,8 +303,8 @@ export function DateRangePickerV2({
             <ChevronDown className="h-4 w-4 text-gray-500 ml-auto" />
           </button>
           
-          {/* Loading indicator for ASIN data */}
-          {asin && isLoadingAvailability && (
+          {/* Loading indicator for ASIN data - only show on initial load */}
+          {asin && isLoadingAvailability && !dataAvailability && (
             <div className="absolute right-0 top-full mt-1 text-sm text-gray-500">
               Loading ASIN data...
             </div>

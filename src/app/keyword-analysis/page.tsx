@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { ArrowLeft, Download, BarChart2, AlertCircle } from 'lucide-react'
 import { format } from 'date-fns'
@@ -26,6 +26,84 @@ function formatPercentage(num: number, decimals: number = 2): string {
 function formatDateRange(start: string, end: string): string {
   return `${format(new Date(start), 'MMM d')} - ${format(new Date(end), 'MMM d, yyyy')}`
 }
+
+// Memoized header component to prevent re-renders
+const PageHeader = memo(function PageHeader({ 
+  asin, 
+  viewMode, 
+  singleKeyword, 
+  selectedKeywords, 
+  onViewModeChange,
+  onBack
+}: {
+  asin: string | null
+  viewMode: ViewMode
+  singleKeyword: string | null
+  selectedKeywords: string[]
+  onViewModeChange: (mode: ViewMode) => void
+  onBack: () => void
+}) {
+  return (
+    <div className="bg-white shadow">
+      <div className="px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Back to dashboard"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            
+            {/* Breadcrumb */}
+            <Breadcrumb 
+              items={[
+                { label: 'Dashboard', href: '/', icon: 'home' },
+                { label: asin || '', href: `/products/${asin}` },
+                { label: viewMode === 'single' ? singleKeyword || '' : `${selectedKeywords.length} keywords` }
+              ]}
+            />
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {/* View mode toggle */}
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => onViewModeChange('single')}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  viewMode === 'single'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Single Keyword
+              </button>
+              <button
+                onClick={() => onViewModeChange('comparison')}
+                className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
+                  viewMode === 'comparison'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Compare Keywords
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent re-renders when only comparison dates change
+  return (
+    prevProps.asin === nextProps.asin &&
+    prevProps.viewMode === nextProps.viewMode &&
+    prevProps.singleKeyword === nextProps.singleKeyword &&
+    JSON.stringify(prevProps.selectedKeywords) === JSON.stringify(nextProps.selectedKeywords)
+  )
+})
 
 export default function KeywordAnalysisPage() {
   const searchParams = useSearchParams()
@@ -213,114 +291,22 @@ export default function KeywordAnalysisPage() {
   const isLoading = viewMode === 'single' ? performanceLoading : comparisonLoading
   const error = viewMode === 'single' ? performanceError : comparisonError
 
+  // Memoized callback for router.back
+  const handleBack = useCallback(() => {
+    router.back()
+  }, [router])
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Back to dashboard"
-              >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
-              </button>
-              
-              {/* Breadcrumb */}
-              <Breadcrumb 
-                items={[
-                  { label: 'Dashboard', href: '/', icon: 'home' },
-                  { label: asin || '', href: `/products/${asin}` },
-                  { label: viewMode === 'single' ? singleKeyword || '' : `${selectedKeywords.length} keywords` }
-                ]}
-              />
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              {/* View mode toggle */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => handleViewModeChange('single')}
-                  className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                    viewMode === 'single'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Single Keyword
-                </button>
-                <button
-                  onClick={() => handleViewModeChange('comparison')}
-                  className={`px-3 py-1 text-sm font-medium rounded transition-colors ${
-                    viewMode === 'comparison'
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Compare Keywords
-                </button>
-              </div>
-              
-              {/* Export button */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>Export Data</span>
-                </button>
-                
-                {showExportMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                    <button
-                      onClick={() => handleExport('csv')}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-50"
-                    >
-                      Export as CSV
-                    </button>
-                    <button
-                      onClick={() => handleExport('excel')}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-50"
-                    >
-                      Export as Excel
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          {/* Page title and metrics */}
-          <div className="mt-6">
-            <h1 className="text-2xl font-bold text-gray-900">Keyword Analysis</h1>
-            {viewMode === 'single' && performanceData && (
-              <div className="flex items-center space-x-6 mt-2 text-sm">
-                <div>
-                  <span className="text-gray-500">Impressions:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {formatNumber(performanceData.funnelData.impressions)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">CTR:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {formatPercentage(performanceData.funnelData.clicks / performanceData.funnelData.impressions)}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500">CVR:</span>
-                  <span className="ml-2 font-medium text-gray-900">
-                    {formatPercentage(performanceData.funnelData.purchases / performanceData.funnelData.impressions)}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Memoized Header */}
+      <PageHeader
+        asin={asin}
+        viewMode={viewMode}
+        singleKeyword={singleKeyword}
+        selectedKeywords={selectedKeywords}
+        onViewModeChange={handleViewModeChange}
+        onBack={handleBack}
+      />
 
       {/* Main content */}
       <div className="px-8 py-6">
