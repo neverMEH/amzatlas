@@ -127,17 +127,19 @@ export default function KeywordAnalysisPage() {
     asin && startDate && endDate ? { asin, startDate, endDate } : null
   )
 
-  // Handle date range changes
+  // Handle date range changes - using stable callbacks without searchParams in deps
   const handleDateRangeChange = useCallback((range: { startDate: string; endDate: string }) => {
-    const params = new URLSearchParams(searchParams.toString())
+    // Get current searchParams at execution time
+    const params = new URLSearchParams(window.location.search)
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
     
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [pathname, router, searchParams])
+  }, [pathname, router])
 
   const handleCompareRangeChange = useCallback((range: { startDate: string; endDate: string; enabled: boolean }) => {
-    const params = new URLSearchParams(searchParams.toString())
+    // Get current searchParams at execution time
+    const params = new URLSearchParams(window.location.search)
     
     if (range.enabled && range.startDate && range.endDate) {
       params.set('compareStartDate', range.startDate)
@@ -148,13 +150,14 @@ export default function KeywordAnalysisPage() {
     }
     
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }, [pathname, router, searchParams])
+  }, [pathname, router])
 
   // Handle view mode changes
-  const handleViewModeChange = (mode: ViewMode) => {
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)
     
-    const params = new URLSearchParams(searchParams.toString())
+    // Get current searchParams at execution time
+    const params = new URLSearchParams(window.location.search)
     if (mode === 'single' && selectedKeywords.length > 0) {
       params.set('keyword', selectedKeywords[0])
       params.delete('keywords')
@@ -164,18 +167,19 @@ export default function KeywordAnalysisPage() {
     }
     
     router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  }, [selectedKeywords, pathname, router])
 
   // Handle keyword selection changes
-  const handleKeywordSelectionChange = (keywords: string[]) => {
+  const handleKeywordSelectionChange = useCallback((keywords: string[]) => {
     setSelectedKeywords(keywords)
     
     if (viewMode === 'comparison' && keywords.length > 0) {
-      const params = new URLSearchParams(searchParams.toString())
+      // Get current searchParams at execution time
+      const params = new URLSearchParams(window.location.search)
       params.set('keywords', keywords.join(','))
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
-  }
+  }, [viewMode, pathname, router])
 
   // Export functionality
   const handleExport = (format: 'csv' | 'excel') => {
