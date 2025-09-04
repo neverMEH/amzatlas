@@ -45,9 +45,12 @@ export function ComparisonSelector({
   // Get comparison options for current period type
   const comparisonOptions = getComparisonOptions(periodType)
 
+  // Track if we've already set a default to prevent loops
+  const [hasSetDefault, setHasSetDefault] = useState(false)
+
   // Calculate default comparison when enabled
   useEffect(() => {
-    if (enabled && !compareStartDate && !compareEndDate) {
+    if (enabled && !compareStartDate && !compareEndDate && !hasSetDefault) {
       // Use smart comparison for initial default
       const smartComparison = calculateSmartComparison(
         { start: mainStartDate, end: mainEndDate },
@@ -55,6 +58,7 @@ export function ComparisonSelector({
       )
       
       setSelectedComparison(smartComparison)
+      setHasSetDefault(true)
       onChange({
         startDate: smartComparison.start,
         endDate: smartComparison.end,
@@ -63,7 +67,13 @@ export function ComparisonSelector({
       setComparisonType('previous')
       setShowSmartSuggestions(true) // Show smart suggestions by default
     }
-  }, [enabled, mainStartDate, mainEndDate])
+    
+    // Reset the flag when comparison is disabled
+    if (!enabled) {
+      setHasSetDefault(false)
+    }
+  }, [enabled, mainStartDate, mainEndDate, compareStartDate, compareEndDate, hasSetDefault])
+  // Note: onChange is intentionally omitted from deps to prevent infinite loops
 
   // Validate initial comparison dates
   useEffect(() => {

@@ -249,7 +249,8 @@ export function DateRangePickerV2({
       setHasSetDefaultRange(true)
       setLastProcessedASIN(asin)
     }
-  }, [asin, dataAvailability, isLoadingAvailability, hasManualSelection, onChange, periodType, hasSetDefaultRange, lastProcessedASIN, startDate, endDate])
+  }, [asin, dataAvailability, isLoadingAvailability, hasManualSelection, periodType, hasSetDefaultRange, lastProcessedASIN, startDate, endDate])
+  // Note: onChange is intentionally omitted from deps to prevent infinite loops
 
   // Reset when ASIN changes
   useEffect(() => {
