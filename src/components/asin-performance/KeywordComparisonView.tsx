@@ -286,8 +286,8 @@ export function KeywordComparisonView({
 
       {activeTab === 'funnels' && (
         <div data-testid="conversion-funnels-content">
-          <div className="grid grid-cols-2 gap-4">
-            {displayKeywords.slice(0, 4).map((keyword, index) => {
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {displayKeywords.slice(0, 8).map((keyword, index) => {
               const funnelData = data?.funnels[keyword]
               if (!funnelData) return null
 

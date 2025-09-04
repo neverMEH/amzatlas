@@ -264,7 +264,7 @@ export default function KeywordAnalysisPage() {
   if (!hasRequiredParams) {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-amber-500 mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Missing required parameters</h2>
@@ -412,8 +412,9 @@ export default function KeywordAnalysisPage() {
 
         {/* Comparison view */}
         {viewMode === 'comparison' && !isLoading && !error && (
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-1">
+          <div className="space-y-6">
+            {/* Full-width keyword selector at the top */}
+            <div className="w-full">
               <MultiKeywordSelector
                 availableKeywords={keywordsData?.keywords.map(k => k.keyword) || []}
                 selectedKeywords={selectedKeywords}
@@ -422,8 +423,9 @@ export default function KeywordAnalysisPage() {
               />
             </div>
             
-            <div className="col-span-2">
-              {selectedKeywords.length > 0 && comparisonData && (
+            {/* Full-width comparison view below */}
+            {selectedKeywords.length > 0 && comparisonData && (
+              <div className="w-full">
                 <KeywordComparisonView
                   keywords={selectedKeywords}
                   data={comparisonData}
@@ -433,8 +435,8 @@ export default function KeywordAnalysisPage() {
                   isLoading={false}
                   error={null}
                 />
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
