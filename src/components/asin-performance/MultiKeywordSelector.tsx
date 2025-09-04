@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Search, X, Check, AlertCircle, TrendingUp, Users, ShoppingCart, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, X, Check, AlertCircle, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react'
 import { useKeywordMetrics, type KeywordKPI } from '@/lib/api/keyword-analysis'
 
 interface MultiKeywordSelectorProps {
@@ -14,7 +14,8 @@ interface MultiKeywordSelectorProps {
   endDate?: string
 }
 
-type SortOption = 'impressions' | 'clicks' | 'purchases' | 'ctr' | 'cvr' | 'alphabetical'
+type SortOption = 'keyword' | 'impressions' | 'clicks' | 'purchases' | 'ctr' | 'cvr'
+type SortDirection = 'asc' | 'desc'
 
 export function MultiKeywordSelector({
   availableKeywords,
@@ -27,6 +28,7 @@ export function MultiKeywordSelector({
 }: MultiKeywordSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('impressions')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [showFilters, setShowFilters] = useState(false)
   const [minImpressions, setMinImpressions] = useState('')
   const [minPurchases, setMinPurchases] = useState('')
@@ -83,39 +85,43 @@ export function MultiKeywordSelector({
     let sorted = [...filteredKeywords]
 
     // Sort based on selected option
-    if (sortBy === 'alphabetical') {
-      sorted.sort((a, b) => a.localeCompare(b))
-    } else if (metricsMap.size > 0) {
-      sorted.sort((a, b) => {
-        const aMetrics = metricsMap.get(a)
-        const bMetrics = metricsMap.get(b)
-        
-        if (!aMetrics && !bMetrics) return 0
-        if (!aMetrics) return 1
-        if (!bMetrics) return -1
+    sorted.sort((a, b) => {
+      const aMetrics = metricsMap.get(a)
+      const bMetrics = metricsMap.get(b)
 
+      let comparison = 0
+
+      if (sortBy === 'keyword') {
+        comparison = a.localeCompare(b)
+      } else if (aMetrics && bMetrics) {
         switch (sortBy) {
           case 'impressions':
-            return bMetrics.impressions - aMetrics.impressions
+            comparison = aMetrics.impressions - bMetrics.impressions
+            break
           case 'clicks':
-            return bMetrics.clicks - aMetrics.clicks
+            comparison = aMetrics.clicks - bMetrics.clicks
+            break
           case 'purchases':
-            return bMetrics.purchases - aMetrics.purchases
+            comparison = aMetrics.purchases - bMetrics.purchases
+            break
           case 'ctr':
-            return bMetrics.ctr - aMetrics.ctr
+            comparison = aMetrics.ctr - bMetrics.ctr
+            break
           case 'cvr':
-            return bMetrics.cvr - aMetrics.cvr
-          default:
-            return 0
+            comparison = aMetrics.cvr - bMetrics.cvr
+            break
         }
-      })
-    }
+      } else if (!aMetrics && bMetrics) {
+        return 1
+      } else if (aMetrics && !bMetrics) {
+        return -1
+      }
 
-    // Show selected keywords first
-    const selected = sorted.filter(k => selectedKeywords.includes(k))
-    const unselected = sorted.filter(k => !selectedKeywords.includes(k))
-    return [...selected, ...unselected]
-  }, [filteredKeywords, selectedKeywords, sortBy, metricsMap])
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+
+    return sorted
+  }, [filteredKeywords, sortBy, sortDirection, metricsMap])
 
   const handleKeywordToggle = (keyword: string) => {
     if (selectedKeywords.includes(keyword)) {
@@ -129,8 +135,22 @@ export function MultiKeywordSelector({
     }
   }
 
+  const handleSelectAll = () => {
+    const visibleKeywords = sortedKeywords.slice(0, maxKeywords)
+    onSelectionChange(visibleKeywords)
+  }
+
   const handleClearAll = () => {
     onSelectionChange([])
+  }
+
+  const handleSort = (column: SortOption) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortDirection('desc')
+    }
   }
 
   const isAtMax = selectedKeywords.length >= maxKeywords
@@ -164,7 +184,7 @@ export function MultiKeywordSelector({
 
   return (
     <div className="bg-white rounded-lg shadow">
-      <div className="p-6">
+      <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Select Keywords to Compare</h3>
@@ -172,14 +192,24 @@ export function MultiKeywordSelector({
               {selectedKeywords.length} / {maxKeywords} keywords selected
             </p>
           </div>
-          {selectedKeywords.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Clear all
-            </button>
-          )}
+          <div className="flex items-center space-x-3">
+            {selectedKeywords.length < maxKeywords && sortedKeywords.length > 0 && (
+              <button
+                onClick={handleSelectAll}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Select visible ({Math.min(sortedKeywords.length, maxKeywords - selectedKeywords.length)})
+              </button>
+            )}
+            {selectedKeywords.length > 0 && (
+              <button
+                onClick={handleClearAll}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear all
+              </button>
+            )}
+          </div>
         </div>
 
         {isAtMax && (
@@ -190,55 +220,38 @@ export function MultiKeywordSelector({
         )}
 
         {/* Search and filters */}
-        <div className="space-y-4 mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search keywords..."
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
-
-          {/* Sort and filter controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={metricsLoading || metricsMap.size === 0}
-              >
-                <option value="impressions">Sort by Impressions</option>
-                <option value="clicks">Sort by Clicks</option>
-                <option value="purchases">Sort by Purchases</option>
-                <option value="ctr">Sort by CTR</option>
-                <option value="cvr">Sort by CVR</option>
-                <option value="alphabetical">Sort Alphabetically</option>
-              </select>
-
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center space-x-1"
-                disabled={metricsLoading || metricsMap.size === 0}
-              >
-                <span>Filters</span>
-                {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </button>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search keywords..."
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
 
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center space-x-1"
+              disabled={metricsLoading || metricsMap.size === 0}
+            >
+              <span>Filters</span>
+              {showFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+
             <p className="text-sm text-gray-500">
-              {sortedKeywords.length} keywords available
+              {sortedKeywords.length} keywords
             </p>
           </div>
 
@@ -283,105 +296,175 @@ export function MultiKeywordSelector({
         </div>
       </div>
 
-      {/* Keyword list with KPIs */}
-      <div className="border-t border-gray-200 max-h-[600px] overflow-y-auto">
-        {metricsLoading && (
-          <div className="p-4 text-center">
-            <div className="inline-flex items-center space-x-2 text-gray-600">
-              <div className="animate-spin h-5 w-5 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
-              <span>Loading keyword metrics...</span>
-            </div>
-          </div>
-        )}
-
-        {!metricsLoading && sortedKeywords.length === 0 && (
-          <div className="p-8 text-center text-gray-500">
-            No keywords match your filters
-          </div>
-        )}
-
-        {!metricsLoading && sortedKeywords.map((keyword) => {
-          const isSelected = selectedKeywords.includes(keyword)
-          const isDisabled = !isSelected && isAtMax
-          const metrics = metricsMap.get(keyword)
-
-          return (
-            <div
-              key={keyword}
-              data-testid="keyword-item"
-              onClick={() => !isDisabled && handleKeywordToggle(keyword)}
-              onKeyDown={(e) => {
-                if (!isDisabled && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault()
-                  handleKeywordToggle(keyword)
-                }
-              }}
-              className={`
-                border-b border-gray-200 transition-all cursor-pointer
-                ${isSelected 
-                  ? 'bg-blue-50 hover:bg-blue-100' 
-                  : isDisabled
-                    ? 'bg-gray-50 cursor-not-allowed opacity-50'
-                    : 'bg-white hover:bg-gray-50'
-                }
-              `}
-              role="button"
-              tabIndex={isDisabled ? -1 : 0}
-              aria-label={`${isSelected ? 'Deselect' : 'Select'} keyword: ${keyword}`}
-              aria-pressed={isSelected}
-            >
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                    {keyword}
-                  </span>
-                  {isSelected && (
-                    <Check className="h-5 w-5 text-blue-600" data-testid="check-icon" />
-                  )}
+      {/* Table with keywords and metrics */}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="px-4 py-3 text-left">
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedKeywords.length === sortedKeywords.length && sortedKeywords.length > 0}
+                    ref={(el) => {
+                      if (el) {
+                        el.indeterminate = selectedKeywords.length > 0 && selectedKeywords.length < sortedKeywords.length
+                      }
+                    }}
+                    onChange={() => {
+                      if (selectedKeywords.length === sortedKeywords.length) {
+                        handleClearAll()
+                      } else {
+                        handleSelectAll()
+                      }
+                    }}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    disabled={sortedKeywords.length === 0}
+                  />
                 </div>
-
-                {/* KPI metrics */}
-                {metrics && (
-                  <div className="grid grid-cols-5 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-500">Impressions</p>
-                      <p className="font-medium text-gray-900">{formatNumber(metrics.impressions)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Clicks</p>
-                      <p className="font-medium text-gray-900">{formatNumber(metrics.clicks)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">Purchases</p>
-                      <p className="font-medium text-gray-900">{formatNumber(metrics.purchases)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">CTR</p>
-                      <p className="font-medium text-gray-900">{formatPercentage(metrics.ctr)}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500">CVR</p>
-                      <p className="font-medium text-gray-900">{formatPercentage(metrics.cvr)}</p>
-                    </div>
+              </th>
+              <th className="px-4 py-3 text-left">
+                <button
+                  onClick={() => handleSort('keyword')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700"
+                >
+                  <span>Keyword</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'keyword' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <button
+                  onClick={() => handleSort('impressions')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                  disabled={metricsMap.size === 0}
+                >
+                  <span>Impressions</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'impressions' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <button
+                  onClick={() => handleSort('clicks')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                  disabled={metricsMap.size === 0}
+                >
+                  <span>Clicks</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'clicks' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <button
+                  onClick={() => handleSort('purchases')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                  disabled={metricsMap.size === 0}
+                >
+                  <span>Purchases</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'purchases' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <button
+                  onClick={() => handleSort('ctr')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                  disabled={metricsMap.size === 0}
+                >
+                  <span>CTR</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'ctr' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+              <th className="px-4 py-3 text-right">
+                <button
+                  onClick={() => handleSort('cvr')}
+                  className="flex items-center space-x-1 font-medium text-xs text-gray-900 uppercase tracking-wider hover:text-gray-700 ml-auto"
+                  disabled={metricsMap.size === 0}
+                >
+                  <span>CVR</span>
+                  <ArrowUpDown className={`h-4 w-4 ${sortBy === 'cvr' ? 'text-blue-600' : 'text-gray-400'}`} />
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {metricsLoading && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center">
+                  <div className="inline-flex items-center space-x-2 text-gray-600">
+                    <div className="animate-spin h-5 w-5 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
+                    <span>Loading keyword metrics...</span>
                   </div>
-                )}
+                </td>
+              </tr>
+            )}
 
-                {/* Loading state for individual keyword */}
-                {!metrics && metricsMap.size > 0 && (
-                  <div className="flex space-x-4 text-sm">
-                    {[...Array(5)].map((_, i) => (
-                      <div key={i} className="flex-1">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse mb-1"></div>
-                        <div className="h-5 bg-gray-200 rounded animate-pulse w-2/3"></div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })}
+            {!metricsLoading && sortedKeywords.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  No keywords match your filters
+                </td>
+              </tr>
+            )}
+
+            {!metricsLoading && sortedKeywords.map((keyword) => {
+              const isSelected = selectedKeywords.includes(keyword)
+              const isDisabled = !isSelected && isAtMax
+              const metrics = metricsMap.get(keyword)
+
+              return (
+                <tr
+                  key={keyword}
+                  className={`
+                    transition-colors
+                    ${isSelected 
+                      ? 'bg-blue-50' 
+                      : isDisabled
+                        ? 'opacity-50'
+                        : 'hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleKeywordToggle(keyword)}
+                      disabled={isDisabled}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      aria-label={`${isSelected ? 'Deselect' : 'Select'} keyword: ${keyword}`}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                      {keyword}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    {metrics ? formatNumber(metrics.impressions) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    {metrics ? formatNumber(metrics.clicks) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    {metrics ? formatNumber(metrics.purchases) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    {metrics ? formatPercentage(metrics.ctr) : '-'}
+                  </td>
+                  <td className="px-4 py-3 text-right text-gray-900">
+                    {metrics ? formatPercentage(metrics.cvr) : '-'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
       </div>
+
+      {/* Pagination or load more could go here if needed */}
+      {sortedKeywords.length > 100 && (
+        <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-center text-sm text-gray-600">
+          Showing first 100 keywords
+        </div>
+      )}
     </div>
   )
 }
