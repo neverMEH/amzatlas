@@ -133,7 +133,7 @@ export default function KeywordAnalysisPage() {
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
     
-    router.push(`${pathname}?${params.toString()}`)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [pathname, router, searchParams])
 
   const handleCompareRangeChange = useCallback((range: { startDate: string; endDate: string; enabled: boolean }) => {
@@ -147,7 +147,7 @@ export default function KeywordAnalysisPage() {
       params.delete('compareEndDate')
     }
     
-    router.push(`${pathname}?${params.toString()}`)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }, [pathname, router, searchParams])
 
   // Handle view mode changes
@@ -163,7 +163,7 @@ export default function KeywordAnalysisPage() {
       params.delete('keyword')
     }
     
-    router.push(`${pathname}?${params.toString()}`)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
   }
 
   // Handle keyword selection changes
@@ -173,7 +173,7 @@ export default function KeywordAnalysisPage() {
     if (viewMode === 'comparison' && keywords.length > 0) {
       const params = new URLSearchParams(searchParams.toString())
       params.set('keywords', keywords.join(','))
-      router.push(`${pathname}?${params.toString()}`)
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
     }
   }
 
