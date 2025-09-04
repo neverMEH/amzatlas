@@ -100,7 +100,7 @@ export default function Dashboard() {
               <nav className="flex items-center space-x-4">
                 <a href="/" className="text-sm hover:text-gray-300">ASIN Performance</a>
                 <span className="text-gray-500">|</span>
-                <a href="/brand-dashboard" className="text-sm hover:text-gray-300">Brand Dashboard</a>
+                <a href="/brands" className="text-sm hover:text-gray-300">Brand Dashboard</a>
               </nav>
             </div>
           </div>
