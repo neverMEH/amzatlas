@@ -129,7 +129,16 @@ export function WaterfallChartEnhanced({
     const totalPrevious = sortedData.reduce((sum, item) => sum + item.previous, 0)
     
     // Start with total previous period
-    const result = [{
+    const result: Array<{
+      keyword: string
+      value: number
+      cumulative: number
+      type: 'total' | 'positive' | 'negative' | 'neutral'
+      displayName: string
+      color: string
+      isTotal: boolean
+      originalData: WaterfallDataPoint | null
+    }> = [{
       keyword: 'Previous Total',
       value: totalPrevious,
       cumulative: 0,
@@ -148,9 +157,9 @@ export function WaterfallChartEnhanced({
         keyword: item.keyword,
         value: item.change,
         cumulative: cumulative,
-        type: item.change > 0 ? 'positive' as const : 
-              item.change < 0 ? 'negative' as const : 
-              'neutral' as const,
+        type: item.change > 0 ? 'positive' : 
+              item.change < 0 ? 'negative' : 
+              'neutral',
         displayName: truncateKeyword(item.keyword),
         color: item.change > 0 ? METRIC_COLORS.positive : 
                item.change < 0 ? METRIC_COLORS.negative : 
@@ -417,7 +426,7 @@ export function WaterfallChartEnhanced({
               data={waterfallData}
               margin={{ top: 20, right: 30, left: 60, bottom: 80 }}
               onMouseMove={(e) => {
-                if (e && e.activeTooltipIndex !== undefined) {
+                if (e && e.activeTooltipIndex !== undefined && typeof e.activeTooltipIndex === 'number') {
                   setHoveredIndex(e.activeTooltipIndex)
                 }
               }}

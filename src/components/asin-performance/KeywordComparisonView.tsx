@@ -107,7 +107,12 @@ export function KeywordComparisonView({
   const waterfallMetrics = useMemo(() => {
     if (!data?.comparisonData || !comparisonDateRange) return null
 
-    const metrics: Record<string, WaterfallDataPoint[]> = {
+    const metrics: {
+      impressions: WaterfallDataPoint[]
+      clicks: WaterfallDataPoint[]
+      cartAdds: WaterfallDataPoint[]
+      purchases: WaterfallDataPoint[]
+    } = {
       impressions: [],
       clicks: [],
       cartAdds: [],
@@ -301,7 +306,7 @@ export function KeywordComparisonView({
       {activeTab === 'funnels' && (
         <div data-testid="conversion-funnels-content">
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {displayKeywords.slice(0, 8).map((keyword, index) => {
+            {displayKeywords.slice(0, 8).map((keyword) => {
               const funnelData = data?.funnels[keyword]
               if (!funnelData) return null
 

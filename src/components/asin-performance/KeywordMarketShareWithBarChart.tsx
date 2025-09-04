@@ -105,7 +105,7 @@ export function KeywordMarketShareWithBarChart({
   error,
 }: KeywordMarketShareProps) {
   const [selectedMetric, setSelectedMetric] = useState<ShareMetric>('impressionShare')
-  const [viewMode, setViewMode] = useState<ViewMode>('bar') // Default to bar chart as per user request
+  const [viewMode, setViewMode] = useState<ViewMode>('bar' as ViewMode) // Default to bar chart as per user request
 
   // Calculate enhanced metrics for each competitor
   const enhancedCompetitors = useMemo(() => {
@@ -191,22 +191,14 @@ export function KeywordMarketShareWithBarChart({
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('pie')}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 ${
-                viewMode === 'pie'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className="px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 text-gray-600 hover:text-gray-900"
             >
               <PieChartIcon className="h-4 w-4" />
               <span>Pie Chart</span>
             </button>
             <button
               onClick={() => setViewMode('bar')}
-              className={`px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 ${
-                viewMode === 'bar'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className="px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 bg-white text-gray-900 shadow-sm"
             >
               <BarChart3Icon className="h-4 w-4" />
               <span>Bar Chart</span>
@@ -288,22 +280,14 @@ export function KeywordMarketShareWithBarChart({
         <div className="flex bg-gray-100 rounded-lg p-1">
           <button
             onClick={() => setViewMode('pie')}
-            className={`px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 ${
-              viewMode === 'pie'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className="px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 bg-white text-gray-900 shadow-sm"
           >
             <PieChartIcon className="h-4 w-4" />
             <span>Pie Chart</span>
           </button>
           <button
             onClick={() => setViewMode('bar')}
-            className={`px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 ${
-              viewMode === 'bar'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            className="px-3 py-1 text-sm font-medium rounded transition-colors flex items-center space-x-2 text-gray-600 hover:text-gray-900"
           >
             <BarChart3Icon className="h-4 w-4" />
             <span>Bar Chart</span>
