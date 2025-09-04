@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
       ? `search_query,
          asin_impression_count,
          asin_click_count,
-         asin_add_to_cart_count,
+         asin_cart_add_count,
          asin_purchase_count,
-         total_impression_count,
+         total_query_impression_count,
          total_purchase_count`
       : 'search_query, asin_impression_count'
 
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           keywordMetrics.set(keyword, {
             impressions: existing.impressions + (row.asin_impression_count || 0),
             clicks: existing.clicks + (row.asin_click_count || 0),
-            cartAdds: existing.cartAdds + (row.asin_add_to_cart_count || 0),
+            cartAdds: existing.cartAdds + (row.asin_cart_add_count || 0),
             purchases: existing.purchases + (row.asin_purchase_count || 0),
             totalPurchases: existing.totalPurchases + (row.total_purchase_count || 0)
           })
