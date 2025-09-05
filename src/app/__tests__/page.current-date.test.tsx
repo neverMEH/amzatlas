@@ -6,22 +6,6 @@ import HomePage from '../page'
 import * as asinApi from '@/lib/api/asin-performance'
 
 // Mock Next.js modules
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
-  useSearchParams: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'asin') return 'B001234567'
-      return null
-    }),
-    toString: () => 'asin=B001234567',
-  }),
-  usePathname: () => '/',
-}))
-
 // Mock the API module
 vi.mock('@/lib/api/asin-performance')
 
@@ -355,8 +339,3 @@ const useSearchParams = vi.fn()
 const useRouter = vi.fn()
 const usePathname = vi.fn()
 
-vi.mock('next/navigation', () => ({
-  useSearchParams,
-  useRouter,
-  usePathname,
-}))

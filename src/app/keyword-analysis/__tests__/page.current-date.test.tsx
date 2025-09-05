@@ -6,15 +6,6 @@ import KeywordAnalysisPage from '../page'
 import * as router from 'next/navigation'
 
 // Mock Next.js modules
-vi.mock('next/navigation')
-
-// Mock API modules
-vi.mock('@/lib/api/keyword-analysis', () => ({
-  useKeywordPerformance: vi.fn(),
-  useKeywordComparison: vi.fn(),
-  useASINKeywords: vi.fn(),
-}))
-
 import * as keywordApi from '@/lib/api/keyword-analysis'
 
 const mockKeywordData = {

@@ -5,12 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import EnhancedDashboardPage from '@/app/dashboard/enhanced/page'
 import EnhancedDashboardLayout from '@/components/dashboard/enhanced-dashboard-layout'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useRouter: vi.fn(),
-}))
-
 // Mock the child components
 vi.mock('@/components/layout/application-shell', () => ({
   default: ({ children }: any) => (
@@ -117,13 +111,6 @@ vi.mock('@/components/ui/untitled-ui', () => ({
     </p>
   ),
 }))
-
-const mockRouter = {
-  push: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  refresh: vi.fn(),
-}
 
 describe('Enhanced Dashboard Integration', () => {
   beforeEach(() => {

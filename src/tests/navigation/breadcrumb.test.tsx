@@ -5,12 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import Breadcrumb from '@/components/navigation/breadcrumb'
 import type { BreadcrumbItem } from '@/types/navigation'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useRouter: vi.fn(),
-}))
-
 // Mock our UI components
 vi.mock('@/lib/untitled-ui', () => ({
   ChevronRightIcon: ({ className, ...props }: any) => (
@@ -39,13 +33,6 @@ vi.mock('@/lib/untitled-ui', () => ({
     </span>
   ),
 }))
-
-const mockRouter = {
-  push: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  refresh: vi.fn(),
-}
 
 describe('Breadcrumb Component', () => {
   beforeEach(() => {

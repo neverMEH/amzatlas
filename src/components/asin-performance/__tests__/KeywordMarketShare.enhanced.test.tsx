@@ -6,10 +6,6 @@ import { KeywordMarketShare } from '../KeywordMarketShare'
 import { useRouter } from 'next/navigation'
 
 // Mock Next.js navigation
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
-}))
-
 // Mock recharts to avoid rendering issues in tests
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div>{children}</div>,

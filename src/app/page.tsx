@@ -101,6 +101,8 @@ export default function Dashboard() {
                 <a href="/" className="text-sm hover:text-gray-300">ASIN Performance</a>
                 <span className="text-gray-500">|</span>
                 <a href="/brands" className="text-sm hover:text-gray-300">Brand Dashboard</a>
+                <span className="text-gray-500">|</span>
+                <a href="/refresh-monitor" className="text-sm hover:text-gray-300">Refresh Monitor</a>
               </nav>
             </div>
           </div>

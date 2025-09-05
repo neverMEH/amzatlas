@@ -7,12 +7,6 @@ import ApplicationShell from '@/components/layout/application-shell'
 import SidebarNavigation from '@/components/layout/sidebar-navigation'
 import Breadcrumb from '@/components/navigation/breadcrumb'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useRouter: vi.fn(),
-}))
-
 // Mock components for isolated testing
 vi.mock('@/components/layout/application-shell', () => ({
   default: ({ children }: any) => (
@@ -75,13 +69,6 @@ vi.mock('@/contexts/dashboard-context', () => ({
     toggleDarkMode: vi.fn(),
   }),
 }))
-
-const mockRouter = {
-  push: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  refresh: vi.fn(),
-}
 
 const TestContent = () => (
   <div data-testid="test-content">

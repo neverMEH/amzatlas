@@ -112,6 +112,14 @@ serve(async (req) => {
 
     console.log(`Refresh completed: ${successful} successful, ${failed} failed`)
 
+    // Trigger webhook processor to send notifications
+    if (successful > 0 || failed > 0) {
+      console.log('Triggering webhook processor...')
+      await supabase.functions.invoke('webhook-processor').catch(err => 
+        console.error('Failed to trigger webhook processor:', err)
+      )
+    }
+
     return createSuccessResponse({
       tablesProcessed: results.length,
       successful,

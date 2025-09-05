@@ -4,13 +4,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import '@testing-library/jest-dom'
 import Dashboard from '../page'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-  }),
-}))
-
 // Mock API hooks
 vi.mock('@/lib/api/asin-performance', () => ({
   useASINList: vi.fn(),

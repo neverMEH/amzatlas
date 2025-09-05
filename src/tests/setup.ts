@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom'
 import { vi, beforeEach } from 'vitest'
 import React from 'react'
+import { createNavigationMock, resetNavigationMocks } from './mocks/next-navigation'
 
 // Make React globally available for tests
 // @ts-ignore
@@ -16,7 +17,11 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }))
 
+// Mock next/navigation
+vi.mock('next/navigation', () => createNavigationMock())
+
 // Reset mocks before each test
 beforeEach(() => {
   vi.clearAllMocks()
+  resetNavigationMocks()
 })

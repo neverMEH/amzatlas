@@ -5,12 +5,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import EnhancedDashboardLayout from '@/components/dashboard/enhanced-dashboard-layout'
 import EnhancedDashboardPage from '@/app/dashboard/enhanced/page'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useRouter: vi.fn(),
-}))
-
 // Mock components
 vi.mock('@/components/layout/application-shell', () => ({
   default: ({ children }: any) => (
@@ -63,13 +57,6 @@ vi.mock('@/contexts/dashboard-context', () => ({
     toggleDarkMode: vi.fn(),
   }),
 }))
-
-const mockRouter = {
-  push: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  refresh: vi.fn(),
-}
 
 // Helper to mock window.innerWidth
 const mockWindowSize = (width: number, height: number = 768) => {

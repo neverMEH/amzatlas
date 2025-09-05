@@ -24,7 +24,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 2.4 Add audit log creation and updates
   - [x] 2.5 Implement error handling and retry logic
   - [x] 2.6 Create shared utilities for error handling
-  - [ ] 2.7 Deploy and test orchestrator function (requires Supabase CLI)
+  - [x] 2.7 Deploy and test orchestrator function (requires Supabase CLI) ✅
   - [x] 2.8 Verify all tests pass
 
 - [x] 3. Table-Specific Refresh Functions ✅
@@ -34,7 +34,7 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.4 Build refresh-summary-tables for materialized views
   - [x] 3.5 Add BigQuery connection handling for edge environment
   - [x] 3.6 Implement data transformation logic
-  - [ ] 3.7 Deploy all worker functions (requires Supabase CLI)
+  - [x] 3.7 Deploy all worker functions (requires Supabase CLI) ✅
   - [x] 3.8 Verify all tests pass
 
 - [ ] 4. API Endpoints and Monitoring

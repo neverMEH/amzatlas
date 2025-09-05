@@ -4,12 +4,6 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { usePathname, useRouter } from 'next/navigation'
 import EnhancedDashboardLayout from '@/components/dashboard/enhanced-dashboard-layout'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useRouter: vi.fn(),
-}))
-
 // Mock the ApplicationShell component
 vi.mock('@/components/layout/application-shell', () => ({
   default: ({ children }: any) => (
@@ -67,13 +61,6 @@ vi.mock('@/contexts/dashboard-context', () => ({
     toggleDarkMode: vi.fn(),
   }),
 }))
-
-const mockRouter = {
-  push: vi.fn(),
-  back: vi.fn(),
-  forward: vi.fn(),
-  refresh: vi.fn(),
-}
 
 const TestChildren = () => (
   <div data-testid="dashboard-content">

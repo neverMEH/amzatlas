@@ -5,15 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import Dashboard from '@/app/page'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
-}))
-
 // Mock API responses
 const mockFetch = vi.fn()
 global.fetch = mockFetch

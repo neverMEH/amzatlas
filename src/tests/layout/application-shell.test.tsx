@@ -4,11 +4,6 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import ApplicationShell from '@/components/layout/application-shell'
 import { usePathname } from 'next/navigation'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-}))
-
 // Mock Untitled UI components
 vi.mock('@untitled-ui/react', () => ({
   Sheet: ({ children }: any) => <div data-testid="sheet">{children}</div>,

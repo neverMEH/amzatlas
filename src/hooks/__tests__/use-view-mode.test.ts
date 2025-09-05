@@ -3,11 +3,6 @@ import { renderHook } from '@testing-library/react'
 import { useViewMode } from '../use-view-mode'
 
 // Mock Next.js router
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-  useSearchParams: vi.fn(),
-}))
-
 import { usePathname, useSearchParams } from 'next/navigation'
 
 describe('useViewMode', () => {

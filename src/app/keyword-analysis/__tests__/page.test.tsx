@@ -5,17 +5,6 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import KeywordAnalysisPage from '../page'
 
-// Mock next/navigation
-const mockUseSearchParams = vi.fn()
-const mockUseRouter = vi.fn()
-const mockUsePathname = vi.fn()
-
-vi.mock('next/navigation', () => ({
-  useSearchParams: () => mockUseSearchParams(),
-  useRouter: () => mockUseRouter(),
-  usePathname: () => mockUsePathname(),
-}))
-
 // Mock the API hooks
 const mockUseKeywordPerformance = vi.fn()
 const mockUseKeywordComparison = vi.fn()
@@ -79,8 +68,6 @@ vi.mock('@/components/asin-performance/KeywordComparisonView', () => ({
 }))
 
 let mockSearchParams: URLSearchParams
-const mockRouter = { push: vi.fn(), back: vi.fn(), replace: vi.fn() }
-
 describe('KeywordAnalysisPage', () => {
   let queryClient: QueryClient
 

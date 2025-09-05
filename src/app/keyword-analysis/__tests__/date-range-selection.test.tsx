@@ -6,12 +6,6 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import KeywordAnalysisPage from '../page'
 
 // Mock Next.js navigation
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
-  usePathname: vi.fn(),
-  useSearchParams: vi.fn(),
-}))
-
 // Mock the API hooks
 vi.mock('@/lib/api/keyword-analysis', () => ({
   useKeywordPerformance: vi.fn(() => ({

@@ -4,11 +4,6 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 import { usePathname } from 'next/navigation'
 import SidebarNavigation from '@/components/layout/sidebar-navigation'
 
-// Mock next/navigation
-vi.mock('next/navigation', () => ({
-  usePathname: vi.fn(),
-}))
-
 // Mock our UI components
 vi.mock('@/lib/untitled-ui', () => ({
   ChevronLeftIcon: ({ className, ...props }: any) => (
