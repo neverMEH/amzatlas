@@ -23,20 +23,27 @@ export default function Dashboard() {
       setSelectedASIN(asinParam)
     }
   }, [searchParams, selectedASIN])
-  const [dateRange, setDateRange] = useState(() => {
-    // Default to current week
-    const today = new Date()
-    const dayOfWeek = today.getDay()
-    const startOfWeek = new Date(today)
-    startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
-    const endOfWeek = new Date(startOfWeek)
-    endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
-    
-    return {
-      startDate: startOfWeek.toISOString().split('T')[0],
-      endDate: endOfWeek.toISOString().split('T')[0],
-    }
+  const [dateRange, setDateRange] = useState({
+    startDate: '',
+    endDate: '',
   })
+  
+  // Initialize date range after component mounts to avoid hydration issues
+  useEffect(() => {
+    if (!dateRange.startDate && !dateRange.endDate) {
+      const today = new Date()
+      const dayOfWeek = today.getDay()
+      const startOfWeek = new Date(today)
+      startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
+      const endOfWeek = new Date(startOfWeek)
+      endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
+      
+      setDateRange({
+        startDate: startOfWeek.toISOString().split('T')[0],
+        endDate: endOfWeek.toISOString().split('T')[0],
+      })
+    }
+  }, [])
   const [compareRange, setCompareRange] = useState({
     startDate: '',
     endDate: '',
