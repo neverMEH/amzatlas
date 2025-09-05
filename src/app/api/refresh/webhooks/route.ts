@@ -67,9 +67,9 @@ export async function GET() {
         updated_at: webhook.updated_at,
         statistics: {
           total_deliveries_24h: recentDeliveries.length,
-          successful_24h: recentDeliveries.filter(d => d.status === 'success').length,
-          failed_24h: recentDeliveries.filter(d => d.status === 'failed').length,
-          pending_24h: recentDeliveries.filter(d => d.status === 'pending' || d.status === 'retrying').length,
+          successful_24h: recentDeliveries.filter((d: any) => d.status === 'success').length,
+          failed_24h: recentDeliveries.filter((d: any) => d.status === 'failed').length,
+          pending_24h: recentDeliveries.filter((d: any) => d.status === 'pending' || d.status === 'retrying').length,
           last_delivery: deliveries[0]?.created_at || null,
           last_status: deliveries[0]?.status || null
         }
