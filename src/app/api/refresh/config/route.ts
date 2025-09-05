@@ -100,7 +100,7 @@ export async function PUT(request: NextRequest) {
     const validation = updateConfigSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid update parameters', details: validation.error.errors },
+        { error: 'Invalid update parameters', details: validation.error.issues },
         { status: 400 }
       )
     }
