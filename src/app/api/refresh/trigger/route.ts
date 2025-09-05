@@ -43,7 +43,8 @@ export async function POST(request: NextRequest) {
         const syncService = new BigQuerySyncService()
         
         const results = []
-        const tables = ['search_query_performance', 'asin_performance_data']
+        // Start with just the highest priority table, then add others if needed
+        const tables = ['asin_performance_data']
         
         for (const tableName of tables) {
           const result = await syncService.syncTable(tableName, {
