@@ -17,15 +17,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 1.7 Apply migration to development database
   - [x] 1.8 Verify all tests pass
 
-- [ ] 2. Edge Function Core Implementation
-  - [ ] 2.1 Write tests for orchestrator function logic
-  - [ ] 2.2 Create daily-refresh-orchestrator function structure
-  - [ ] 2.3 Implement table scheduling and priority logic
-  - [ ] 2.4 Add audit log creation and updates
-  - [ ] 2.5 Implement error handling and retry logic
-  - [ ] 2.6 Create shared utilities for error handling
-  - [ ] 2.7 Deploy and test orchestrator function
-  - [ ] 2.8 Verify all tests pass
+- [x] 2. Edge Function Core Implementation ✅
+  - [x] 2.1 Write tests for orchestrator function logic
+  - [x] 2.2 Create daily-refresh-orchestrator function structure
+  - [x] 2.3 Implement table scheduling and priority logic
+  - [x] 2.4 Add audit log creation and updates
+  - [x] 2.5 Implement error handling and retry logic
+  - [x] 2.6 Create shared utilities for error handling
+  - [ ] 2.7 Deploy and test orchestrator function (requires Supabase CLI)
+  - [x] 2.8 Verify all tests pass
 
 - [ ] 3. Table-Specific Refresh Functions
   - [ ] 3.1 Write tests for ASIN performance refresh
