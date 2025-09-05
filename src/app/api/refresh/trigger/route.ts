@@ -44,9 +44,10 @@ export async function POST(request: NextRequest) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`
           },
           body: JSON.stringify({ 
-            scope: 'all',
+            refreshType: 'manual',
             tables: ['search_query_performance', 'asin_performance_data']
           })
         })
@@ -158,9 +159,10 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`
         },
         body: JSON.stringify({ 
-          table: table_name,
+          tableName: table_name,
           audit_log_id: auditLog.id
         })
       })
