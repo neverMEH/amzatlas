@@ -179,20 +179,47 @@ export async function GET(
       purchaseShareComparison: null,
     }))
     
-    // Fetch search query performance
+    // Fetch search query performance by aggregating from search_performance_summary
     const { data: searchQueries, error: queriesError } = await supabase
-      .from('brand_search_query_metrics')
-      .select('*')
-      .eq('brand_id', brandId)
-      .order('impressions', { ascending: false })
-      .limit(queryLimit)
+      .from('search_performance_summary')
+      .select('search_query, impressions, clicks, cart_adds, purchases')
+      .in('asin', asinList)
+      .gte('start_date', dateFrom)
+      .lte('end_date', dateTo)
     
     if (queriesError) {
       throw queriesError
     }
     
+    // Aggregate search query data
+    const queryAggregates = (searchQueries || []).reduce((acc: Record<string, any>, row: any) => {
+      const query = row.search_query
+      if (!acc[query]) {
+        acc[query] = { impressions: 0, clicks: 0, cart_adds: 0, purchases: 0 }
+      }
+      acc[query].impressions += row.impressions || 0
+      acc[query].clicks += row.clicks || 0
+      acc[query].cart_adds += row.cart_adds || 0
+      acc[query].purchases += row.purchases || 0
+      return acc
+    }, {})
+    
+    // Convert to array and calculate metrics
+    const aggregatedQueries = Object.entries(queryAggregates)
+      .map(([search_query, metrics]: [string, any]) => ({
+        search_query,
+        impressions: metrics.impressions,
+        clicks: metrics.clicks,
+        cart_adds: metrics.cart_adds,
+        purchases: metrics.purchases,
+        ctr: metrics.impressions > 0 ? (metrics.clicks / metrics.impressions * 100).toFixed(1) : 0,
+        cvr: metrics.clicks > 0 ? (metrics.purchases / metrics.clicks * 100).toFixed(1) : 0,
+      }))
+      .sort((a, b) => b.impressions - a.impressions)
+      .slice(0, queryLimit)
+    
     // Format search queries data
-    const formattedQueries = (searchQueries || []).map((query: any, index: number) => ({
+    const formattedQueries = aggregatedQueries.map((query: any, index: number) => ({
       id: index + 1,
       query: query.search_query,
       impressions: query.impressions || 0,
@@ -203,19 +230,19 @@ export async function GET(
       cartAddsComparison: comparison ? comparison.cartAdds : null,
       purchases: query.purchases || 0,
       purchasesComparison: comparison ? comparison.purchases : null,
-      ctr: `${query.ctr?.toFixed(1) || 0}%`,
+      ctr: `${query.ctr || 0}%`,
       ctrComparison: null,
-      cvr: `${query.cvr?.toFixed(1) || 0}%`,
+      cvr: `${query.cvr || 0}%`,
       cvrComparison: null,
-      impressionShare: `${query.impression_share?.toFixed(0) || 0}%`,
+      impressionShare: `0%`, // Not available without the materialized view
       impressionShareComparison: null,
-      cvrShare: `${query.cvr_share?.toFixed(0) || 0}%`,
+      cvrShare: `0%`, // Not available without the materialized view
       cvrShareComparison: null,
-      ctrShare: `${query.ctr_share?.toFixed(0) || 0}%`,
+      ctrShare: `0%`, // Not available without the materialized view
       ctrShareComparison: null,
-      cartAddShare: `${query.cart_add_share?.toFixed(0) || 0}%`,
+      cartAddShare: `0%`, // Not available without the materialized view
       cartAddShareComparison: null,
-      purchaseShare: `${query.purchase_share?.toFixed(0) || 0}%`,
+      purchaseShare: `0%`, // Not available without the materialized view
       purchaseShareComparison: null,
     }))
     
