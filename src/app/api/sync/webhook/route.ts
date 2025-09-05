@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '@/config/supabase.config'
+import { getSupabaseConfig } from '../../../../config/supabase.config'
 import crypto from 'crypto'
 
 // Process webhook notifications

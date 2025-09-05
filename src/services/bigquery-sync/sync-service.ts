@@ -1,7 +1,7 @@
 import { BigQuery } from '@google-cloud/bigquery'
 import { createClient } from '@supabase/supabase-js'
-import { getBigQueryConfig } from '@/config/bigquery.config'
-import { getSupabaseConfig } from '@/config/supabase.config'
+import { getBigQueryConfig } from '../../config/bigquery.config'
+import { getSupabaseConfig } from '../../config/supabase.config'
 
 export interface SyncResult {
   success: boolean

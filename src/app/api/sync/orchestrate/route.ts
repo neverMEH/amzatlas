@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '@/config/supabase.config'
+import { getSupabaseConfig } from '../../../../config/supabase.config'
 
 // Orchestrate sync for multiple tables
 export async function POST(request: NextRequest) {

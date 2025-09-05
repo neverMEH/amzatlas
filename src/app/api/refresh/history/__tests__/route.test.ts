@@ -238,7 +238,7 @@ describe('GET /api/refresh/history', () => {
             error: null
           })
         })
-      }))
+      })
 
       const request = new NextRequest('http://localhost:3000/api/refresh/history?page=2&pageSize=10')
       const response = await GET(request)
@@ -285,7 +285,7 @@ describe('GET /api/refresh/history', () => {
             error: null
           })
         })
-      }))
+      })
 
       const request = new NextRequest('http://localhost:3000/api/refresh/history')
       const response = await GET(request)
@@ -314,7 +314,7 @@ describe('GET /api/refresh/history', () => {
             })
           })
         })
-      }))
+      })
 
       const request = new NextRequest('http://localhost:3000/api/refresh/history')
       const response = await GET(request)
