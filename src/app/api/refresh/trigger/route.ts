@@ -36,27 +36,44 @@ export async function POST(request: NextRequest) {
 
     const { table_name, force } = validation.data
 
-    // If no table specified, trigger full refresh
+    // If no table specified, trigger full refresh via BigQuery sync orchestrator
     if (!table_name) {
-      const { data, error } = await supabase.functions.invoke('daily-refresh-orchestrator')
-      
-      if (error) {
+      try {
+        const baseUrl = request.nextUrl.origin
+        const orchestrateResponse = await fetch(`${baseUrl}/api/sync/orchestrate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            scope: 'all',
+            tables: ['search_query_performance', 'asin_performance_data']
+          })
+        })
+
+        if (!orchestrateResponse.ok) {
+          const errorData = await orchestrateResponse.json()
+          throw new Error(errorData.error || 'Orchestration failed')
+        }
+
+        const orchestrateData = await orchestrateResponse.json()
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Full BigQuery sync triggered successfully',
+          type: 'full',
+          details: orchestrateData
+        })
+      } catch (error) {
         return NextResponse.json(
           { 
             success: false,
-            error: 'Failed to trigger refresh',
-            details: error.message 
+            error: 'Failed to trigger full sync',
+            details: error instanceof Error ? error.message : 'Unknown error'
           },
           { status: 500 }
         )
       }
-
-      return NextResponse.json({
-        success: true,
-        message: 'Refresh triggered successfully',
-        type: 'full',
-        details: data
-      })
     }
 
     // Single table refresh
@@ -114,12 +131,11 @@ export async function POST(request: NextRequest) {
     const { data: auditLog, error: auditError } = await supabase
       .from('refresh_audit_log')
       .insert({
+        refresh_config_id: config.id,
         table_schema: config.table_schema,
         table_name: config.table_name,
-        refresh_type: 'manual',
-        status: 'in_progress',
-        refresh_started_at: new Date().toISOString(),
-        function_name: config.function_name || 'refresh-generic-table'
+        status: 'running',
+        refresh_started_at: new Date().toISOString()
       })
       .select()
       .single()
@@ -135,25 +151,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Invoke the specific refresh function
-    const functionName = config.function_name || 'refresh-generic-table'
-    const { data: refreshData, error: refreshError } = await supabase.functions.invoke(
-      functionName,
-      {
-        body: {
-          config,
-          auditLogId: auditLog.id
-        }
-      }
-    )
+    // Invoke BigQuery sync for the specific table
+    try {
+      const baseUrl = request.nextUrl.origin
+      const syncResponse = await fetch(`${baseUrl}/api/sync/bigquery`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          table: table_name,
+          audit_log_id: auditLog.id
+        })
+      })
 
-    if (refreshError) {
+      if (!syncResponse.ok) {
+        const errorData = await syncResponse.json()
+        throw new Error(errorData.error || 'BigQuery sync failed')
+      }
+
+      const refreshData = await syncResponse.json()
+
+      // Update audit log with success
+      await supabase
+        .from('refresh_audit_log')
+        .update({
+          status: 'success',
+          rows_processed: refreshData.rowsProcessed || 0,
+          refresh_completed_at: new Date().toISOString(),
+          sync_metadata: refreshData
+        })
+        .eq('id', auditLog.id)
+
+    } catch (error) {
       // Update audit log with failure
       await supabase
         .from('refresh_audit_log')
         .update({
           status: 'failed',
-          error_message: refreshError.message,
+          error_message: error instanceof Error ? error.message : 'Unknown error',
           refresh_completed_at: new Date().toISOString()
         })
         .eq('id', auditLog.id)
@@ -161,8 +197,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           success: false,
-          error: 'Refresh function failed',
-          details: refreshError.message,
+          error: 'BigQuery sync failed',
+          details: error instanceof Error ? error.message : 'Unknown error',
           table: table_name
         },
         { status: 500 }
@@ -183,12 +219,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Refresh triggered for table: ${table_name}${force ? ' (forced)' : ''}`,
+      message: `BigQuery sync completed for table: ${table_name}${force ? ' (forced)' : ''}`,
       type: 'single',
       table: table_name,
       audit_log_id: auditLog.id,
-      function_invoked: functionName,
-      details: refreshData
+      sync_method: 'bigquery_api',
+      details: 'Sync completed successfully'
     })
 
   } catch (error) {
