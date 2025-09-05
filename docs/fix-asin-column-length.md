@@ -10,28 +10,29 @@ Additionally, there are multiple dependent views and materialized views that pre
 
 ## Solution
 
-### Option A: Use the Alternative Migration (Recommended)
+### Recommended: Use the Safe Migration
 Run three migrations in order:
-1. `031_fix_asin_column_alternative.sql` - Fixes the ASIN column length (explicit drops)
+1. `031_fix_asin_column_safe.sql` - Fixes the ASIN column length (checks object types)
 2. `032_recreate_asin_performance_by_brand.sql` - Recreates the brand performance view
 3. `033_recreate_brand_search_query_metrics.sql` - Recreates the brand search query metrics
 
-### Option B: Use the Comprehensive Migration
-If Option A fails, try:
-1. `031_fix_asin_column_length_comprehensive.sql` - Fixes the ASIN column length (recursive search)
+### Alternative Options (if needed)
+- `031_fix_asin_column_alternative.sql` - Explicit drops version
+- `031_fix_asin_column_length_comprehensive.sql` - Recursive search version
 
 ## Steps
 
-### Using Option A (Alternative Migration - Recommended)
+### Using the Safe Migration (Recommended)
 
 #### Step 1: Fix ASIN Column Length
 1. Go to your Supabase Dashboard
 2. Navigate to the SQL Editor
-3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_alternative.sql`
+3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_safe.sql`
 4. Click "Run" to execute the migration
-   - This explicitly drops all known views
-   - Alters the ASIN column to VARCHAR(20)
-   - Recreates the basic views
+   - This checks object types before dropping (avoids "not a view" errors)
+   - Alters the ASIN column to VARCHAR(20) in all tables
+   - Recreates the necessary views
+   - Provides status reports throughout
 
 #### Step 2: Recreate Brand Performance View
 1. After the first migration completes successfully
