@@ -1,0 +1,3 @@
+# Spec Summary (Lite)
+
+Implement an automated daily trigger mechanism to refresh data from BigQuery source, ensuring all Supabase tables stay synchronized with the latest Amazon Search Query Performance data. The system will automatically handle new data by either updating existing records or adding new entries, while maintaining comprehensive audit trails and ensuring dashboard compatibility for continuous weekly data updates.

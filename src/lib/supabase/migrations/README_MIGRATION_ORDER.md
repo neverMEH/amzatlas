@@ -13,6 +13,11 @@ Run migrations in this order to avoid dependency issues:
 9. `012_fix_seed_function.sql` - Fixes seed function
 10. `013_restructure_for_bigquery_schema.sql` - Adds new tables for nested BigQuery structure
 11. `014_update_period_comparisons_view.sql` - Updates period_comparisons view with cart add columns
+12. `015_add_missing_weekly_summary_columns.sql` - Adds cart add columns to weekly summary
+13. `016_create_public_sync_views.sql` - Creates public views for sync_log and data_quality_checks
+14. `017_fix_summary_table_permissions.sql` - Fixes permissions for summary tables
+15. `018-030` - Various fixes and enhancements
+16. `031_add_refresh_infrastructure.sql` - Adds automated refresh infrastructure tables
 
 ## Important Notes
 
