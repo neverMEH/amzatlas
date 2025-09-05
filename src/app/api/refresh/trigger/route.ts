@@ -36,34 +36,32 @@ export async function POST(request: NextRequest) {
 
     const { table_name, force } = validation.data
 
-    // If no table specified, trigger full refresh via BigQuery sync orchestrator
+    // If no table specified, trigger full refresh via BigQuery sync service
     if (!table_name) {
       try {
-        const baseUrl = request.nextUrl.origin
-        const orchestrateResponse = await fetch(`${baseUrl}/api/sync/orchestrate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabaseServiceKey}`
-          },
-          body: JSON.stringify({ 
-            refreshType: 'manual',
-            tables: ['search_query_performance', 'asin_performance_data']
+        const { BigQuerySyncService } = await import('@/services/bigquery-sync/sync-service')
+        const syncService = new BigQuerySyncService()
+        
+        const results = []
+        const tables = ['search_query_performance', 'asin_performance_data']
+        
+        for (const tableName of tables) {
+          const result = await syncService.syncTable(tableName, {
+            tableSchema: 'sqp'
           })
-        })
-
-        if (!orchestrateResponse.ok) {
-          const errorData = await orchestrateResponse.json()
-          throw new Error(errorData.error || 'Orchestration failed')
+          results.push({
+            table: tableName,
+            success: result.success,
+            rowsProcessed: result.rowsProcessed,
+            error: result.error
+          })
         }
-
-        const orchestrateData = await orchestrateResponse.json()
         
         return NextResponse.json({
           success: true,
-          message: 'Full BigQuery sync triggered successfully',
+          message: `Full BigQuery sync completed for ${results.length} tables`,
           type: 'full',
-          details: orchestrateData
+          details: { results }
         })
       } catch (error) {
         return NextResponse.json(
@@ -152,27 +150,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Invoke BigQuery sync for the specific table
+    // Invoke BigQuery sync for the specific table directly
+    let refreshData
     try {
-      const baseUrl = request.nextUrl.origin
-      const syncResponse = await fetch(`${baseUrl}/api/sync/bigquery`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`
-        },
-        body: JSON.stringify({ 
-          tableName: table_name,
-          audit_log_id: auditLog.id
-        })
+      // Import and call the sync service directly instead of HTTP fetch
+      const { BigQuerySyncService } = await import('@/services/bigquery-sync/sync-service')
+      const syncService = new BigQuerySyncService()
+      
+      refreshData = await syncService.syncTable(table_name, {
+        tableSchema: config.table_schema || 'sqp'
       })
-
-      if (!syncResponse.ok) {
-        const errorData = await syncResponse.json()
-        throw new Error(errorData.error || 'BigQuery sync failed')
+      
+      if (!refreshData.success) {
+        throw new Error(refreshData.error || 'BigQuery sync failed')
       }
-
-      const refreshData = await syncResponse.json()
 
       // Update audit log with success
       await supabase
@@ -181,7 +172,11 @@ export async function POST(request: NextRequest) {
           status: 'success',
           rows_processed: refreshData.rowsProcessed || 0,
           refresh_completed_at: new Date().toISOString(),
-          sync_metadata: refreshData
+          sync_metadata: {
+            table: refreshData.table,
+            duration: refreshData.duration,
+            success: refreshData.success
+          }
         })
         .eq('id', auditLog.id)
 
@@ -225,8 +220,9 @@ export async function POST(request: NextRequest) {
       type: 'single',
       table: table_name,
       audit_log_id: auditLog.id,
-      sync_method: 'bigquery_api',
-      details: 'Sync completed successfully'
+      sync_method: 'bigquery_service',
+      rowsProcessed: refreshData.rowsProcessed || 0,
+      duration: refreshData.duration || 0
     })
 
   } catch (error) {
