@@ -1,148 +1,243 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { 
-  withErrorHandling, 
-  createSuccessResponse,
-  createErrorResponse
-} from "../_shared/error-handler.ts"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { BigQuery } from 'https://esm.sh/@google-cloud/bigquery@7'
+import { createErrorResponse, createSuccessResponse, logError } from '../_shared/utils.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const FUNCTION_TIMEOUT = 300000 // 5 minutes
+const BATCH_SIZE = 1000
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  const { config, auditLogId } = await req.json()
-  
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
   const startTime = Date.now()
+  let auditLogId: number | null = null
 
-  const result = await withErrorHandling(async () => {
-    console.log('Refreshing daily SQP data aggregation...')
+  try {
+    const { config, auditLogId: providedAuditLogId } = await req.json()
+    auditLogId = providedAuditLogId
 
-    // Create daily aggregation from asin_performance_data
-    const aggregationQuery = `
-      INSERT INTO sqp.daily_sqp_data (
-        date,
-        asin,
-        parent_asin,
-        brand,
-        product_title,
-        impressions,
-        clicks,
-        cart_adds,
-        purchases,
-        click_through_rate,
-        cart_add_rate,
-        conversion_rate,
-        impressions_share,
-        clicks_share,
-        purchases_share
-      )
-      SELECT 
-        end_date as date,
-        asin,
-        parent_asin,
-        brand,
-        product_title,
-        asin_impressions as impressions,
-        asin_clicks as clicks,
-        asin_cart_adds as cart_adds,
-        asin_purchases as purchases,
-        CASE WHEN asin_impressions > 0 
-          THEN asin_clicks::FLOAT / asin_impressions 
-          ELSE 0 
-        END as click_through_rate,
-        CASE WHEN asin_clicks > 0 
-          THEN asin_cart_adds::FLOAT / asin_clicks 
-          ELSE 0 
-        END as cart_add_rate,
-        CASE WHEN asin_impressions > 0 
-          THEN asin_purchases::FLOAT / asin_impressions 
-          ELSE 0 
-        END as conversion_rate,
-        CASE WHEN market_impressions > 0 
-          THEN asin_impressions::FLOAT / market_impressions 
-          ELSE 0 
-        END as impressions_share,
-        CASE WHEN market_clicks > 0 
-          THEN asin_clicks::FLOAT / market_clicks 
-          ELSE 0 
-        END as clicks_share,
-        CASE WHEN market_purchases > 0 
-          THEN asin_purchases::FLOAT / market_purchases 
-          ELSE 0 
-        END as purchases_share
-      FROM sqp.asin_performance_data
-      WHERE end_date >= CURRENT_DATE - INTERVAL '7 days'
-        AND end_date = start_date + INTERVAL '6 days' -- Weekly data
-      ON CONFLICT (date, asin) 
-      DO UPDATE SET
-        parent_asin = EXCLUDED.parent_asin,
-        brand = EXCLUDED.brand,
-        product_title = EXCLUDED.product_title,
-        impressions = EXCLUDED.impressions,
-        clicks = EXCLUDED.clicks,
-        cart_adds = EXCLUDED.cart_adds,
-        purchases = EXCLUDED.purchases,
-        click_through_rate = EXCLUDED.click_through_rate,
-        cart_add_rate = EXCLUDED.cart_add_rate,
-        conversion_rate = EXCLUDED.conversion_rate,
-        impressions_share = EXCLUDED.impressions_share,
-        clicks_share = EXCLUDED.clicks_share,
-        purchases_share = EXCLUDED.purchases_share,
-        updated_at = CURRENT_TIMESTAMP
-    `
+    console.log('Refreshing daily SQP data...')
 
-    // Execute aggregation
-    const { error } = await supabase.rpc('execute_sql', {
-      sql: aggregationQuery
+    // Create clients
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Initialize BigQuery
+    const credentials = JSON.parse(Deno.env.get('GOOGLE_APPLICATION_CREDENTIALS_JSON') ?? '{}')
+    const bigquery = new BigQuery({
+      projectId: credentials.project_id,
+      credentials: credentials,
+      location: 'US'
     })
 
-    if (error) throw error
+    // Check for existing checkpoint
+    const { data: checkpoint } = await supabase
+      .from('refresh_checkpoints')
+      .select('*')
+      .eq('function_name', 'refresh-daily-sqp')
+      .eq('table_schema', 'sqp')
+      .eq('table_name', 'daily_sqp_data')
+      .eq('status', 'active')
+      .single()
 
-    // Get count of affected rows
-    const { count } = await supabase
-      .from('sqp.daily_sqp_data')
-      .select('*', { count: 'exact', head: true })
-      .gte('updated_at', new Date(Date.now() - 300000).toISOString()) // Last 5 minutes
-
-    const rowsProcessed = count || 0
-
-    // Update audit log
-    await supabase
-      .from('sqp.refresh_audit_log')
-      .update({
-        rows_processed: rowsProcessed,
-        execution_time_ms: Date.now() - startTime,
-        status: 'success',
-        refresh_completed_at: new Date().toISOString()
-      })
-      .eq('id', auditLogId)
-
-    return {
-      tableName: 'daily_sqp_data',
-      rowsProcessed,
-      executionTimeMs: Date.now() - startTime
+    let offset = 0
+    let processedRows = 0
+    
+    if (checkpoint) {
+      offset = checkpoint.last_processed_row || 0
+      processedRows = offset
+      console.log(`Resuming from checkpoint: offset ${offset}`)
     }
-  }, {
-    functionName: 'refresh-daily-sqp',
-    supabase,
-    auditLogId,
-    tableName: config.table_name
-  })
 
-  if ('error' in result) {
-    return createErrorResponse(result.error)
+    // BigQuery query for daily SQP data aggregation
+    const query = `
+      SELECT 
+        PARSE_DATE('%Y-%m-%d', \`Start Date\`) as report_date,
+        \`Child ASIN\` as asin,
+        COUNT(DISTINCT \`Search Query\`) as unique_search_queries,
+        SUM(CAST(\`Impressions\` AS INT64)) as total_impressions,
+        SUM(CAST(\`Clicks\` AS INT64)) as total_clicks,
+        SUM(CAST(\`Cart Adds\` AS INT64)) as total_cart_adds,
+        SUM(CAST(\`Total Orders (#)\` AS INT64)) as total_purchases,
+        AVG(CAST(\`CTR (%)\` AS FLOAT64)) as avg_ctr,
+        AVG(CAST(\`CVR (%)\` AS FLOAT64)) as avg_cvr,
+        SUM(CAST(\`Spend ($)\` AS FLOAT64)) as total_spend,
+        SUM(CAST(\`Total Sales  ($)\` AS FLOAT64)) as total_sales,
+        AVG(CAST(\`CPC ($)\` AS FLOAT64)) as avg_cpc,
+        SUM(CAST(\`Total Units (#)\` AS INT64)) as total_units,
+        AVG(CAST(\`Search Impression Share (%)\` AS FLOAT64)) as avg_impression_share,
+        AVG(CAST(\`Click Share (%)\` AS FLOAT64)) as avg_click_share,
+        AVG(CAST(\`Search Impression Rank (avg)\` AS FLOAT64)) as avg_impression_rank,
+        AVG(CAST(\`Click Rank (avg)\` AS FLOAT64)) as avg_click_rank
+      FROM \`dataclient_amzatlas_agency_85.amz_atlas_product_data_search_query_performance_85\`
+      WHERE \`Child ASIN\` IS NOT NULL 
+        AND \`Start Date\` IS NOT NULL
+      GROUP BY 
+        PARSE_DATE('%Y-%m-%d', \`Start Date\`), 
+        \`Child ASIN\`
+      ORDER BY report_date DESC, asin
+      LIMIT ${BATCH_SIZE}
+      OFFSET ${offset}
+    `
+
+    const [job] = await bigquery.createQueryJob({
+      query,
+      location: 'US',
+    })
+
+    console.log(`BigQuery job started: ${job.id}`)
+    
+    const [rows] = await job.getQueryResults()
+    
+    if (!rows || rows.length === 0) {
+      console.log('No more data to process')
+      
+      // Clean up checkpoint
+      if (checkpoint) {
+        await supabase
+          .from('refresh_checkpoints')
+          .update({ status: 'completed' })
+          .eq('id', checkpoint.id)
+      }
+
+      // Update audit log
+      if (auditLogId) {
+        await supabase
+          .from('refresh_audit_log')
+          .update({
+            status: 'success',
+            rows_processed: processedRows,
+            execution_time_ms: Date.now() - startTime,
+            refresh_completed_at: new Date().toISOString()
+          })
+          .eq('id', auditLogId)
+      }
+
+      return createSuccessResponse({ 
+        rowsProcessed: processedRows,
+        message: 'Daily SQP data refresh completed' 
+      })
+    }
+
+    console.log(`Processing ${rows.length} rows (offset: ${offset})`)
+
+    // Transform and prepare data for upsert
+    const transformedData = rows.map(row => ({
+      report_date: row.report_date?.value || row.report_date,
+      asin: row.asin,
+      unique_search_queries: parseInt(row.unique_search_queries) || 0,
+      total_impressions: parseInt(row.total_impressions) || 0,
+      total_clicks: parseInt(row.total_clicks) || 0,
+      total_cart_adds: parseInt(row.total_cart_adds) || 0,
+      total_purchases: parseInt(row.total_purchases) || 0,
+      avg_ctr: parseFloat(row.avg_ctr) || 0,
+      avg_cvr: parseFloat(row.avg_cvr) || 0,
+      total_spend: parseFloat(row.total_spend) || 0,
+      total_sales: parseFloat(row.total_sales) || 0,
+      avg_cpc: parseFloat(row.avg_cpc) || 0,
+      total_units: parseInt(row.total_units) || 0,
+      avg_impression_share: parseFloat(row.avg_impression_share) || 0,
+      avg_click_share: parseFloat(row.avg_click_share) || 0,
+      avg_impression_rank: parseFloat(row.avg_impression_rank) || 0,
+      avg_click_rank: parseFloat(row.avg_click_rank) || 0,
+      
+      // Calculate derived metrics
+      cart_add_rate: row.total_clicks > 0 ? ((row.total_cart_adds || 0) / row.total_clicks * 100) : 0,
+      purchase_rate: row.total_cart_adds > 0 ? ((row.total_purchases || 0) / row.total_cart_adds * 100) : 0,
+      roi_percentage: row.total_spend > 0 ? ((row.total_sales || 0) / row.total_spend * 100) : 0,
+      
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }))
+
+    // Batch upsert to avoid conflicts
+    const { error: upsertError } = await supabase
+      .from('daily_sqp_data')
+      .upsert(transformedData, { onConflict: 'report_date,asin' })
+
+    if (upsertError) {
+      throw new Error(`Upsert failed: ${upsertError.message}`)
+    }
+
+    processedRows += rows.length
+    const newOffset = offset + rows.length
+
+    // Check if we're approaching timeout
+    if (Date.now() - startTime > FUNCTION_TIMEOUT - 30000) { // 30s buffer
+      console.log('Approaching timeout, saving checkpoint...')
+      
+      // Create or update checkpoint
+      await supabase
+        .from('refresh_checkpoints')
+        .upsert({
+          function_name: 'refresh-daily-sqp',
+          table_schema: 'sqp',
+          table_name: 'daily_sqp_data',
+          checkpoint_data: { offset: newOffset },
+          last_processed_row: newOffset,
+          status: 'active',
+          updated_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 3600000).toISOString() // 1 hour
+        }, { onConflict: 'function_name,table_schema,table_name,status' })
+
+      // Continue processing by invoking self
+      await supabase.functions.invoke('refresh-daily-sqp', {
+        body: { config, auditLogId }
+      })
+
+      return createSuccessResponse({ 
+        rowsProcessed: processedRows,
+        message: 'Checkpoint saved, continuing in new invocation' 
+      })
+    }
+
+    // Continue processing more batches
+    if (rows.length === BATCH_SIZE) {
+      // More data available, continue
+      await supabase.functions.invoke('refresh-daily-sqp', {
+        body: { config, auditLogId }
+      })
+    } else {
+      // Final batch completed
+      if (checkpoint) {
+        await supabase
+          .from('refresh_checkpoints')
+          .update({ status: 'completed' })
+          .eq('id', checkpoint.id)
+      }
+
+      if (auditLogId) {
+        await supabase
+          .from('refresh_audit_log')
+          .update({
+            status: 'success',
+            rows_processed: processedRows,
+            rows_inserted: processedRows, // For this function, processed = inserted
+            execution_time_ms: Date.now() - startTime,
+            bigquery_job_id: job.id,
+            refresh_completed_at: new Date().toISOString()
+          })
+          .eq('id', auditLogId)
+      }
+    }
+
+    return createSuccessResponse({ 
+      rowsProcessed: processedRows,
+      jobId: job.id,
+      message: `Processed ${rows.length} daily SQP records` 
+    })
+
+  } catch (error) {
+    console.error('Daily SQP refresh error:', error)
+    
+    if (auditLogId) {
+      await logError(
+        createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''),
+        auditLogId,
+        error.message
+      )
+    }
+    
+    return createErrorResponse('Daily SQP refresh failed', error.message)
   }
-
-  return createSuccessResponse(result)
 })

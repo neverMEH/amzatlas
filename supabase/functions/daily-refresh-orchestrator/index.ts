@@ -1,125 +1,126 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createErrorResponse, createSuccessResponse } from '../_shared/utils.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const FUNCTION_TIMEOUT = 540000 // 9 minutes (leaving 1 minute buffer)
 
 serve(async (req) => {
-  // Handle CORS
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
-  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
   try {
-    console.log('Starting daily refresh orchestration...')
+    // Create Supabase client
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-    // 1. Get tables due for refresh
+    console.log('Daily refresh orchestrator starting...')
+    const startTime = Date.now()
+
+    // Get tables that need refresh
     const { data: tablesToRefresh, error: configError } = await supabase
-      .from('sqp.refresh_config')
+      .from('refresh_config')
       .select('*')
       .eq('is_enabled', true)
       .lte('next_refresh_at', new Date().toISOString())
       .order('priority', { ascending: false })
 
-    if (configError) throw configError
+    if (configError) {
+      return createErrorResponse('Failed to fetch refresh configs', configError)
+    }
 
-    console.log(`Found ${tablesToRefresh?.length || 0} tables to refresh`)
+    if (!tablesToRefresh || tablesToRefresh.length === 0) {
+      console.log('No tables need refresh at this time')
+      return createSuccessResponse({ tablesProcessed: 0 }, 'No tables need refresh')
+    }
 
-    // 2. Process each table based on type
-    const refreshPromises = tablesToRefresh?.map(async (config) => {
-      const functionName = getFunctionNameForTable(config.table_name)
-      
-      // Create audit log entry
-      const { data: auditLog } = await supabase
-        .from('sqp.refresh_audit_log')
-        .insert({
-          refresh_config_id: config.id,
-          table_schema: config.table_schema,
-          table_name: config.table_name,
-          refresh_started_at: new Date().toISOString(),
-          status: 'running'
-        })
-        .select()
-        .single()
+    console.log(`Found ${tablesToRefresh.length} tables to refresh`)
 
-      try {
-        // Invoke appropriate refresh function
-        const response = await supabase.functions.invoke(functionName, {
-          body: { 
-            config,
-            auditLogId: auditLog?.id 
+    // Process tables in parallel batches
+    const BATCH_SIZE = 3 // Process 3 tables at a time
+    const results = []
+    
+    for (let i = 0; i < tablesToRefresh.length; i += BATCH_SIZE) {
+      // Check if we're approaching timeout
+      if (Date.now() - startTime > FUNCTION_TIMEOUT) {
+        console.log('Approaching timeout, scheduling continuation...')
+        // Schedule another run for remaining tables
+        await supabase.functions.invoke('daily-refresh-orchestrator')
+        break
+      }
+
+      const batch = tablesToRefresh.slice(i, i + BATCH_SIZE)
+      console.log(`Processing batch ${i / BATCH_SIZE + 1}: ${batch.map(t => t.table_name).join(', ')}`)
+
+      const batchPromises = batch.map(async (config) => {
+        try {
+          // Create audit log entry
+          const { data: auditLog, error: auditError } = await supabase
+            .from('refresh_audit_log')
+            .insert({
+              table_schema: config.table_schema,
+              table_name: config.table_name,
+              refresh_type: 'scheduled',
+              status: 'in_progress',
+              refresh_started_at: new Date().toISOString(),
+              function_name: config.function_name || 'refresh-generic-table'
+            })
+            .select()
+            .single()
+
+          if (auditError) {
+            console.error(`Failed to create audit log for ${config.table_name}:`, auditError)
+            return { status: 'rejected', reason: auditError }
           }
-        })
 
-        if (!response.error) {
+          // Invoke specific refresh function
+          const functionName = config.function_name || 'refresh-generic-table'
+          console.log(`Invoking ${functionName} for ${config.table_name}`)
+
+          const { data, error: invokeError } = await supabase.functions.invoke(functionName, {
+            body: { config, auditLogId: auditLog.id }
+          })
+
+          if (invokeError) {
+            throw invokeError
+          }
+
           // Update next refresh time
+          const nextRefreshAt = new Date()
+          nextRefreshAt.setHours(nextRefreshAt.getHours() + config.refresh_frequency_hours)
+
           await supabase
-            .from('sqp.refresh_config')
-            .update({ 
+            .from('refresh_config')
+            .update({
               last_refresh_at: new Date().toISOString(),
-              next_refresh_at: new Date(Date.now() + config.refresh_frequency_hours * 60 * 60 * 1000).toISOString()
+              next_refresh_at: nextRefreshAt.toISOString()
             })
             .eq('id', config.id)
+
+          return { status: 'fulfilled', value: data }
+        } catch (error) {
+          console.error(`Error refreshing ${config.table_name}:`, error)
+          return { status: 'rejected', reason: error.message }
         }
+      })
 
-        return response
-      } catch (error) {
-        console.error(`Error refreshing ${config.table_name}:`, error)
-        
-        // Update audit log with error
-        await supabase
-          .from('sqp.refresh_audit_log')
-          .update({
-            status: 'failed',
-            error_message: error.message,
-            refresh_completed_at: new Date().toISOString()
-          })
-          .eq('id', auditLog?.id)
+      const batchResults = await Promise.allSettled(batchPromises)
+      results.push(...batchResults)
+    }
 
-        return { error: error.message }
-      }
-    }) || []
+    // Summary
+    const successful = results.filter(r => r.status === 'fulfilled').length
+    const failed = results.filter(r => r.status === 'rejected').length
 
-    // Wait for all refreshes to complete
-    const results = await Promise.allSettled(refreshPromises)
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        tablesProcessed: results.length,
-        results: results.map(r => r.status)
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.log(`Refresh completed: ${successful} successful, ${failed} failed`)
+
+    return createSuccessResponse({
+      tablesProcessed: results.length,
+      successful,
+      failed,
+      results: results.map(r => r.status)
+    })
+
   } catch (error) {
     console.error('Orchestrator error:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    return createErrorResponse('Orchestrator failed', error.message)
   }
 })
-
-function getFunctionNameForTable(tableName: string): string {
-  const functionMap: Record<string, string> = {
-    'asin_performance_data': 'refresh-asin-performance',
-    'search_query_performance': 'refresh-search-queries',
-    'search_performance_summary': 'refresh-summary-tables',
-    'weekly_summary': 'refresh-summary-tables',
-    'monthly_summary': 'refresh-summary-tables',
-    'quarterly_summary': 'refresh-summary-tables',
-    'yearly_summary': 'refresh-summary-tables',
-    'daily_sqp_data': 'refresh-daily-sqp'
-  }
-  
-  return functionMap[tableName] || 'refresh-generic-table'
-}

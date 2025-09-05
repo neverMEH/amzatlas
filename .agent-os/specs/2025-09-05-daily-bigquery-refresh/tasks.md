@@ -27,15 +27,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [ ] 2.7 Deploy and test orchestrator function (requires Supabase CLI)
   - [x] 2.8 Verify all tests pass
 
-- [ ] 3. Table-Specific Refresh Functions
-  - [ ] 3.1 Write tests for ASIN performance refresh
-  - [ ] 3.2 Implement refresh-asin-performance function with checkpoints
-  - [ ] 3.3 Create refresh-search-queries function with pagination
-  - [ ] 3.4 Build refresh-summary-tables for materialized views
-  - [ ] 3.5 Add BigQuery connection handling for edge environment
-  - [ ] 3.6 Implement data transformation logic
-  - [ ] 3.7 Deploy all worker functions
-  - [ ] 3.8 Verify all tests pass
+- [x] 3. Table-Specific Refresh Functions ✅
+  - [x] 3.1 Write tests for ASIN performance refresh
+  - [x] 3.2 Implement refresh-asin-performance function with checkpoints
+  - [x] 3.3 Create refresh-search-queries function with pagination
+  - [x] 3.4 Build refresh-summary-tables for materialized views
+  - [x] 3.5 Add BigQuery connection handling for edge environment
+  - [x] 3.6 Implement data transformation logic
+  - [ ] 3.7 Deploy all worker functions (requires Supabase CLI)
+  - [x] 3.8 Verify all tests pass
 
 - [ ] 4. API Endpoints and Monitoring
   - [ ] 4.1 Write tests for refresh status endpoints
