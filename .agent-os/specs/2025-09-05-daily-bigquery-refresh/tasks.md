@@ -7,15 +7,15 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 
 ## Tasks
 
-- [ ] 1. Database Infrastructure and Migration
-  - [ ] 1.1 Write tests for database schema creation and triggers
-  - [ ] 1.2 Create migration file 031_add_refresh_infrastructure.sql with all tables
-  - [ ] 1.3 Implement auto-registration trigger for new tables
-  - [ ] 1.4 Add checkpoint table and cleanup functions
-  - [ ] 1.5 Populate initial refresh configurations
-  - [ ] 1.6 Set up table dependencies
-  - [ ] 1.7 Apply migration to development database
-  - [ ] 1.8 Verify all tests pass
+- [x] 1. Database Infrastructure and Migration ✅
+  - [x] 1.1 Write tests for database schema creation and triggers
+  - [x] 1.2 Create migration file 031_add_refresh_infrastructure.sql with all tables
+  - [x] 1.3 Implement auto-registration trigger for new tables
+  - [x] 1.4 Add checkpoint table and cleanup functions
+  - [x] 1.5 Populate initial refresh configurations
+  - [x] 1.6 Set up table dependencies
+  - [x] 1.7 Apply migration to development database
+  - [x] 1.8 Verify all tests pass
 
 - [ ] 2. Edge Function Core Implementation
   - [ ] 2.1 Write tests for orchestrator function logic
