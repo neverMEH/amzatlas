@@ -3,15 +3,25 @@
 ## Issue
 The BigQuery sync is failing because the ASIN column in `sqp.asin_performance_data` is limited to VARCHAR(10), but some ASINs are 11 characters long (e.g., "B0FM1J8DXM").
 
+Additionally, there's a dependent view `asin_performance_by_brand` that prevents altering the column directly.
+
 ## Solution
-Run the migration `031_fix_asin_column_length.sql` in the Supabase SQL Editor.
+Run two migrations in order:
+1. `031_fix_asin_column_length_final.sql` - Fixes the ASIN column length
+2. `032_recreate_asin_performance_by_brand.sql` - Recreates the brand performance view
 
 ## Steps
 
+### Step 1: Fix ASIN Column Length
 1. Go to your Supabase Dashboard
 2. Navigate to the SQL Editor
-3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_length.sql`
+3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_length_final.sql`
 4. Click "Run" to execute the migration
+
+### Step 2: Recreate Brand Performance View
+1. After the first migration completes successfully
+2. Copy and paste the entire contents of `/src/lib/supabase/migrations/032_recreate_asin_performance_by_brand.sql`
+3. Click "Run" to execute the migration
 
 ## What the Migration Does
 
