@@ -72,11 +72,34 @@ BEGIN
     END IF;
   END LOOP;
   
+  -- Find and drop all views that depend on sqp.search_query_performance.asin (if column exists)
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'sqp' 
+    AND table_name = 'search_query_performance' 
+    AND column_name = 'asin'
+  ) THEN
+    FOR dep IN 
+      SELECT * FROM find_dependent_views('sqp', 'search_query_performance', 'asin')
+    LOOP
+      IF dep.view_type = 'MATERIALIZED VIEW' THEN
+        EXECUTE format('DROP MATERIALIZED VIEW IF EXISTS %I.%I CASCADE', dep.view_schema, dep.view_name);
+        RAISE NOTICE 'Dropped materialized view %.%', dep.view_schema, dep.view_name;
+      ELSE
+        EXECUTE format('DROP VIEW IF EXISTS %I.%I CASCADE', dep.view_schema, dep.view_name);
+        RAISE NOTICE 'Dropped view %.%', dep.view_schema, dep.view_name;
+      END IF;
+    END LOOP;
+  END IF;
+  
   -- Also manually drop known views to be sure
   DROP MATERIALIZED VIEW IF EXISTS sqp.brand_search_query_metrics CASCADE;
   DROP VIEW IF EXISTS public.asin_performance_by_brand CASCADE;
   DROP VIEW IF EXISTS public.search_performance_summary CASCADE;
   DROP VIEW IF EXISTS public.asin_performance_data CASCADE;
+  DROP VIEW IF EXISTS search_query_performance CASCADE;  -- Drop view without schema prefix
+  DROP VIEW IF EXISTS public.search_query_performance CASCADE;  -- Also try public schema
+  DROP VIEW IF EXISTS sqp.search_query_performance CASCADE;  -- Also try sqp schema
 END $$;
 
 -- Clean up the helper function

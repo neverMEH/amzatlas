@@ -9,31 +9,43 @@ Additionally, there are multiple dependent views and materialized views that pre
 - `sqp.brand_search_query_metrics`
 
 ## Solution
+
+### Option A: Use the Alternative Migration (Recommended)
 Run three migrations in order:
-1. `031_fix_asin_column_length_comprehensive.sql` - Fixes the ASIN column length (handles all dependencies)
+1. `031_fix_asin_column_alternative.sql` - Fixes the ASIN column length (explicit drops)
 2. `032_recreate_asin_performance_by_brand.sql` - Recreates the brand performance view
 3. `033_recreate_brand_search_query_metrics.sql` - Recreates the brand search query metrics
 
+### Option B: Use the Comprehensive Migration
+If Option A fails, try:
+1. `031_fix_asin_column_length_comprehensive.sql` - Fixes the ASIN column length (recursive search)
+
 ## Steps
 
-### Step 1: Fix ASIN Column Length (Comprehensive)
+### Using Option A (Alternative Migration - Recommended)
+
+#### Step 1: Fix ASIN Column Length
 1. Go to your Supabase Dashboard
 2. Navigate to the SQL Editor
-3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_length_comprehensive.sql`
+3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_alternative.sql`
 4. Click "Run" to execute the migration
-   - This will automatically find and drop all dependent views
-   - Then alter the ASIN column to VARCHAR(20)
-   - Finally recreate the basic views
+   - This explicitly drops all known views
+   - Alters the ASIN column to VARCHAR(20)
+   - Recreates the basic views
 
-### Step 2: Recreate Brand Performance View
+#### Step 2: Recreate Brand Performance View
 1. After the first migration completes successfully
 2. Copy and paste the entire contents of `/src/lib/supabase/migrations/032_recreate_asin_performance_by_brand.sql`
 3. Click "Run" to execute the migration
 
-### Step 3: Recreate Brand Search Query Metrics
+#### Step 3: Recreate Brand Search Query Metrics
 1. After the second migration completes successfully
 2. Copy and paste the entire contents of `/src/lib/supabase/migrations/033_recreate_brand_search_query_metrics.sql`
 3. Click "Run" to execute the migration
+
+### If Option A Fails
+
+If you encounter errors with the alternative migration, use the comprehensive version (`031_fix_asin_column_length_comprehensive.sql`) which uses a recursive function to find all dependencies automatically.
 
 ## What the Migration Does
 
