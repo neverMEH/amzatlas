@@ -42,6 +42,11 @@ export class BigQuerySyncService {
     try {
       console.log(`Starting sync for table: ${tableSchema}.${tableName}`)
       
+      // For search_query_performance, we need to ensure parent records exist first
+      if (tableName === 'search_query_performance') {
+        await this.ensureParentRecords(dateRange)
+      }
+      
       // Get table configuration
       const { data: config, error: configError } = await this.supabase
         .from('refresh_config')
@@ -112,14 +117,17 @@ export class BigQuerySyncService {
           const batch = rows.slice(i, i + batchSize)
           
           // Transform data if needed
-          const transformedBatch = this.transformData(tableName, batch)
+          let transformedBatch = this.transformData(tableName, batch)
+          
+          // For search_query_performance, we need to resolve parent IDs
+          if (tableName === 'search_query_performance') {
+            transformedBatch = await this.resolveParentIds(transformedBatch)
+          }
           
           // Insert batch
           const { error: insertError } = await this.supabase
             .from(tableName)
-            .upsert(transformedBatch, { 
-              onConflict: this.getConflictColumns(tableName) 
-            })
+            .insert(transformedBatch)
           
           if (insertError) {
             throw new Error(`Insert failed at batch ${i / batchSize}: ${insertError.message}`)
@@ -196,7 +204,7 @@ export class BigQuerySyncService {
       search_query_performance: `
         SELECT *
         FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE("End Date") >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
+        ${dateRange ? `WHERE DATE(Date) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(Date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
         LIMIT 10000
       `,
       
@@ -217,23 +225,205 @@ export class BigQuerySyncService {
     return queries[tableName] || `SELECT * FROM \`${config.projectId}.${dataset}.${tableName}\` LIMIT 1000`
   }
   
+  private async ensureParentRecords(dateRange?: { start: string; end: string }) {
+    console.log('Ensuring parent ASIN records exist...')
+    
+    const config = getBigQueryConfig()
+    const dataset = config.datasets.production
+    const tableName = 'seller-search_query_performance'
+    
+    // Get unique ASINs for the date range
+    let whereClause = ''
+    if (dateRange) {
+      whereClause = `WHERE DATE(Date) BETWEEN '${dateRange.start}' AND '${dateRange.end}'`
+    } else {
+      whereClause = `WHERE DATE(Date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)`
+    }
+    
+    const query = `
+      SELECT DISTINCT
+        COALESCE("Parent ASIN", "Child ASIN") as asin,
+        DATE(Date) as date
+      FROM \`${config.projectId}.${dataset}.${tableName}\`
+      ${whereClause}
+      AND ("Parent ASIN" IS NOT NULL OR "Child ASIN" IS NOT NULL)
+    `
+    
+    const [rows] = await this.bigquery.query({ query })
+    console.log(`Found ${rows.length} unique ASIN/date combinations`)
+    
+    if (rows.length === 0) return
+    
+    // Transform to parent records
+    const parentRecords = rows.map((row: any) => {
+      const dateValue = row.date?.value || row.date
+      const dateStr = dateValue.split('T')[0]
+      return {
+        asin: row.asin,
+        start_date: dateStr,
+        end_date: dateStr
+      }
+    })
+    
+    // Insert in batches (without using onConflict since there's no unique constraint)
+    const batchSize = 100
+    for (let i = 0; i < parentRecords.length; i += batchSize) {
+      const batch = parentRecords.slice(i, i + batchSize)
+      
+      // First check which records already exist
+      const asins = batch.map(r => r.asin)
+      const dates = batch.map(r => r.start_date)
+      
+      const { data: existing } = await this.supabase
+        .from('asin_performance_data')
+        .select('asin, start_date, end_date')
+        .in('asin', asins)
+        .in('start_date', dates)
+      
+      // Filter out existing records
+      const existingKeys = new Set(
+        (existing || []).map(e => `${e.asin}_${e.start_date}_${e.end_date}`)
+      )
+      
+      const newRecords = batch.filter(r => 
+        !existingKeys.has(`${r.asin}_${r.start_date}_${r.end_date}`)
+      )
+      
+      if (newRecords.length > 0) {
+        const { error } = await this.supabase
+          .from('asin_performance_data')
+          .insert(newRecords)
+        
+        if (error) {
+          console.error(`Error inserting parent records:`, error)
+        }
+      }
+    }
+    
+    console.log('Parent records ensured')
+  }
+  
+  private async resolveParentIds(records: any[]): Promise<any[]> {
+    // Group by ASIN and date to minimize queries
+    const lookupKeys = [...new Set(records.map(r => `${r._temp_asin}_${r._temp_date}`))]
+    const lookupMap = new Map()
+    
+    // Batch lookup parent IDs
+    for (let i = 0; i < lookupKeys.length; i += 50) {
+      const batchKeys = lookupKeys.slice(i, i + 50)
+      const conditions = batchKeys.map(key => {
+        const [asin, date] = key.split('_')
+        return { asin, start_date: date, end_date: date }
+      })
+      
+      // Build dynamic query
+      let query = this.supabase
+        .from('asin_performance_data')
+        .select('id, asin, start_date, end_date')
+      
+      // Add OR conditions
+      conditions.forEach((cond, idx) => {
+        if (idx === 0) {
+          query = query
+            .eq('asin', cond.asin)
+            .eq('start_date', cond.start_date)
+            .eq('end_date', cond.end_date)
+        } else {
+          query = query.or(`asin.eq.${cond.asin},start_date.eq.${cond.start_date},end_date.eq.${cond.end_date}`)
+        }
+      })
+      
+      const { data: parentRecords } = await query
+      
+      if (parentRecords) {
+        parentRecords.forEach(parent => {
+          const key = `${parent.asin}_${parent.start_date}`
+          lookupMap.set(key, parent.id)
+        })
+      }
+    }
+    
+    // Map records to parent IDs
+    return records.map(record => {
+      const key = `${record._temp_asin}_${record._temp_date}`
+      const parentId = lookupMap.get(key)
+      
+      if (!parentId) {
+        console.warn(`No parent ID found for ${key}`)
+        return null
+      }
+      
+      // Remove temp fields and add parent ID
+      const { _temp_asin, _temp_date, ...rest } = record
+      return {
+        ...rest,
+        asin_performance_id: parentId
+      }
+    }).filter(r => r !== null)
+  }
+
   private transformData(tableName: string, data: any[]): any[] {
     // Transform BigQuery data to match Supabase schema
     if (tableName === 'search_query_performance') {
-      return data.map(row => ({
-        asin_performance_data_id: `${row.ASIN}_${row['Start Date']}_${row['End Date']}`,
-        search_query: row['Search Query'],
-        impressions: parseInt(row.Impressions) || 0,
-        clicks: parseInt(row.Clicks) || 0,
-        cart_adds: parseInt(row['Cart Adds']) || 0,
-        purchases: parseInt(row.Purchases) || 0,
-        // Calculate derived metrics
-        click_through_rate: row.Impressions > 0 ? (row.Clicks / row.Impressions) * 100 : 0,
-        cart_add_rate: row.Clicks > 0 ? (row['Cart Adds'] / row.Clicks) * 100 : 0,
-        purchase_rate: row.Clicks > 0 ? (row.Purchases / row.Clicks) * 100 : 0,
-        start_date: row['Start Date'],
-        end_date: row['End Date']
-      }))
+      // We need to map the records to their parent IDs
+      // This will be done in a separate step after transformation
+      return data.map(row => {
+        // Extract date value from BigQuery date object
+        const dateValue = row.Date?.value || row.Date || new Date().toISOString()
+        const dateStr = dateValue.split('T')[0] // Get just the date part
+        
+        // Use Parent ASIN as the main ASIN
+        const asin = row['Parent ASIN'] || row['Child ASIN'] || 'UNKNOWN'
+        
+        return {
+          // We'll set asin_performance_id later after looking up the parent record
+          _temp_asin: asin,
+          _temp_date: dateStr,
+          search_query: row['Search Query'] || '',
+          search_query_score: parseInt(row['Search Query Score']) || 0,
+          search_query_volume: parseInt(row['Search Query Volume']) || 0,
+          total_query_impression_count: parseInt(row['Total Query Impression Count']) || 0,
+          asin_impression_count: parseInt(row['ASIN Impression Count']) || 0,
+          asin_impression_share: parseFloat(row['ASIN Impression Share']) || 0,
+          total_click_count: parseInt(row['Total Click Count']) || 0,
+          total_click_rate: parseFloat(row['Total Click Rate']) || 0,
+          asin_click_count: parseInt(row['ASIN Click Count']) || 0,
+          asin_click_share: parseFloat(row['ASIN Click Share']) || 0,
+          total_median_click_price: parseFloat(row['Total Median Click Price Amount']) || 0,
+          asin_median_click_price: parseFloat(row['ASIN Median Click Price Amount']) || 0,
+          total_same_day_shipping_click_count: parseInt(row['Total Same Day Shipping Click Count']) || 0,
+          total_one_day_shipping_click_count: parseInt(row['Total One Day Shipping Click Count']) || 0,
+          total_two_day_shipping_click_count: parseInt(row['Total Two Day Shipping Click Count']) || 0,
+          total_cart_add_count: parseInt(row['Total Cart Add Count']) || 0,
+          total_cart_add_rate: parseFloat(row['Total Cart Add Rate']) || 0,
+          asin_cart_add_count: parseInt(row['ASIN Cart Add Count']) || 0,
+          asin_cart_add_share: parseFloat(row['ASIN Cart Add Share']) || 0,
+          total_median_cart_add_price: parseFloat(row['Total Median Cart Add Price Amount']) || 0,
+          asin_median_cart_add_price: parseFloat(row['ASIN Median Cart Add Price Amount']) || 0,
+          total_same_day_shipping_cart_add_count: parseInt(row['Total Same Day Shipping Cart Add Count']) || 0,
+          total_one_day_shipping_cart_add_count: parseInt(row['Total One Day Shipping Cart Add Count']) || 0,
+          total_two_day_shipping_cart_add_count: parseInt(row['Total Two Day Shipping Cart Add Count']) || 0,
+          total_purchase_count: parseInt(row['Total Purchase Count']) || 0,
+          total_purchase_rate: parseFloat(row['Total Purchase Rate']) || 0,
+          asin_purchase_count: parseInt(row['ASIN Purchase Count']) || 0,
+          asin_purchase_share: parseFloat(row['ASIN Purchase Share']) || 0,
+          total_median_purchase_price: parseFloat(row['Total Median Purchase Price Amount']) || 0,
+          asin_median_purchase_price: parseFloat(row['ASIN Median Purchase Price Amount']) || 0,
+          total_same_day_shipping_purchase_count: parseInt(row['Total Same Day Shipping Purchase Count']) || 0,
+          total_one_day_shipping_purchase_count: parseInt(row['Total One Day Shipping Purchase Count']) || 0,
+          total_two_day_shipping_purchase_count: parseInt(row['Total Two Day Shipping Purchase Count']) || 0,
+          // Standard fields
+          asin,
+          start_date: dateStr,
+          end_date: dateStr,
+          // Aggregated fields for summary
+          impressions_sum: parseInt(row['ASIN Impression Count']) || 0,
+          clicks_sum: parseInt(row['ASIN Click Count']) || 0,
+          cart_adds_sum: parseInt(row['ASIN Cart Add Count']) || 0,
+          purchases_sum: parseInt(row['ASIN Purchase Count']) || 0,
+          median_price_purchase: parseFloat(row['ASIN Median Purchase Price Amount']) || 0
+        }
+      })
     }
     
     if (tableName === 'asin_performance_data') {
@@ -252,9 +442,11 @@ export class BigQuerySyncService {
   }
   
   private getConflictColumns(tableName: string): string {
+    // No longer used since we're using INSERT instead of UPSERT
+    // Keeping for potential future use
     const conflictColumns: Record<string, string> = {
       asin_performance_data: 'asin,start_date,end_date',
-      search_query_performance: 'asin_performance_data_id,search_query',
+      search_query_performance: 'asin_performance_id,search_query',
       daily_sqp_data: 'asin,date'
     }
     
