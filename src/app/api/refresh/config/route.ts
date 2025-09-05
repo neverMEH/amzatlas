@@ -11,7 +11,7 @@ const updateConfigSchema = z.object({
   is_enabled: z.boolean().optional(),
   refresh_frequency_hours: z.number().min(1).max(168).optional(), // 1 hour to 7 days
   priority: z.number().min(0).max(1000).optional(),
-  custom_sync_params: z.record(z.any()).optional(),
+  custom_sync_params: z.record(z.string(), z.any()).optional(),
   dependencies: z.array(z.string()).optional()
 })
 
