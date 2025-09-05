@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { generateSparklineData, calculateComparison } from '@/lib/utils/sparkline'
+import { calculateComparison } from '@/lib/utils/sparkline'
 import { format, subDays, startOfDay, endOfDay } from 'date-fns'
 
 interface DashboardParams {
@@ -97,53 +97,20 @@ export async function GET(
       { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
     )
     
-    // Fetch daily data for sparkline trends
-    const { data: dailyData, error: dailyError } = await supabase
-      .from('daily_sqp_data')
-      .select('date, impressions, clicks, cart_adds, purchases')
-      .in('asin', asinList)
-      .gte('date', dateFrom)
-      .lte('date', dateTo)
-      .order('date', { ascending: true })
-    
-    if (dailyError) {
-      throw dailyError
-    }
-    
-    // Aggregate daily data by date
-    const dailyAggregates = (dailyData || []).reduce((acc: Record<string, any>, row: any) => {
-      const date = row.date
-      if (!acc[date]) {
-        acc[date] = { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
-      }
-      acc[date].impressions += row.impressions || 0
-      acc[date].clicks += row.clicks || 0
-      acc[date].cartAdds += row.cart_adds || 0
-      acc[date].purchases += row.purchases || 0
-      return acc
-    }, {} as Record<string, any>)
-    
-    // Generate sparkline data (20 points)
-    const dates = Object.keys(dailyAggregates).sort()
-    const impressionsTrend = generateSparklineData(
-      dates.map(d => ({ date: d, value: dailyAggregates[d].impressions })),
-      20
-    )
-    const clicksTrend = generateSparklineData(
-      dates.map(d => ({ date: d, value: dailyAggregates[d].clicks })),
-      20
-    )
-    const cartAddsTrend = generateSparklineData(
-      dates.map(d => ({ date: d, value: dailyAggregates[d].cartAdds })),
-      20
-    )
-    const purchasesTrend = generateSparklineData(
-      dates.map(d => ({ date: d, value: dailyAggregates[d].purchases })),
-      20
-    )
+    // For now, we'll use empty arrays for sparkline trends since we don't have daily data
+    // TODO: Implement daily data aggregation or use weekly data to generate trends
+    const impressionsTrend: number[] = []
+    const clicksTrend: number[] = []
+    const cartAddsTrend: number[] = []
+    const purchasesTrend: number[] = []
     
     // Handle comparison period if provided
-    let comparison = null
+    let comparison: {
+      impressions: number;
+      clicks: number;
+      cartAdds: number;
+      purchases: number;
+    } | null = null
     if (comparisonDateFrom && comparisonDateTo) {
       const { data: comparisonKpis } = await supabase
         .from('search_performance_summary')
@@ -183,7 +150,7 @@ export async function GET(
     }
     
     // Format products data
-    const formattedProducts = (products || []).map((product: any, index: number) => ({
+    const formattedProducts = (products || []).map((product: any) => ({
       id: product.asin,
       name: product.product_title || product.asin,
       childAsin: product.asin,
