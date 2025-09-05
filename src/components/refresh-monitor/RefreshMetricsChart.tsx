@@ -8,6 +8,7 @@ export function RefreshMetricsChart() {
   const [metrics, setMetrics] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [selectedDays, setSelectedDays] = useState(7)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchMetrics()
@@ -15,18 +16,29 @@ export function RefreshMetricsChart() {
 
   const fetchMetrics = async () => {
     setIsLoading(true)
+    setError(null)
     try {
       const response = await fetch(`/api/refresh/metrics?days=${selectedDays}`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`)
+      }
       const data = await response.json()
+      
+      // Validate data structure
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
       setMetrics(data)
     } catch (error) {
       console.error('Failed to fetch metrics:', error)
+      setError(error instanceof Error ? error.message : 'Failed to load metrics')
     } finally {
       setIsLoading(false)
     }
   }
 
-  if (isLoading || !metrics) {
+  if (isLoading) {
     return (
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center justify-center h-64">
@@ -36,14 +48,45 @@ export function RefreshMetricsChart() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!metrics || !metrics.summary) {
+    return (
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-500">No metrics data available</div>
+        </div>
+      </div>
+    )
+  }
+
   const COLORS = ['#10B981', '#EF4444', '#F59E0B', '#6B7280']
+  
+  // Safe property access with defaults
+  const summary = metrics.summary || {}
+  const successful = summary.successful || 0
+  const failed = summary.failed || 0
+  const totalRefreshes = summary.total_refreshes || 0
+  const successRate = summary.overall_success_rate || 0
+  const avgTime = summary.average_refresh_time_minutes || 0
+  const totalRows = summary.total_rows_processed || 0
+  
   const statusBreakdown = [
-    { name: 'Success', value: metrics.summary.successful, color: '#10B981' },
-    { name: 'Failed', value: metrics.summary.failed, color: '#EF4444' },
-    { name: 'Other', value: metrics.summary.total_refreshes - metrics.summary.successful - metrics.summary.failed, color: '#6B7280' }
+    { name: 'Success', value: successful, color: '#10B981' },
+    { name: 'Failed', value: failed, color: '#EF4444' },
+    { name: 'Other', value: Math.max(0, totalRefreshes - successful - failed), color: '#6B7280' }
   ].filter(item => item.value > 0)
 
   const topTables = metrics.table_metrics?.slice(0, 5) || []
+  const dailyMetrics = metrics.daily_metrics || []
 
   return (
     <div className="space-y-6">
@@ -54,11 +97,11 @@ export function RefreshMetricsChart() {
             <div>
               <p className="text-sm text-gray-500">Success Rate</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {metrics.summary.overall_success_rate}%
+                {successRate.toFixed(1)}%
               </p>
             </div>
-            <div className={`p-2 rounded-full ${metrics.summary.overall_success_rate >= 95 ? 'bg-green-100' : 'bg-yellow-100'}`}>
-              {metrics.summary.overall_success_rate >= 95 ? 
+            <div className={`p-2 rounded-full ${successRate >= 95 ? 'bg-green-100' : 'bg-yellow-100'}`}>
+              {successRate >= 95 ? 
                 <TrendingUp className="w-5 h-5 text-green-600" /> : 
                 <TrendingDown className="w-5 h-5 text-yellow-600" />
               }
@@ -71,7 +114,7 @@ export function RefreshMetricsChart() {
             <div>
               <p className="text-sm text-gray-500">Total Refreshes</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {metrics.summary.total_refreshes}
+                {totalRefreshes}
               </p>
             </div>
             <div className="p-2 rounded-full bg-blue-100">
@@ -85,7 +128,7 @@ export function RefreshMetricsChart() {
             <div>
               <p className="text-sm text-gray-500">Avg Duration</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {metrics.summary.average_refresh_time_minutes}m
+                {avgTime.toFixed(1)}m
               </p>
             </div>
           </div>
@@ -96,7 +139,7 @@ export function RefreshMetricsChart() {
             <div>
               <p className="text-sm text-gray-500">Rows Processed</p>
               <p className="text-2xl font-semibold text-gray-900">
-                {(metrics.summary.total_rows_processed / 1000000).toFixed(1)}M
+                {(totalRows / 1000000).toFixed(1)}M
               </p>
             </div>
           </div>
@@ -120,7 +163,7 @@ export function RefreshMetricsChart() {
             </select>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={metrics.daily_metrics}>
+            <LineChart data={dailyMetrics}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey="date" 
