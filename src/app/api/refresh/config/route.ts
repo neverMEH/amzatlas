@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const { id, ...updates } = validation.data
+    const { id, ...updates } = validation.data as any
 
     // Check if there are fields to update
     if (Object.keys(updates).length === 0) {
