@@ -52,7 +52,7 @@ export async function GET() {
       const deliveries = webhook.recent_deliveries || []
       const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000)
       const recentDeliveries = deliveries.filter(
-        d => new Date(d.created_at) > last24h
+        (d: any) => new Date(d.created_at) > last24h
       )
 
       return {
