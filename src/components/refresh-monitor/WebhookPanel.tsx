@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, Check, X, AlertCircle, Send, Eye, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, AlertCircle, Send, Eye, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 
 interface Webhook {
   id: number

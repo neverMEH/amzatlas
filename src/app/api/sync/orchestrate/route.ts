@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '../../../../config/supabase.config'
+import { getSupabaseConfig } from '@/config/supabase.config'
 
 // Orchestrate sync for multiple tables
 export async function POST(request: NextRequest) {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         results.push({
           table: config.table_name,
           status: 'failed',
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         })
       }
 
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Orchestration failed',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )
@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to get orchestration status',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )

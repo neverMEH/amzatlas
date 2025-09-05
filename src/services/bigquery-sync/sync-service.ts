@@ -13,13 +13,14 @@ export interface SyncResult {
 
 export class BigQuerySyncService {
   private bigquery: BigQuery
-  private supabase: ReturnType<typeof createClient>
+  private supabase: any
   
   constructor() {
     const bigQueryConfig = getBigQueryConfig()
     this.bigquery = new BigQuery({
       projectId: bigQueryConfig.projectId,
       credentials: bigQueryConfig.credentials,
+      location: bigQueryConfig.location || 'US'
     })
     
     const supabaseConfig = getSupabaseConfig()
@@ -53,11 +54,14 @@ export class BigQuerySyncService {
         throw new Error(`Table configuration not found for ${tableName}`)
       }
       
+      // Use config directly since supabase is typed as any
+      const refreshConfig = config
+      
       // Create audit log entry
       const { data: auditLog } = await this.supabase
         .from('refresh_audit_log')
         .insert({
-          table_schema: config.table_schema,
+          table_schema: refreshConfig.table_schema,
           table_name: tableName,
           status: 'in_progress',
           refresh_started_at: new Date().toISOString(),
@@ -93,10 +97,14 @@ export class BigQuerySyncService {
         if (truncate) {
           // Clear existing data
           console.log(`Truncating existing data in ${tableName}`)
-          await this.supabase
+          const { error: deleteError } = await this.supabase
             .from(tableName)
             .delete()
             .gte('created_at', '1900-01-01')
+          
+          if (deleteError) {
+            throw new Error(`Failed to truncate table: ${deleteError.message}`)
+          }
         }
         
         // Insert in batches
@@ -123,7 +131,7 @@ export class BigQuerySyncService {
         
         // Update audit log and config
         await this.updateAuditLog(auditLogId, 'success', totalProcessed)
-        await this.updateRefreshConfig(config.id)
+        await this.updateRefreshConfig(refreshConfig.id)
         
         return {
           success: true,
@@ -133,7 +141,7 @@ export class BigQuerySyncService {
         }
         
       } catch (error) {
-        await this.updateAuditLog(auditLogId, 'failed', 0, error.message)
+        await this.updateAuditLog(auditLogId, 'failed', 0, error instanceof Error ? error.message : 'Unknown error')
         throw error
       }
       
@@ -143,7 +151,7 @@ export class BigQuerySyncService {
         success: false,
         table: tableName,
         rowsProcessed: 0,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         duration: Date.now() - startTime
       }
     }
@@ -152,6 +160,15 @@ export class BigQuerySyncService {
   private buildQuery(tableName: string, dateRange?: { start: string; end: string }): string {
     const config = getBigQueryConfig()
     const dataset = config.datasets.production
+    
+    // Map Supabase table names to BigQuery table names
+    const tableMapping: Record<string, string> = {
+      'search_query_performance': 'seller-search_query_performance',
+      'asin_performance_data': 'seller-search_query_performance',
+      'daily_sqp_data': 'seller-search_query_performance'
+    }
+    
+    const bigQueryTable = tableMapping[tableName] || tableName
     
     // Base query for each table type
     const queries: Record<string, string> = {
@@ -170,7 +187,7 @@ export class BigQuerySyncService {
               "Purchases" as purchases
             )
           ) as search_query_performance
-        FROM \`${config.projectId}.${dataset}.search_query_performance\`
+        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
         ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : ''}
         GROUP BY ASIN, "Start Date", "End Date", "Child ASIN"
         LIMIT 1000
@@ -178,7 +195,7 @@ export class BigQuerySyncService {
       
       search_query_performance: `
         SELECT *
-        FROM \`${config.projectId}.${dataset}.search_query_performance\`
+        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
         ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE("End Date") >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
         LIMIT 10000
       `,
@@ -191,7 +208,7 @@ export class BigQuerySyncService {
           SUM(CAST("Clicks" AS INT64)) as clicks,
           SUM(CAST("Cart Adds" AS INT64)) as cart_adds,
           SUM(CAST("Purchases" AS INT64)) as purchases
-        FROM \`${config.projectId}.${dataset}.search_query_performance\`
+        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
         ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE("End Date") >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'}
         GROUP BY ASIN, date
       `

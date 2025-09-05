@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { BigQuerySyncService } from '../../../../services/bigquery-sync/sync-service'
+import { BigQuerySyncService } from '@/services/bigquery-sync/sync-service'
 import { createClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '../../../../config/supabase.config'
+import { getSupabaseConfig } from '@/config/supabase.config'
 
 // This runs in Node.js environment where BigQuery client works properly
 export async function POST(request: NextRequest) {
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Sync failed',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSupabaseConfig } from '../../../../config/supabase.config'
+import { getSupabaseConfig } from '@/config/supabase.config'
 import crypto from 'crypto'
 
 // Process webhook notifications
@@ -131,12 +131,14 @@ export async function POST(request: NextRequest) {
       } catch (error) {
         console.error(`Webhook delivery failed for ${config.endpoint_url}:`, error)
         
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        
         // Update delivery log with error
         await supabase
           .from('webhook_delivery_log')
           .update({
             status: 'failed',
-            error_message: error.message,
+            error_message: errorMessage,
             delivered_at: new Date().toISOString()
           })
           .eq('id', deliveryLog?.id)
@@ -144,7 +146,7 @@ export async function POST(request: NextRequest) {
         deliveryResults.push({
           endpoint: config.endpoint_url,
           status: 'failed',
-          error: error.message
+          error: errorMessage
         })
 
         // Update webhook config failure count
@@ -166,7 +168,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Webhook processing failed',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )
@@ -237,7 +239,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       { 
         error: 'Failed to get webhook status',
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     )
