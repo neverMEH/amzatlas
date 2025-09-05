@@ -1,9 +1,11 @@
 -- Migration: Fix ASIN column length constraint
 -- The ASIN column is currently VARCHAR(10) but some ASINs are 11+ characters long
+-- Note: search_performance_summary is a VIEW, not a MATERIALIZED VIEW
 
 -- Step 1: Drop dependent views and materialized views
 -- We need to drop them in dependency order
 DROP VIEW IF EXISTS public.asin_performance_by_brand CASCADE;
+DROP VIEW IF EXISTS public.search_performance_summary CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS public.search_performance_summary CASCADE;
 DROP VIEW IF EXISTS public.asin_performance_data CASCADE;
 
@@ -65,7 +67,7 @@ GRANT SELECT ON public.asin_performance_data TO authenticated;
 GRANT SELECT ON public.asin_performance_data TO anon;
 GRANT SELECT ON public.asin_performance_data TO service_role;
 
--- Step 4: Recreate search_performance_summary materialized view (if the tables exist)
+-- Step 4: Recreate search_performance_summary view (if the tables exist)
 DO $$
 BEGIN
   IF EXISTS (
@@ -73,7 +75,7 @@ BEGIN
     WHERE table_schema = 'sqp' 
     AND table_name = 'search_query_performance'
   ) THEN
-    CREATE MATERIALIZED VIEW public.search_performance_summary AS
+    CREATE VIEW public.search_performance_summary AS
     WITH performance_data AS (
       SELECT 
         apd.asin,
@@ -97,11 +99,6 @@ BEGIN
     )
     SELECT * FROM performance_data
     WHERE search_query IS NOT NULL;
-
-    -- Create indexes
-    CREATE INDEX idx_sps_asin ON public.search_performance_summary(asin);
-    CREATE INDEX idx_sps_dates ON public.search_performance_summary(start_date, end_date);
-    CREATE INDEX idx_sps_search_query ON public.search_performance_summary(search_query);
 
     -- Grant permissions
     GRANT SELECT ON public.search_performance_summary TO authenticated;
