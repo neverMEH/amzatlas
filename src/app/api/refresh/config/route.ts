@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
       // Could add validation to ensure dependencies exist
       // For now, just ensure it's an array of strings
       if (!Array.isArray(updates.dependencies) || 
-          !updates.dependencies.every(dep => typeof dep === 'string')) {
+          !updates.dependencies.every((dep: any) => typeof dep === 'string')) {
         return NextResponse.json(
           { error: 'Invalid dependencies: must be an array of table names' },
           { status: 400 }
