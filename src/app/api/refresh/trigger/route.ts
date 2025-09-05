@@ -15,6 +15,18 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
+    // Clean up any stuck "running" processes older than 30 minutes
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+    await supabase
+      .from('refresh_audit_log')
+      .update({ 
+        status: 'failed',
+        error_message: 'Process timed out',
+        refresh_completed_at: new Date().toISOString()
+      })
+      .eq('status', 'running')
+      .lt('refresh_started_at', thirtyMinutesAgo)
+    
     // Parse and validate request body
     let body
     try {
@@ -43,8 +55,8 @@ export async function POST(request: NextRequest) {
         const syncService = new BigQuerySyncService()
         
         const results = []
-        // Start with just the highest priority table, then add others if needed
-        const tables = ['asin_performance_data']
+        // Sync search_query_performance which contains the actual performance data
+        const tables = ['search_query_performance']
         
         for (const tableName of tables) {
           const result = await syncService.syncTable(tableName, {

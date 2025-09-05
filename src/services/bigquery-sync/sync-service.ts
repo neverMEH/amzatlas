@@ -237,16 +237,14 @@ export class BigQuerySyncService {
     }
     
     if (tableName === 'asin_performance_data') {
+      // This table only stores basic ASIN info, not metrics
+      // The metrics are stored in search_query_performance table
       return data.map(row => ({
         asin: row.asin,
         start_date: row.start_date,
         end_date: row.end_date,
-        child_asin: row.child_asin,
-        // Aggregate metrics from nested data
-        total_impressions: row.search_query_performance?.reduce((sum: number, sq: any) => sum + sq.impressions, 0) || 0,
-        total_clicks: row.search_query_performance?.reduce((sum: number, sq: any) => sum + sq.clicks, 0) || 0,
-        total_cart_adds: row.search_query_performance?.reduce((sum: number, sq: any) => sum + sq.cart_adds, 0) || 0,
-        total_purchases: row.search_query_performance?.reduce((sum: number, sq: any) => sum + sq.purchases, 0) || 0,
+        // Note: child_asin, total_impressions etc don't exist in this table
+        // This is just a parent record for search_query_performance entries
       }))
     }
     
