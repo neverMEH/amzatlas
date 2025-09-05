@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const validation = triggerSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid request parameters', details: validation.error.errors },
+        { error: 'Invalid request parameters', details: validation.error.issues },
         { status: 400 }
       )
     }

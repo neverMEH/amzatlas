@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     const validation = webhookSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid webhook configuration', details: validation.error.errors },
+        { error: 'Invalid webhook configuration', details: validation.error.issues },
         { status: 400 }
       )
     }
@@ -202,7 +202,7 @@ export async function PUT(request: NextRequest) {
     const validation = updateWebhookSchema.safeParse(body)
     if (!validation.success) {
       return NextResponse.json(
-        { error: 'Invalid update parameters', details: validation.error.errors },
+        { error: 'Invalid update parameters', details: validation.error.issues },
         { status: 400 }
       )
     }
