@@ -12,7 +12,7 @@ const webhookSchema = z.object({
   secret: z.string().optional(),
   events: z.array(z.enum(['refresh.completed', 'refresh.failed', 'refresh.warning'])).min(1),
   is_enabled: z.boolean().optional().default(true),
-  headers: z.record(z.string()).optional().default({}),
+  headers: z.record(z.string(), z.string()).optional().default({}),
   retry_config: z.object({
     max_attempts: z.number().min(1).max(10).optional().default(3),
     backoff_seconds: z.array(z.number()).optional().default([5, 30, 300])
