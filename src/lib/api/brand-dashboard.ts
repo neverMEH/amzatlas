@@ -62,6 +62,14 @@ interface SearchQueryData {
   purchaseShareComparison?: number
 }
 
+interface TimeSeriesPoint {
+  date: string
+  impressions: number
+  clicks: number
+  cartAdds: number
+  purchases: number
+}
+
 interface BrandDashboardResponse {
   data: {
     kpis: {
@@ -70,6 +78,7 @@ interface BrandDashboardResponse {
       cartAdds: KPIData
       purchases: KPIData
     }
+    timeSeries: TimeSeriesPoint[]
     products: ProductData[]
     searchQueries: SearchQueryData[]
   }

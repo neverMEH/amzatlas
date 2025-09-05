@@ -97,26 +97,89 @@ export async function GET(
       { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
     )
     
-    // Generate sparkline trends from weekly data
-    // Since we have weekly data, we'll create a simple trend based on the aggregated totals
-    const generateSimpleSparkline = (total: number, points: number = 20): number[] => {
-      if (total === 0) return Array(points).fill(0)
-      
-      // Create a simple upward trend that sums to the total
-      const avgPerPoint = total / points
-      const variance = avgPerPoint * 0.2 // 20% variance
-      
-      return Array(points).fill(0).map((_, i) => {
-        // Add some variance to make it look more realistic
-        const randomVariance = (Math.random() - 0.5) * variance * 2
-        return Math.max(0, Math.round(avgPerPoint + randomVariance))
-      })
+    // Fetch weekly time series data for the brand
+    const { data: weeklyData, error: weeklyError } = await supabase
+      .from('search_performance_summary')
+      .select('start_date, end_date, impressions, clicks, cart_adds, purchases')
+      .in('asin', asinList)
+      .gte('start_date', dateFrom)
+      .lte('end_date', dateTo)
+      .order('start_date', { ascending: true })
+    
+    if (weeklyError) {
+      throw weeklyError
     }
     
-    const impressionsTrend = generateSimpleSparkline(kpiTotals.impressions)
-    const clicksTrend = generateSimpleSparkline(kpiTotals.clicks)
-    const cartAddsTrend = generateSimpleSparkline(kpiTotals.cartAdds)
-    const purchasesTrend = generateSimpleSparkline(kpiTotals.purchases)
+    // Aggregate weekly data by date range for the brand
+    const weeklyAggregates = (weeklyData || []).reduce((acc: Record<string, any>, row: any) => {
+      const weekKey = row.start_date
+      if (!acc[weekKey]) {
+        acc[weekKey] = { 
+          start_date: row.start_date,
+          end_date: row.end_date,
+          impressions: 0, 
+          clicks: 0, 
+          cartAdds: 0, 
+          purchases: 0 
+        }
+      }
+      acc[weekKey].impressions += row.impressions || 0
+      acc[weekKey].clicks += row.clicks || 0
+      acc[weekKey].cartAdds += row.cart_adds || 0
+      acc[weekKey].purchases += row.purchases || 0
+      return acc
+    }, {})
+    
+    // Convert to array and sort by date
+    const timeSeries = Object.values(weeklyAggregates)
+      .sort((a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+      .map((week: any) => ({
+        date: week.start_date,
+        impressions: week.impressions,
+        clicks: week.clicks,
+        cartAdds: week.cartAdds,
+        purchases: week.purchases,
+      }))
+    
+    // Fetch last 5 weeks of data specifically for sparklines
+    const fiveWeeksAgo = new Date()
+    fiveWeeksAgo.setDate(fiveWeeksAgo.getDate() - 35) // 5 weeks
+    
+    const { data: sparklineData, error: sparklineError } = await supabase
+      .from('search_performance_summary')
+      .select('start_date, impressions, clicks, cart_adds, purchases')
+      .in('asin', asinList)
+      .gte('start_date', fiveWeeksAgo.toISOString().split('T')[0])
+      .order('start_date', { ascending: true })
+    
+    if (sparklineError) {
+      console.error('Error fetching sparkline data:', sparklineError)
+    }
+    
+    // Aggregate sparkline data by week
+    const sparklineAggregates = (sparklineData || []).reduce((acc: Record<string, any>, row: any) => {
+      const weekKey = row.start_date
+      if (!acc[weekKey]) {
+        acc[weekKey] = { 
+          impressions: 0, 
+          clicks: 0, 
+          cartAdds: 0, 
+          purchases: 0 
+        }
+      }
+      acc[weekKey].impressions += row.impressions || 0
+      acc[weekKey].clicks += row.clicks || 0
+      acc[weekKey].cartAdds += row.cart_adds || 0
+      acc[weekKey].purchases += row.purchases || 0
+      return acc
+    }, {})
+    
+    // Convert to arrays for sparklines (last 5 weeks)
+    const sparklineWeeks = Object.keys(sparklineAggregates).sort().slice(-5)
+    const impressionsTrend = sparklineWeeks.map(week => sparklineAggregates[week].impressions)
+    const clicksTrend = sparklineWeeks.map(week => sparklineAggregates[week].clicks)
+    const cartAddsTrend = sparklineWeeks.map(week => sparklineAggregates[week].cartAdds)
+    const purchasesTrend = sparklineWeeks.map(week => sparklineAggregates[week].purchases)
     
     // Handle comparison period if provided
     let comparison: {
@@ -285,6 +348,7 @@ export async function GET(
             comparison: comparison?.purchases,
           },
         },
+        timeSeries,  // Add the weekly time series data
         products: formattedProducts,
         searchQueries: formattedQueries,
       },
