@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-09-06T10:35:34.423Z",
+  "totalTablesChecked": 8,
+  "unusedTables": [],
+  "usedTables": [
+    {
+      "table": "brand_query_stats",
+      "referenceCount": 3
+    },
+    {
+      "table": "report_configurations",
+      "referenceCount": 12
+    },
+    {
+      "table": "report_recipients",
+      "referenceCount": 4
+    },
+    {
+      "table": "report_execution_history",
+      "referenceCount": 14
+    },
+    {
+      "table": "report_queue",
+      "referenceCount": 10
+    },
+    {
+      "table": "refresh_data_quality",
+      "referenceCount": 3
+    },
+    {
+      "table": "refresh_checkpoints",
+      "referenceCount": 10
+    },
+    {
+      "table": "webhook_deliveries",
+      "referenceCount": 5
+    }
+  ],
+  "dropStatements": []
+}
