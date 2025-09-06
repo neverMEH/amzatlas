@@ -10,30 +10,33 @@ Additionally, there are multiple dependent views and materialized views that pre
 
 ## Solution
 
-### Recommended: Use the Final Safe Migration
+### Recommended: Use the Simplified Migration
 Run three migrations in order:
-1. `031_fix_asin_column_final_safe.sql` - Fixes the ASIN column length (checks each object individually)
+1. `031_fix_asin_column_simple.sql` - Fixes the ASIN column length (simplified approach)
 2. `032_recreate_asin_performance_by_brand.sql` - Recreates the brand performance view
 3. `033_recreate_brand_search_query_metrics.sql` - Recreates the brand search query metrics
 
 ### Why This Works
-The final safe migration:
-- Checks each object individually to determine if it's a TABLE, VIEW, or MATERIALIZED VIEW
-- Only drops the appropriate type (no more "not a view" or "not a materialized view" errors)
-- Provides detailed logging throughout the process
-- Handles all tables with ASIN columns
+The simplified migration:
+- Drops all views with IF EXISTS (won't error if they don't exist)
+- Keeps all SQL statements properly within DO blocks
+- Dynamically finds and updates all tables with ASIN columns
+- Provides logging throughout the process
 
 ## Steps
 
-### Using the Final Safe Migration
+### Using the Corrected Migration (Recommended)
 
 #### Step 1: Fix ASIN Column Length
 1. Go to your Supabase Dashboard
 2. Navigate to the SQL Editor
-3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_final_safe.sql`
+3. Copy and paste the entire contents of `/src/lib/supabase/migrations/031_fix_asin_column_corrected.sql`
 4. Click "Run" to execute the migration
+   - This version fixes the syntax error by wrapping ALL statements in DO blocks
    - You'll see detailed logging showing each object being checked and handled
    - The migration will report the final status of all ASIN columns
+
+**Note**: Use `031_fix_asin_column_corrected.sql` instead of the other versions as it properly handles the RAISE NOTICE syntax.
 
 #### Step 2: Recreate Brand Performance View
 1. After the first migration completes successfully

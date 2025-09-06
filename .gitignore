@@ -41,3 +41,19 @@ next-env.d.ts
 /credentials
 google-credentials.json
 service-account.json
+
+# local test files
+test-*.ts
+setup-*.ts
+direct-*.ts
+*-test-*.sql
+
+# migration backups
+migrations_backup_*/
+
+# temporary reports
+table-usage-report.json
+
+# supabase local
+supabase/.temp/
+supabase/.branches/
