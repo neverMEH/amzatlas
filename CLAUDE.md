@@ -72,6 +72,12 @@ All API routes follow a consistent error response format:
 - Batch processing for data sync (weekly batches of ~30k rows)
 - Connection pooling for BigQuery operations
 
+#### Next.js App Router Conventions
+- All API routes use the App Router pattern in `/src/app/api/`
+- Route handlers export named functions: `GET`, `POST`, `PUT`, `DELETE`
+- Dynamic routes use brackets: `[id]/route.ts`
+- Nested layouts for shared UI components
+
 ## Environment Setup
 
 ### Required Environment Variables
@@ -147,7 +153,7 @@ npm run build            # Production build
 npm run build:debug     # Debug build issues
 npm run start           # Start production server
 npm run lint            # Run ESLint  
-npx tsc --noEmit        # Run TypeScript type checking
+npm run typecheck       # Run TypeScript type checking (or use: npx tsc --noEmit)
 ```
 
 ### Testing
@@ -159,6 +165,11 @@ npm run test:coverage   # Test coverage report
 # Run specific tests
 vitest run path/to/test.ts  # Run a single test file
 vitest run keyword         # Run tests matching a pattern
+
+# Test specific features
+npm run test:current-date    # Test current date handling
+npm run test:date-utils      # Test date utility functions
+npm run test:dashboard-dates # Test dashboard date components
 ```
 
 ### Database Operations
@@ -193,6 +204,15 @@ npm run verify:schema         # Verify BigQuery schema matches expectations
 ```bash
 npm run seed:db            # Seed database with test data
 npm run fix:columns        # Add missing columns to tables
+```
+
+### Migration Analysis & Maintenance
+```bash
+npx tsx src/scripts/analyze-migrations.ts      # Analyze migration files for duplicates
+npx tsx src/scripts/consolidate-migrations.ts  # Consolidate duplicate migrations
+npx tsx src/scripts/backup-migrations.ts       # Create migration backup
+npx tsx src/scripts/scan-table-usage.ts       # Scan codebase for table references
+npx tsx src/scripts/check-applied-migrations.ts # Check which migrations are applied
 ```
 
 ## API Endpoints
@@ -414,6 +434,12 @@ npm run fix:columns        # Add missing columns to tables
 - `042_create_report_configuration_tables.sql` - Report system infrastructure
 - `/src/lib/supabase/migrations/README_MIGRATION_ORDER.md` - Complete migration sequence documentation
 
+### Migration Consolidation (Sep 2025)
+- Cleaned up 27 duplicate migration files across 9 migration numbers
+- Consolidated into 3 main migrations: 031, 032, and 033
+- Renumbered migrations 025-029 to 036-047 for sequential ordering
+- Total reduction from 60 to 47 migration files (22% reduction)
+
 ### Data Sync Implementation (Dec 2024)
 - **BigQuery Schema**: Discovered flat structure with space-separated column names (e.g., `Child ASIN`, `Search Query`)
 - **Date Handling**: BigQuery returns dates as objects with `value` property, requiring conversion
@@ -487,6 +513,8 @@ npm run verify:schema         # Validate schema consistency
 - **Migration Guide**: `/docs/bigquery-schema-migration.md` - Schema migration details
 - **Migration Order**: `/src/lib/supabase/migrations/README_MIGRATION_ORDER.md` - Migration sequence
 - **Supabase README**: `/src/lib/supabase/README.md` - Database documentation
+
+**Note**: The repository's README.md incorrectly shows Supabase CLI documentation. This is actually the SQP Intelligence project for Amazon Search Query Performance analysis.
 
 For questions or issues, refer to the test scripts in `/src/scripts/` for debugging utilities and examples.
 
