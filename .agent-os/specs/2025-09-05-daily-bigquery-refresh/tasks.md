@@ -38,14 +38,14 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
   - [x] 3.8 Verify all tests pass
 
 - [ ] 4. API Endpoints and Monitoring
-  - [ ] 4.1 Write tests for refresh status endpoints
-  - [ ] 4.2 Implement GET /api/refresh/status endpoint
-  - [ ] 4.3 Create POST /api/refresh/trigger for manual runs
-  - [ ] 4.4 Build refresh history and metrics endpoints
-  - [ ] 4.5 Add configuration management endpoints
-  - [ ] 4.6 Create monitoring views and dashboards
-  - [ ] 4.7 Implement webhook notification system
-  - [ ] 4.8 Verify all tests pass
+  - [x] 4.1 Write tests for refresh status endpoints ✅
+  - [x] 4.2 Implement GET /api/refresh/status endpoint ✅
+  - [x] 4.3 Create POST /api/refresh/trigger for manual runs ✅
+  - [x] 4.4 Build refresh history and metrics endpoints ✅
+  - [x] 4.5 Add configuration management endpoints ✅
+  - [x] 4.6 Create monitoring views and dashboards ✅
+  - [x] 4.7 Implement webhook notification system ✅
+  - [ ] 4.8 Verify all tests pass ⚠️ Blocking issue: Fixed status and config tests. Trigger tests need complete mock rewrite to match current BigQuerySyncService implementation. History tests appear to have proper mocks.
 
 - [ ] 5. Migration and Production Deployment
   - [ ] 5.1 Write integration tests for complete refresh cycle

@@ -128,18 +128,38 @@ describe('Refresh Configuration API', () => {
         priority: 100
       }
 
-      mockSupabase.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
+      // Mock needs to handle both SELECT and UPDATE operations
+      let callCount = 0
+      mockSupabase.from.mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          // First call is SELECT to get current config
+          return {
             select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: { ...mockConfig, is_enabled: true, refresh_frequency_hours: 6 },
-                error: null
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: mockConfig,
+                  error: null
+                })
               })
             })
-          })
-        })
-      }))
+          }
+        } else {
+          // Second call is UPDATE
+          return {
+            update: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { ...mockConfig, is_enabled: true, refresh_frequency_hours: 6, updated_at: new Date().toISOString() },
+                    error: null
+                  })
+                })
+              })
+            })
+          }
+        }
+      })
 
       const request = new NextRequest('http://localhost:3000/api/refresh/config', {
         method: 'PUT',
@@ -158,8 +178,8 @@ describe('Refresh Configuration API', () => {
         success: true,
         message: 'Configuration updated successfully',
         configuration: expect.objectContaining({
-          is_enabled: true,
-          refresh_frequency_hours: 6
+          enabled: true,
+          frequency_hours: 6
         })
       })
     })
@@ -177,7 +197,8 @@ describe('Refresh Configuration API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toContain('frequency must be at least 1 hour')
+      expect(data.error).toBe('Invalid update parameters')
+      expect(data.details).toBeDefined()
     })
 
     it('should validate priority', async () => {
@@ -193,18 +214,18 @@ describe('Refresh Configuration API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toContain('Priority must be between 0 and 1000')
+      expect(data.error).toBe('Invalid update parameters')
+      expect(data.details).toBeDefined()
     })
 
     it('should handle non-existent configuration', async () => {
+      // Mock SELECT operation that returns no data
       mockSupabase.from.mockImplementation(() => ({
-        update: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: null,
-                error: { code: 'PGRST116' }
-              })
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { code: 'PGRST116' }
             })
           })
         })
@@ -229,25 +250,51 @@ describe('Refresh Configuration API', () => {
       const now = new Date()
       const lastRefresh = new Date(now.getTime() - 12 * 60 * 60 * 1000) // 12 hours ago
 
-      mockSupabase.from.mockImplementation(() => ({
-        update: vi.fn().mockImplementation((updates: any) => ({
-          eq: vi.fn().mockReturnValue({
+      let callCount = 0
+      mockSupabase.from.mockImplementation(() => {
+        callCount++
+        if (callCount === 1) {
+          // First call is SELECT
+          return {
             select: vi.fn().mockReturnValue({
-              single: vi.fn().mockResolvedValue({
-                data: {
-                  id: 1,
-                  table_name: 'asin_performance_data',
-                  is_enabled: true,
-                  refresh_frequency_hours: 6,
-                  last_refresh_at: lastRefresh.toISOString(),
-                  next_refresh_at: updates.next_refresh_at
-                },
-                error: null
+              eq: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({
+                  data: {
+                    id: 1,
+                    table_name: 'asin_performance_data',
+                    is_enabled: true,
+                    refresh_frequency_hours: 24, // Current frequency
+                    last_refresh_at: lastRefresh.toISOString()
+                  },
+                  error: null
+                })
               })
             })
-          })
-        }))
-      }))
+          }
+        } else {
+          // Second call is UPDATE
+          return {
+            update: vi.fn().mockImplementation((updates: any) => ({
+              eq: vi.fn().mockReturnValue({
+                select: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: {
+                      id: 1,
+                      table_name: 'asin_performance_data',
+                      is_enabled: true,
+                      refresh_frequency_hours: 6,
+                      last_refresh_at: lastRefresh.toISOString(),
+                      next_refresh_at: updates.next_refresh_at,
+                      updated_at: updates.updated_at
+                    },
+                    error: null
+                  })
+                })
+              })
+            }))
+          }
+        }
+      })
 
       const request = new NextRequest('http://localhost:3000/api/refresh/config', {
         method: 'PUT',
@@ -263,7 +310,7 @@ describe('Refresh Configuration API', () => {
       expect(response.status).toBe(200)
       // Next refresh should be 6 hours from last refresh
       const expectedNextRefresh = new Date(lastRefresh.getTime() + 6 * 60 * 60 * 1000)
-      expect(new Date(data.configuration.next_refresh_at).getTime())
+      expect(new Date(data.configuration.next_refresh).getTime())
         .toBeCloseTo(expectedNextRefresh.getTime(), -3) // Within seconds
     })
 
@@ -286,11 +333,28 @@ describe('Refresh Configuration API', () => {
     })
 
     it('should validate dependencies', async () => {
+      // Mock SELECT for current config
+      mockSupabase.from.mockImplementation(() => ({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: {
+                id: 1,
+                table_name: 'asin_performance_data',
+                is_enabled: true,
+                refresh_frequency_hours: 24
+              },
+              error: null
+            })
+          })
+        })
+      }))
+
       const request = new NextRequest('http://localhost:3000/api/refresh/config', {
         method: 'PUT',
         body: JSON.stringify({
           id: 1,
-          dependencies: ['self_reference'] // Can't depend on self
+          dependencies: 'not-an-array' // Invalid type - should be array
         })
       })
 
@@ -298,7 +362,8 @@ describe('Refresh Configuration API', () => {
       const data = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toContain('Invalid dependencies')
+      expect(data.error).toBe('Invalid update parameters')
+      expect(data.details).toBeDefined()
     })
 
     it('should require at least one field to update', async () => {

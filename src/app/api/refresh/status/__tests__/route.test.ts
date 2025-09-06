@@ -68,10 +68,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: mockRecentLogs,
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: mockRecentLogs,
+                    error: null
+                  })
                 })
               })
             })
@@ -97,6 +99,13 @@ describe('GET /api/refresh/status', () => {
           last_refresh_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // 2 days old
           next_refresh_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Past due
           refresh_frequency_hours: 24
+        },
+        {
+          table_name: 'search_query_performance',
+          is_enabled: true,
+          last_refresh_at: new Date().toISOString(), // Recently refreshed
+          next_refresh_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // Not due yet
+          refresh_frequency_hours: 24
         }
       ]
 
@@ -114,10 +123,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [],
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: [],
+                    error: null
+                  })
                 })
               })
             })
@@ -157,10 +168,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: mockRecentLogs,
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: mockRecentLogs,
+                    error: null
+                  })
                 })
               })
             })
@@ -206,10 +219,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [],
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: [],
+                    error: null
+                  })
                 })
               })
             })
@@ -259,10 +274,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: [],
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: [],
+                    error: null
+                  })
                 })
               })
             })
@@ -334,10 +351,12 @@ describe('GET /api/refresh/status', () => {
         if (table === 'refresh_audit_log') {
           return {
             select: vi.fn().mockReturnValue({
-              order: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue({
-                  data: mockRecentLogs,
-                  error: null
+              gte: vi.fn().mockReturnValue({
+                order: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue({
+                    data: mockRecentLogs,
+                    error: null
+                  })
                 })
               })
             })
