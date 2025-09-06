@@ -1,0 +1,33 @@
+{
+  "timestamp": "2025-09-06T12:06:57.485Z",
+  "allPassed": false,
+  "results": [
+    {
+      "phase": "BigQuery Data Check",
+      "success": false,
+      "details": {
+        "rowsProcessed": 0,
+        "duration": 1004,
+        "error": "Could not cast literal \"End Date\" to type TIMESTAMP at [17:20]"
+      }
+    },
+    {
+      "phase": "Search Query Sync",
+      "success": false,
+      "details": {
+        "rowsProcessed": 0,
+        "duration": 8278,
+        "error": "Insert failed at batch 3: cannot insert a non-DEFAULT value into column \"impressions_sum\""
+      }
+    },
+    {
+      "phase": "ASIN Length Test",
+      "success": false,
+      "details": {
+        "noErrors": true,
+        "rowsProcessed": 0,
+        "success": false
+      }
+    }
+  ]
+}

@@ -1,98 +1,175 @@
-#!/usr/bin/env tsx
-import { createClient } from '@supabase/supabase-js'
-import { promises as fs } from 'fs'
-import path from 'path'
-import dotenv from 'dotenv'
+#!/usr/bin/env node
+import * as fs from 'fs'
+import * as path from 'path'
 
-// Load environment variables
-dotenv.config()
-
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  console.error('Missing required environment variables')
-  process.exit(1)
+interface ValidationResult {
+  file: string
+  valid: boolean
+  errors: string[]
+  warnings: string[]
 }
 
-async function validateMigration() {
-  console.log('🔍 Validating migration syntax...\n')
+function validateSQLSyntax(content: string, filename: string): ValidationResult {
+  const result: ValidationResult = {
+    file: filename,
+    valid: true,
+    errors: [],
+    warnings: []
+  }
 
-  try {
-    // Read the migration file
-    const migrationPath = path.join(__dirname, '../lib/supabase/migrations/031_fix_asin_column_simple.sql')
-    const migrationSQL = await fs.readFile(migrationPath, 'utf-8')
+  // Check for basic syntax patterns
+  const lines = content.split('\n')
+  let inDOBlock = false
+  let doBlockCount = 0
+  let endBlockCount = 0
+  let openParens = 0
+  let openQuotes = 0
+
+  lines.forEach((line, lineNum) => {
+    const trimmedLine = line.trim()
     
-    console.log('📋 Migration file loaded')
-    console.log(`Size: ${migrationSQL.length} characters`)
-    console.log(`Lines: ${migrationSQL.split('\n').length}`)
-    
-    // Check for common syntax issues
-    const issues: string[] = []
-    
-    // Check for RAISE NOTICE outside of DO blocks
-    const lines = migrationSQL.split('\n')
-    let inDoBlock = false
-    let blockDepth = 0
-    
-    lines.forEach((line, idx) => {
-      const trimmed = line.trim()
-      
-      // Track DO block status
-      if (trimmed.toUpperCase().startsWith('DO $$')) {
-        inDoBlock = true
-        blockDepth++
-      }
-      if (trimmed === '$$;' || trimmed.endsWith('$$;')) {
-        blockDepth--
-        if (blockDepth === 0) inDoBlock = false
-      }
-      
-      // Check for RAISE NOTICE outside DO blocks
-      if (trimmed.toUpperCase().startsWith('RAISE NOTICE') && !inDoBlock) {
-        issues.push(`Line ${idx + 1}: RAISE NOTICE outside of DO block`)
-      }
-      
-      // Check for unmatched quotes
-      const singleQuotes = (line.match(/'/g) || []).length
-      const doubleQuotes = (line.match(/"/g) || []).length
-      if (singleQuotes % 2 !== 0) {
-        issues.push(`Line ${idx + 1}: Unmatched single quotes`)
-      }
-      if (doubleQuotes % 2 !== 0 && !line.includes('--')) {
-        issues.push(`Line ${idx + 1}: Unmatched double quotes`)
-      }
-    })
-    
-    // Check for missing semicolons
-    const statements = migrationSQL.split(/;\s*$/m).filter(s => s.trim())
-    statements.forEach((stmt, idx) => {
-      const trimmed = stmt.trim()
-      if (trimmed && !trimmed.endsWith(';') && !trimmed.endsWith('$$') && idx < statements.length - 1) {
-        const firstLine = trimmed.split('\n')[0]
-        if (!firstLine.startsWith('--')) {
-          issues.push(`Statement ${idx + 1}: Missing semicolon (starts with: ${firstLine.substring(0, 50)}...)`)
-        }
-      }
-    })
-    
-    if (issues.length > 0) {
-      console.log('\n❌ Found syntax issues:')
-      issues.forEach(issue => console.log(`  - ${issue}`))
-    } else {
-      console.log('\n✅ No obvious syntax issues found')
+    // Skip comments
+    if (trimmedLine.startsWith('--') || trimmedLine === '') {
+      return
+    }
+
+    // Check for DO blocks
+    if (trimmedLine.startsWith('DO $$')) {
+      inDOBlock = true
+      doBlockCount++
     }
     
-    console.log('\n📝 Migration Summary:')
-    console.log('- Drops all dependent views')
-    console.log('- Alters ASIN columns to VARCHAR(20)')
-    console.log('- Recreates necessary views')
-    console.log('- All RAISE NOTICE statements are inside DO blocks')
-    
+    if (trimmedLine === 'END $$;') {
+      inDOBlock = false
+      endBlockCount++
+    }
+
+    // Check for RAISE NOTICE outside DO blocks
+    if (trimmedLine.includes('RAISE NOTICE') && !inDOBlock) {
+      result.errors.push(`Line ${lineNum + 1}: RAISE NOTICE found outside DO block`)
+      result.valid = false
+    }
+
+    // Check for unbalanced parentheses
+    for (const char of line) {
+      if (char === '(' && openQuotes % 2 === 0) openParens++
+      if (char === ')' && openQuotes % 2 === 0) openParens--
+      if (char === "'") openQuotes++
+    }
+
+    // Check for common SQL errors
+    if (trimmedLine.endsWith(',') && lines[lineNum + 1]?.trim().startsWith(')')) {
+      result.warnings.push(`Line ${lineNum + 1}: Trailing comma before closing parenthesis`)
+    }
+
+    // Check for missing semicolons
+    if (trimmedLine.length > 0 && 
+        !trimmedLine.endsWith(';') && 
+        !trimmedLine.endsWith('$$') &&
+        !trimmedLine.startsWith('--') &&
+        !inDOBlock &&
+        lineNum < lines.length - 1) {
+      const nextLine = lines[lineNum + 1]?.trim() || ''
+      if (!nextLine.startsWith('FROM') && 
+          !nextLine.startsWith('WHERE') && 
+          !nextLine.startsWith('AND') &&
+          !nextLine.startsWith('OR') &&
+          !nextLine.startsWith('JOIN') &&
+          !nextLine.startsWith('ORDER') &&
+          !nextLine.startsWith('GROUP') &&
+          !nextLine.startsWith('UNION') &&
+          !nextLine.startsWith(',')) {
+        // Check if this might be a complete statement
+        if (trimmedLine.match(/^(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE|GRANT|COMMENT)/i)) {
+          result.warnings.push(`Line ${lineNum + 1}: Statement might be missing semicolon`)
+        }
+      }
+    }
+  })
+
+  // Final checks
+  if (doBlockCount !== endBlockCount) {
+    result.errors.push(`Unbalanced DO blocks: ${doBlockCount} DO $$ but ${endBlockCount} END $$;`)
+    result.valid = false
+  }
+
+  if (openParens !== 0) {
+    result.errors.push(`Unbalanced parentheses: ${openParens > 0 ? openParens + ' unclosed' : Math.abs(openParens) + ' extra closing'}`)
+    result.valid = false
+  }
+
+  if (openQuotes % 2 !== 0) {
+    result.errors.push('Unbalanced quotes')
+    result.valid = false
+  }
+
+  return result
+}
+
+function validateMigrationFile(filepath: string): ValidationResult {
+  try {
+    const content = fs.readFileSync(filepath, 'utf8')
+    return validateSQLSyntax(content, path.basename(filepath))
   } catch (error) {
-    console.error('Error:', error)
+    return {
+      file: path.basename(filepath),
+      valid: false,
+      errors: [`Failed to read file: ${error}`],
+      warnings: []
+    }
   }
 }
 
-// Run validation
-validateMigration()
+async function main() {
+  console.log('=== SQL Migration Syntax Validator ===\n')
+
+  // Check specific migration files
+  const migrationFiles = [
+    '/root/amzatlas/migrations_backup_2025_09_06/031_fix_asin_column_corrected.sql',
+    '/root/amzatlas/migrations_backup_2025_09_06/032_recreate_asin_performance_by_brand.sql',
+    '/root/amzatlas/migrations_backup_2025_09_06/033_recreate_brand_search_query_metrics.sql'
+  ]
+
+  let allValid = true
+
+  for (const file of migrationFiles) {
+    if (fs.existsSync(file)) {
+      const result = validateMigrationFile(file)
+      
+      console.log(`\nFile: ${result.file}`)
+      console.log(`Status: ${result.valid ? '✅ VALID' : '❌ INVALID'}`)
+      
+      if (result.errors.length > 0) {
+        console.log('\nErrors:')
+        result.errors.forEach(err => console.log(`  - ${err}`))
+        allValid = false
+      }
+      
+      if (result.warnings.length > 0) {
+        console.log('\nWarnings:')
+        result.warnings.forEach(warn => console.log(`  - ${warn}`))
+      }
+      
+      if (result.valid && result.errors.length === 0 && result.warnings.length === 0) {
+        console.log('  No issues found')
+      }
+    } else {
+      console.log(`\nFile not found: ${file}`)
+      allValid = false
+    }
+  }
+
+  console.log('\n=== Summary ===')
+  console.log(`Overall status: ${allValid ? '✅ All files valid' : '❌ Some files have issues'}`)
+  
+  if (allValid) {
+    console.log('\nThe migration files appear to have valid SQL syntax.')
+    console.log('They should be safe to execute in Supabase.')
+  } else {
+    console.log('\nPlease fix the errors before executing the migrations.')
+  }
+
+  process.exit(allValid ? 0 : 1)
+}
+
+main()

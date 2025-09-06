@@ -1,0 +1,48 @@
+{
+  "timestamp": "2025-09-06T12:00:14.047Z",
+  "checksPerformed": 8,
+  "checksPassed": 6,
+  "status": "FAILED",
+  "details": [
+    {
+      "check": "View public.asin_performance_data",
+      "passed": true,
+      "details": "Accessible (3531 rows)"
+    },
+    {
+      "check": "View public.asin_performance_by_brand",
+      "passed": true,
+      "details": "Accessible (83 rows)"
+    },
+    {
+      "check": "View public.search_performance_summary",
+      "passed": true,
+      "details": "Accessible (204515 rows)"
+    },
+    {
+      "check": "Table sqp.asin_performance_data",
+      "passed": true,
+      "details": "Has 3531 rows"
+    },
+    {
+      "check": "Table sqp.search_query_performance",
+      "passed": true,
+      "details": "Has 204515 rows"
+    },
+    {
+      "check": "Table sqp.daily_sqp_data",
+      "passed": false,
+      "details": "Has null rows"
+    },
+    {
+      "check": "ASIN length support",
+      "passed": false,
+      "details": "'length' is not an embedded resource in this request"
+    },
+    {
+      "check": "Database dependencies",
+      "passed": true,
+      "details": "All views functional - dependencies intact"
+    }
+  ]
+}

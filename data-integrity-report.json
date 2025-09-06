@@ -1,0 +1,48 @@
+{
+  "timestamp": "2025-09-06T12:02:04.107Z",
+  "checksPerformed": 8,
+  "checksPassed": 8,
+  "allPassed": true,
+  "details": [
+    {
+      "test": "Row count consistency",
+      "passed": true,
+      "details": "Table: 3531 rows, View: 3531 rows"
+    },
+    {
+      "test": "No NULL ASINs",
+      "passed": true,
+      "details": "All ASINs have values"
+    },
+    {
+      "test": "ASIN format validity",
+      "passed": true,
+      "details": "All sampled ASINs have valid format"
+    },
+    {
+      "test": "Date range validity",
+      "passed": true,
+      "details": "All date ranges are valid"
+    },
+    {
+      "test": "View asin_performance_data returns data",
+      "passed": true,
+      "details": "Returns 1 rows in sample"
+    },
+    {
+      "test": "View asin_performance_by_brand returns data",
+      "passed": true,
+      "details": "Returns 1 rows in sample"
+    },
+    {
+      "test": "View search_performance_summary returns data",
+      "passed": true,
+      "details": "Returns 1 rows in sample"
+    },
+    {
+      "test": "Metric logical consistency",
+      "passed": true,
+      "details": "All metrics are logically consistent"
+    }
+  ]
+}
