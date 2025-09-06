@@ -40,6 +40,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Reporting**: Automated report generation and performance analysis
 - **Brand Management**: Automatic ASIN-to-brand mapping with pattern matching
 
+### Important Architecture Patterns
+
+#### API Versioning Strategy
+The project uses versioned API endpoints under `/api/dashboard/v2/` for new features while maintaining backward compatibility with v1 endpoints. All new development should use v2 APIs which support the nested BigQuery data structure.
+
+#### Date Handling Architecture
+- All date operations use UTC internally to avoid timezone issues
+- The `current-date-utils.ts` provides `getCurrentDate()` for consistent "today" handling
+- Date ranges are inclusive on both ends
+- Comparison periods use intelligent detection based on the selected range
+
+#### State Management Pattern
+- React Query (@tanstack/react-query) manages server state and caching
+- Component state is kept local unless needed by multiple components
+- No global state management library - data flows through props and API calls
+
+#### Error Handling Pattern
+All API routes follow a consistent error response format:
+```json
+{
+  "error": "Error message",
+  "details": { ... },
+  "code": "ERROR_CODE"
+}
+```
+
+#### Performance Optimization Strategies
+- Materialized views in Supabase for expensive aggregations
+- LRU caching in date calculations (200x+ performance improvement)
+- Batch processing for data sync (weekly batches of ~30k rows)
+- Connection pooling for BigQuery operations
+
 ## Environment Setup
 
 ### Required Environment Variables
@@ -114,8 +146,8 @@ npm run dev              # Start development server
 npm run build            # Production build
 npm run build:debug     # Debug build issues
 npm run start           # Start production server
-npm run lint            # Run ESLint
-npm run typecheck       # Run TypeScript type checking
+npm run lint            # Run ESLint  
+npx tsc --noEmit        # Run TypeScript type checking
 ```
 
 ### Testing
@@ -123,6 +155,10 @@ npm run typecheck       # Run TypeScript type checking
 npm test                # Run test suite
 npm run test:ui         # Visual test interface
 npm run test:coverage   # Test coverage report
+
+# Run specific tests
+vitest run path/to/test.ts  # Run a single test file
+vitest run keyword         # Run tests matching a pattern
 ```
 
 ### Database Operations
@@ -228,6 +264,7 @@ npm run fix:columns        # Add missing columns to tables
 - Use TypeScript for all new code with proper type definitions
 - Place reusable logic in `/src/lib/` directory
 - Keep components focused and composable
+- Use the `@/` path alias for imports from the `src` directory (e.g., `import { foo } from '@/lib/utils'`)
 
 ### Database Migrations
 - Always create migration files for schema changes
@@ -252,6 +289,10 @@ npm run fix:columns        # Add missing columns to tables
 - Use integration tests for API endpoints
 - Test both old and new data structures during migration period
 - Maintain test coverage for critical paths
+- Test files follow the pattern `*.test.ts` or `*.test.tsx`
+- Component tests use `@testing-library/react` and `vitest`
+- Mock Supabase client in tests using `vi.mock('@/config/supabase.config')`
+- Use `getCurrentDate()` from `date-utils` for consistent date handling in tests
 
 ## Recent Changes & Migration Notes
 
@@ -366,11 +407,12 @@ npm run fix:columns        # Add missing columns to tables
 - `015_add_missing_weekly_summary_columns.sql` - Added cart add columns to weekly summary
 - `016_create_public_sync_views.sql` - Created public views for sync_log and data_quality_checks
 - `017_fix_summary_table_permissions.sql` - Fixed permissions for summary tables
-- `025_add_post_sync_brand_extraction.sql` - Trigger for automatic brand extraction
-- `026_create_public_views_for_sqp_tables.sql` - Public schema views for API access
-- `027_add_brand_matching_functions.sql` - RPC functions for brand management
-- `docs/bigquery-schema-migration.md` - Detailed migration guide
-- `docs/brand-management-system.md` - Brand management documentation
+- `031_consolidated_infrastructure.sql` - Consolidated keyword analysis, refresh infrastructure, and ASIN fixes
+- `036_add_post_sync_brand_extraction.sql` - Trigger for automatic brand extraction
+- `039_create_public_views_for_sqp_tables.sql` - Public schema views for API access
+- `041_add_brand_matching_functions.sql` - RPC functions for brand management
+- `042_create_report_configuration_tables.sql` - Report system infrastructure
+- `/src/lib/supabase/migrations/README_MIGRATION_ORDER.md` - Complete migration sequence documentation
 
 ### Data Sync Implementation (Dec 2024)
 - **BigQuery Schema**: Discovered flat structure with space-separated column names (e.g., `Child ASIN`, `Search Query`)
@@ -447,3 +489,40 @@ npm run verify:schema         # Validate schema consistency
 - **Supabase README**: `/src/lib/supabase/README.md` - Database documentation
 
 For questions or issues, refer to the test scripts in `/src/scripts/` for debugging utilities and examples.
+
+## Common Development Tasks
+
+### Adding a New API Endpoint
+1. Create route file under `/src/app/api/` following Next.js App Router conventions
+2. Use the v2 API pattern for new endpoints: `/api/dashboard/v2/[feature]/route.ts`
+3. Implement proper error handling using the standard error response format
+4. Add TypeScript types in `/src/types/` or inline
+5. Write integration tests in `__tests__/` folder next to the route
+
+### Adding a New Dashboard Component
+1. Create component in `/src/components/asin-performance/`
+2. Export from `/src/components/asin-performance/index.ts`
+3. Add TypeScript types in `/src/components/asin-performance/types.ts`
+4. Write component tests using React Testing Library
+5. Use Tailwind CSS for styling - no separate CSS files
+
+### Modifying Database Schema
+1. Create migration file in `/src/lib/supabase/migrations/` with next sequential number
+2. Test migration locally first using `npm run migrate:run [migration-number]`
+3. Update any affected views or functions in the same migration
+4. Document breaking changes in the migration file header
+5. Update TypeScript types to match new schema
+
+### Debugging Data Sync Issues
+1. Check sync status: `npm run sync:status`
+2. View sync logs in Supabase: `SELECT * FROM public.sync_log ORDER BY started_at DESC`
+3. Test BigQuery connection: `npm run test:bigquery`
+4. Verify data transformations: Check `/src/lib/bigquery/transformers/`
+5. For date issues, ensure BigQuery date objects are properly handled (they return as `{value: "date"}`)
+
+### Performance Troubleshooting
+1. Check API response times in Railway logs
+2. Use Supabase dashboard to analyze slow queries
+3. Verify materialized views are refreshing: `SELECT * FROM public.materialized_view_refresh_status`
+4. Check for N+1 queries in API routes
+5. Use the performance monitoring dashboard at `/api/monitoring/pipeline`
