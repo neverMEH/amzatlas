@@ -125,7 +125,7 @@ export default function RefreshMonitorPage() {
       label: 'Core Pipeline', 
       count: statusData?.tables?.filter((t: any) => t.is_core).length || 0,
       description: 'Essential data pipeline tables',
-      health: statusData?.critical_tables?.length > 0 ? 'error' : 'healthy'
+      health: statusData?.critical_tables?.length > 0 ? 'error' as const : 'healthy' as const
     },
     { 
       id: 'brand', 
@@ -150,7 +150,7 @@ export default function RefreshMonitorPage() {
         t.table_name.includes('webhook') || !t.is_core && t.priority < 50
       ).length || 0,
       description: 'Legacy tables (consider removing)',
-      health: 'warning'
+      health: 'warning' as const
     }
   ]
 
