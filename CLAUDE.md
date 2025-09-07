@@ -19,7 +19,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Environment**: .env file needs to be configured with actual credentials for local development
 
 ### 📅 Latest Updates (September 7, 2025)
-- **Refresh Monitor API Enhancement**: Completed Task 3 of refresh monitor redesign
+- **Refresh Monitor UI Redesign**: Completed Task 4 - Complete UI overhaul
+  - Redesigned RefreshStatusCard with core system health metrics, alerts, and pipeline activity
+  - Created CriticalTablesMonitor component for high-priority table tracking
+  - Added PipelineStatusCard showing visual BigQuery → Supabase data flow
+  - Implemented DataFreshnessIndicator with color-coded health status
+  - Added TableCategoryFilter for organizing tables (Core, Brand, Reporting, Legacy)
+  - Removed webhook monitoring tab to focus on actual data pipeline
+  - Added Pipeline tab showing ETL stages and sync activity
+  - Full test coverage for all new components
+- **Refresh Monitor API Enhancement**: Completed Task 3
   - Enhanced /api/refresh/status to focus on 7 core tables from migration 048
   - Integrated sync_log for real pipeline activity monitoring
   - Implemented data freshness scoring (0-100 scale) for all tables
@@ -27,7 +36,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Added new /api/refresh/health endpoint with system health checks
   - Created new /api/refresh/tables endpoint for detailed table metrics
   - Full test coverage for all API enhancements
-- **Refresh Monitor Infrastructure**: Complete overhaul (Tasks 1-2)
+- **Refresh Monitor Infrastructure**: Tasks 1-2 complete
   - Removed 8 obsolete tables from monitoring (webhook_*, summary tables)
   - Added critical pipeline tables: sync_log, data_quality_checks, brands
   - Created monitoring views: pipeline_health, data_freshness_summary
@@ -303,8 +312,17 @@ npm run fix:columns        # Add missing columns to tables
   - `SearchQueryTable.tsx` - Sortable, searchable keyword performance table
   - `WaterfallChart.tsx` - Waterfall chart for keyword comparison changes
   - `KeywordComparisonView.tsx` - Multi-keyword comparison with waterfall visualization
+- `/src/components/refresh-monitor/` - Data pipeline monitoring components
+  - `RefreshStatusCard.tsx` - System health overview with alerts and metrics
+  - `CriticalTablesMonitor.tsx` - High-priority table monitoring by category
+  - `PipelineStatusCard.tsx` - Visual BigQuery → Supabase flow diagram
+  - `DataFreshnessIndicator.tsx` - Table freshness with health indicators
+  - `TableCategoryFilter.tsx` - Filter tables by type (Core, Brand, etc.)
+  - `RefreshHistoryTable.tsx` - Historical refresh activity log
+  - `RefreshConfigPanel.tsx` - Table configuration management
 - `/src/app/page.tsx` - Main dashboard page (single-page application)
 - `/src/app/keyword-analysis/page.tsx` - Full-screen keyword analysis page
+- `/src/app/refresh-monitor/page.tsx` - Data pipeline monitoring dashboard
 
 ### Data Processing
 - `/src/lib/bigquery/transformers/` - Data transformation utilities

@@ -33,10 +33,28 @@ export const getBigQueryConfig = (): BigQueryConfig => {
   try {
     const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON
     if (credsJson) {
-      credentials = JSON.parse(credsJson)
+      // Clean up common issues with JSON credentials
+      const cleanedJson = credsJson
+        .trim() // Remove leading/trailing whitespace
+        .replace(/[\r\n\t]/g, '') // Remove actual newlines/tabs that might have been pasted
+        .replace(/\\n/g, '\\n') // Ensure newlines in private key are properly escaped
+      
+      credentials = JSON.parse(cleanedJson)
+      
+      // Log success (without sensitive data)
+      console.log('BigQuery credentials parsed successfully', {
+        type: credentials.type,
+        project_id: credentials.project_id,
+        client_email: credentials.client_email
+      })
     }
   } catch (error) {
     console.error('Failed to parse BigQuery credentials:', error)
+    // Log the position where parsing failed for debugging
+    if (error instanceof SyntaxError && error.message.includes('position')) {
+      const credsJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON || ''
+      console.error('Error position context:', credsJson.substring(150, 180))
+    }
   }
 
   return {
