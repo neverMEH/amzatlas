@@ -282,7 +282,7 @@ export class BigQuerySyncService {
       
       // Filter out existing records
       const existingKeys = new Set(
-        (existing || []).map(e => `${e.asin}_${e.start_date}_${e.end_date}`)
+        (existing || []).map((e: any) => `${e.asin}_${e.start_date}_${e.end_date}`)
       )
       
       const newRecords = batch.filter(r => 
