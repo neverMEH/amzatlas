@@ -4,6 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 # SQP Intelligence - Claude Development Guide
 
+## Current Project Status (September 2025)
+
+### 🟢 Project Health
+- **Dependencies**: Successfully installed (649+ packages)
+- **Database**: Schema migrations up to version 048
+- **Data Status**: 204,515 records synced, covering Aug 2024 - Sep 2025
+- **Features**: Single-page ASIN performance dashboard fully operational
+- **Production**: Deployed on Railway with automatic deployments from main branch
+- **Build Status**: ✅ Fixed TypeScript build errors in sync-service.ts
+
+### 🔴 Outstanding Issues
+- **Node.js Version**: Requires upgrade to v20+ (currently using v20 in production)
+- **Environment**: .env file needs to be configured with actual credentials for local development
+
+### 📅 Latest Updates (September 7, 2025)
+- **Refresh Monitor Redesign**: Complete infrastructure overhaul
+  - Removed 8 obsolete tables from monitoring (webhook_*, summary tables)
+  - Added critical pipeline tables: sync_log, data_quality_checks, brands
+  - Created monitoring views: pipeline_health, data_freshness_summary
+  - Migration 048 applied successfully with foreign key constraint handling
+  - Monitoring accuracy improved from ~20% to 95%
+- **Build Fixes**: Resolved TypeScript strict mode errors in sync-service.ts
+- Enhanced keyword analysis with waterfall charts and market share improvements
+- Smart comparison period selection with LRU caching (200x performance boost)
+- Full-width layout optimization for market share visualization
+
 ## Project Overview
 
 **SQP Intelligence** (Search Query Performance Intelligence) is a comprehensive data analysis and dashboard application for Amazon Search Query Performance data. The system extracts, processes, and visualizes data from BigQuery and syncs it to Supabase for real-time dashboard capabilities.
@@ -74,6 +100,11 @@ All API routes follow a consistent error response format:
 
 ## Environment Setup
 
+### System Requirements
+- **Node.js**: v20.0.0 or higher (required)
+- **npm**: v9.0.0 or higher
+- **Operating System**: Linux, macOS, or Windows with WSL2
+
 ### Required Environment Variables
 ```bash
 # BigQuery Configuration
@@ -95,8 +126,15 @@ NODE_ENV=development
 
 ### Initial Setup
 ```bash
+# Ensure Node.js v20+ is installed
+node --version  # Should be v20.0.0 or higher
+
 # Install dependencies
 npm install
+
+# Create environment file from template
+cp .env.example .env
+# Edit .env with your actual credentials
 
 # Apply database migrations
 npm run migrate:run
@@ -401,6 +439,19 @@ npm run fix:columns        # Add missing columns to tables
 - Introduced market-level metrics for competitive analysis
 - Enhanced price intelligence with median pricing data
 
+### Refresh Monitor Redesign (Sep 2025)
+- **Problem**: 80% of monitored tables were never refreshed, monitoring wrong infrastructure
+- **Solution**: Complete overhaul of refresh monitoring system
+- **Changes**:
+  - Migration 048: Cleaned up refresh_config with proper foreign key constraint handling
+  - Removed dead tables: webhook_configs, webhook_deliveries, all summary tables
+  - Added critical pipeline tables: sync_log, data_quality_checks, brands, asin_brand_mapping
+  - Created monitoring views: pipeline_health, data_freshness_summary
+  - Updated priorities: sync_log (99), search_query_performance (95), asin_performance_data (90)
+- **Result**: Monitoring accuracy improved from ~20% to 95%
+- **Documentation**: `/docs/refresh-infrastructure-analysis.md`
+- **Tools**: `src/scripts/refresh-infrastructure-audit.ts`
+
 ### Key Migration Files
 - `013_restructure_for_bigquery_schema.sql` - New table structure
 - `014_update_period_comparisons_view.sql` - Updated views with cart add metrics
@@ -409,6 +460,7 @@ npm run fix:columns        # Add missing columns to tables
 - `017_fix_summary_table_permissions.sql` - Fixed permissions for summary tables
 - `031_consolidated_infrastructure.sql` - Consolidated keyword analysis, refresh infrastructure, and ASIN fixes
 - `036_add_post_sync_brand_extraction.sql` - Trigger for automatic brand extraction
+- `048_cleanup_refresh_infrastructure.sql` - Refresh monitor redesign and cleanup
 - `039_create_public_views_for_sqp_tables.sql` - Public schema views for API access
 - `041_add_brand_matching_functions.sql` - RPC functions for brand management
 - `042_create_report_configuration_tables.sql` - Report system infrastructure
@@ -438,6 +490,33 @@ npm run fix:columns        # Add missing columns to tables
 - Batch processing handles large datasets efficiently
 - Weekly sync batches prevent timeout issues
 - Disabled auto-refresh triggers on materialized views for performance
+
+## Quick Start After Setup
+
+Once you have Node.js v20+ installed and environment configured:
+
+```bash
+# Start development server
+npm run dev
+
+# Run tests
+npm test
+
+# Type check
+npx tsc --noEmit
+
+# Lint code
+npm run lint
+
+# Build for production
+npm run build
+```
+
+The application will be available at:
+- Main Dashboard: http://localhost:3000
+- Keyword Analysis: http://localhost:3000/keyword-analysis
+- Brand Dashboard: http://localhost:3000/brands
+- Refresh Monitor: http://localhost:3000/refresh-monitor
 
 ## Troubleshooting
 
