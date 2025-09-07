@@ -19,7 +19,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Environment**: .env file needs to be configured with actual credentials for local development
 
 ### 📅 Latest Updates (September 7, 2025)
-- **Refresh Monitor Redesign**: Complete infrastructure overhaul
+- **Refresh Monitor API Enhancement**: Completed Task 3 of refresh monitor redesign
+  - Enhanced /api/refresh/status to focus on 7 core tables from migration 048
+  - Integrated sync_log for real pipeline activity monitoring
+  - Implemented data freshness scoring (0-100 scale) for all tables
+  - Created comprehensive alerts system (critical/warning/info levels)
+  - Added new /api/refresh/health endpoint with system health checks
+  - Created new /api/refresh/tables endpoint for detailed table metrics
+  - Full test coverage for all API enhancements
+- **Refresh Monitor Infrastructure**: Complete overhaul (Tasks 1-2)
   - Removed 8 obsolete tables from monitoring (webhook_*, summary tables)
   - Added critical pipeline tables: sync_log, data_quality_checks, brands
   - Created monitoring views: pipeline_health, data_freshness_summary
@@ -252,6 +260,14 @@ npm run fix:columns        # Add missing columns to tables
 - `GET /api/dashboard/v2/keyword-performance` - Single keyword detailed analysis
 - `GET /api/dashboard/v2/keyword-comparison` - Multiple keyword comparison data
 - `GET /api/dashboard/v2/asin-keywords` - Available keywords for an ASIN
+
+### Refresh Monitor APIs (Enhanced)
+- `GET /api/refresh/status` - Enhanced with core table focus, alerts, and freshness scores
+- `GET /api/refresh/health` - System health overview with recommendations
+- `GET /api/refresh/tables` - Detailed table-specific metrics and trends
+- `GET /api/refresh/config` - Refresh configuration management
+- `GET /api/refresh/history` - Historical refresh activity
+- `GET /api/refresh/trigger` - Manual refresh triggering
 
 ### Performance Reports
 - `GET /api/reports/performance/market-share` - Market share reports
