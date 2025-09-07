@@ -336,7 +336,7 @@ export class BigQuerySyncService {
       const { data: parentRecords } = await query
       
       if (parentRecords) {
-        parentRecords.forEach(parent => {
+        parentRecords.forEach((parent: any) => {
           const key = `${parent.asin}_${parent.start_date}`
           lookupMap.set(key, parent.id)
         })
