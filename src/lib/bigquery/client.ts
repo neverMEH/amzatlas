@@ -1,5 +1,6 @@
 import { BigQuery } from '@google-cloud/bigquery'
 import { getBigQueryConfig } from '@/config/bigquery.config'
+import * as crypto from 'crypto'
 
 let bigQueryClient: BigQuery | null = null
 
@@ -13,22 +14,42 @@ export function getBigQueryClient(): BigQuery {
       if (config.credentials.private_key) {
         // Ensure the private key has proper line breaks
         // Sometimes the key comes with literal \n that need to be converted to actual newlines
-        config.credentials.private_key = config.credentials.private_key
+        let privateKey = config.credentials.private_key
           .replace(/\\n/g, '\n')
           .replace(/\\\\n/g, '\n')
           
         // Ensure proper formatting
-        if (!config.credentials.private_key.includes('\n')) {
-          // If no newlines found, it might be a single-line key that needs formatting
-          const key = config.credentials.private_key
-          const keyMatch = key.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/)
+        if (!privateKey.includes('\n') || privateKey.split('\n').length < 3) {
+          // If no newlines found or not enough lines, it might be a single-line key that needs formatting
+          const keyMatch = privateKey.match(/-----BEGIN PRIVATE KEY-----(.*?)-----END PRIVATE KEY-----/)
           if (keyMatch) {
-            const keyContent = keyMatch[1].trim()
+            const keyContent = keyMatch[1].trim().replace(/\s+/g, '')
             // Add newlines every 64 characters (standard PEM format)
             const formattedKey = keyContent.match(/.{1,64}/g)?.join('\n') || keyContent
-            config.credentials.private_key = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----\n`
+            privateKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----\n`
           }
         }
+        
+        // Ensure the key ends with a newline
+        if (!privateKey.endsWith('\n')) {
+          privateKey += '\n'
+        }
+        
+        // Test the key format
+        try {
+          // Try to create a sign object to validate the key format
+          crypto.createSign('SHA256').update('test').sign(privateKey)
+        } catch (error: any) {
+          console.error('Private key validation failed:', error.message)
+          // If the key is invalid, try to fix common issues
+          if (error.code === 'ERR_OSSL_UNSUPPORTED') {
+            // This might be a PKCS#1 key that needs to be converted to PKCS#8
+            console.log('Attempting to handle key format issue...')
+            // For now, we'll pass it through as-is and let the BigQuery client handle it
+          }
+        }
+        
+        config.credentials.private_key = privateKey
       }
       
       bigQueryClient = new BigQuery({

@@ -15,6 +15,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Status**: ✅ Fixed TypeScript build errors in sync-service.ts
 
 ### 🔴 Outstanding Issues
+- **BigQuery Authentication**: Production authentication errors - crypto compatibility issues with service account key
+  - Missing migrations in production: 016_create_public_sync_views.sql, 048_cleanup_refresh_infrastructure.sql
+  - Created debugging scripts to help diagnose and fix credential format issues
 - **Node.js Version**: Requires upgrade to v20+ (currently using v20 in production)
 - **Environment**: .env file needs to be configured with actual credentials for local development
 
@@ -242,6 +245,12 @@ npm run debug:creds           # Debug credentials
 npm run test:bigquery         # Test BigQuery connection
 npm run test:new-apis         # Test v2 API endpoints
 npm run verify:schema         # Verify BigQuery schema matches expectations
+
+# Production debugging scripts
+npx tsx src/scripts/test-bigquery-simple.ts    # Test simplified BigQuery connection
+npx tsx src/scripts/debug-credentials-format.ts # Debug and fix credential format issues
+npx tsx src/scripts/check-missing-migrations.ts # Check for missing database migrations
+npx tsx src/scripts/apply-missing-migrations.ts # Apply missing migrations (requires exec_sql function)
 ```
 
 ### Data Management
@@ -293,6 +302,8 @@ npm run fix:columns        # Add missing columns to tables
 
 ### Configuration
 - `/src/config/bigquery.config.ts` - BigQuery connection and table configuration
+- `/src/config/bigquery-simple.config.ts` - Simplified BigQuery client for production use
+- `/src/config/bigquery-auth.config.ts` - Authentication-aware BigQuery client (alternative)
 - `/src/config/supabase.config.ts` - Supabase client configuration
 - `/src/config/column-mappings.ts` - BigQuery to Supabase column mappings
 
@@ -556,6 +567,9 @@ The application will be available at:
 
 ### Common Issues
 1. **BigQuery Connection Failures**: Check credentials and project access
+   - Use `npx tsx src/scripts/test-bigquery-simple.ts` to test connection
+   - Use `npx tsx src/scripts/debug-credentials-format.ts` to fix credential format
+   - Ensure GOOGLE_APPLICATION_CREDENTIALS_JSON is properly formatted (single line, escaped newlines)
 2. **Supabase Migration Errors**: Verify migration order and dependencies
 3. **Sync Timeouts**: Adjust batch sizes and connection pool settings
 4. **Missing Data**: Check date ranges and ASIN filters

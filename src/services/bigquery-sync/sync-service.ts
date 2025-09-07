@@ -1,6 +1,7 @@
 import { BigQuery } from '@google-cloud/bigquery'
 import { createClient } from '@supabase/supabase-js'
 import { getBigQueryConfig } from '../../config/bigquery.config'
+import { getSimpleBigQueryClient } from '../../config/bigquery-simple.config'
 import { getSupabaseConfig } from '../../config/supabase.config'
 
 export interface SyncResult {
@@ -16,12 +17,8 @@ export class BigQuerySyncService {
   private supabase: any
   
   constructor() {
-    const bigQueryConfig = getBigQueryConfig()
-    this.bigquery = new BigQuery({
-      projectId: bigQueryConfig.projectId,
-      credentials: bigQueryConfig.credentials,
-      location: bigQueryConfig.location || 'US'
-    })
+    // Use the simple BigQuery client
+    this.bigquery = getSimpleBigQueryClient()
     
     const supabaseConfig = getSupabaseConfig()
     this.supabase = createClient(
