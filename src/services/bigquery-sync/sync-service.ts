@@ -80,8 +80,21 @@ export class BigQuerySyncService {
         console.log(`Executing query: ${query}`)
         
         // Execute BigQuery query
-        const [rows] = await this.bigquery.query({ query })
-        console.log(`Fetched ${rows.length} rows from BigQuery`)
+        let rows: any[] = []
+        try {
+          [rows] = await this.bigquery.query({ query })
+          console.log(`Fetched ${rows.length} rows from BigQuery`)
+        } catch (queryError: any) {
+          console.error('BigQuery query failed:')
+          console.error('Query:', query)
+          if (queryError.errors && queryError.errors.length > 0) {
+            console.error('Detailed errors:', JSON.stringify(queryError.errors, null, 2))
+          }
+          if (queryError.response && queryError.response.body) {
+            console.error('Response body:', queryError.response.body)
+          }
+          throw queryError
+        }
         
         if (rows.length === 0) {
           await this.updateAuditLog(auditLogId, 'success', 0)
