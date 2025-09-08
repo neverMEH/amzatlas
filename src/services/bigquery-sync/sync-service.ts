@@ -82,11 +82,29 @@ export class BigQuerySyncService {
         // Execute BigQuery query
         let rows: any[] = []
         try {
-          [rows] = await this.bigquery.query({ query })
+          console.log('Starting BigQuery query execution...')
+          const queryOptions = { 
+            query,
+            location: config.location || 'US'
+          }
+          console.log('Query options:', queryOptions)
+          
+          const startQueryTime = Date.now()
+          ;[rows] = await this.bigquery.query(queryOptions)
+          const queryDuration = Date.now() - startQueryTime
+          
+          console.log(`✅ BigQuery query completed in ${queryDuration}ms`)
           console.log(`Fetched ${rows.length} rows from BigQuery`)
+          
+          if (rows.length > 0) {
+            console.log('Sample row columns:', Object.keys(rows[0]))
+          }
         } catch (queryError: any) {
-          console.error('BigQuery query failed:')
+          console.error('❌ BigQuery query failed:')
           console.error('Query:', query)
+          console.error('Error message:', queryError.message)
+          console.error('Error code:', queryError.code)
+          
           if (queryError.errors && queryError.errors.length > 0) {
             console.error('Detailed errors:', JSON.stringify(queryError.errors, null, 2))
           }
@@ -191,12 +209,18 @@ export class BigQuerySyncService {
     
     // ALL data comes from the same BigQuery table, just transform it differently for each target
     // Simple query - just get the raw data and let transformData handle the rest
-    const query = `
+    // Try without WHERE clause first to see if table is accessible
+    let query = `
       SELECT *
       FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-      ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
-      LIMIT 10000
+      LIMIT 10
     `
+    
+    // If we need date filtering, add it
+    if (dateRange || !dateRange) {
+      // For now, let's test without the WHERE clause to isolate the issue
+      console.log('Testing query without WHERE clause first...')
+    }
     
     console.log('Query to execute:', query)
     return query
