@@ -88,18 +88,12 @@ export async function POST(request: Request) {
     }
     
     const asinResult = await syncService.syncTable('asin_performance_data', asinSyncOptions)
-    results.syncs.push({
-      table: 'asin_performance_data',
-      ...asinResult
-    })
+    results.syncs.push(asinResult)
     
     // If parent sync successful, sync search_query_performance
     if (asinResult.success && (asinResult.rowsProcessed > 0 || forceSync)) {
       const searchResult = await syncService.syncTable('search_query_performance', asinSyncOptions)
-      results.syncs.push({
-        table: 'search_query_performance',
-        ...searchResult
-      })
+      results.syncs.push(searchResult)
     }
     
     // Calculate total stats
