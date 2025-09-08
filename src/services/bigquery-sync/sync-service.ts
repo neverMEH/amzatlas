@@ -166,6 +166,13 @@ export class BigQuerySyncService {
     const config = getBigQueryConfig()
     const dataset = config.datasets.production
     
+    console.log('BigQuery configuration:', {
+      projectId: config.projectId,
+      dataset: dataset,
+      location: config.location,
+      tableName: tableName
+    })
+    
     // Map Supabase table names to BigQuery table names
     const tableMapping: Record<string, string> = {
       'search_query_performance': 'seller-search_query_performance',

@@ -57,10 +57,19 @@ export const getBigQueryConfig = (): BigQueryConfig => {
     }
   }
 
+  const projectId = process.env.BIGQUERY_PROJECT_ID || credentials?.project_id || 'amazon-sp-report-loader'
+  const dataset = process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85'
+  
+  console.log('BigQuery configuration loaded:', {
+    projectId,
+    dataset,
+    location: process.env.BIGQUERY_LOCATION || 'US'
+  })
+  
   return {
-    projectId: process.env.BIGQUERY_PROJECT_ID || 'amzatlas-2024',
+    projectId,
     datasets: {
-      production: process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85',
+      production: dataset,
       development: process.env.BIGQUERY_DATASET_DEV || 'sqp_data_dev',
       staging: process.env.BIGQUERY_DATASET_STAGING || 'sqp_data_staging'
     },
