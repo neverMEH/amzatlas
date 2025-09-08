@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
         .select('asin')
         .eq('brand_id', brandId)
 
-      const asins = brandAsins?.map(ba => ba.asin) || []
+      const asins = brandAsins?.map((ba: any) => ba.asin) || []
       if (asins.length > 0) {
         query = query.in('asin', asins)
       } else {
