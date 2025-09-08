@@ -57,7 +57,11 @@ describe('Header', () => {
     vi.clearAllMocks()
     ;(global.fetch as any).mockResolvedValue({
       ok: true,
-      json: async () => ({ data: mockBrands })
+      json: async () => ({ 
+        data: mockBrands,
+        total: mockBrands.length,
+        timestamp: new Date().toISOString()
+      })
     })
   })
 
@@ -212,7 +216,11 @@ describe('Header', () => {
       
       resolvePromise!({
         ok: true,
-        json: async () => ({ data: mockBrands })
+        json: async () => ({ 
+          data: mockBrands,
+          total: mockBrands.length,
+          timestamp: new Date().toISOString()
+        })
       })
       
       await waitFor(() => {

@@ -1,14 +1,28 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { Brand, BrandsResponse } from '@/types/brand'
 
 export async function GET() {
   try {
     const supabase = createClient()
     
-    // Fetch all active brands
+    // Fetch all active brands with extended information
     const { data: brands, error } = await supabase
       .from('brands')
-      .select('id, display_name')
+      .select(`
+        id,
+        brand_name,
+        normalized_name,
+        display_name,
+        parent_brand_id,
+        is_active,
+        created_at,
+        updated_at,
+        logo_url,
+        brand_color,
+        description,
+        metadata
+      `)
       .eq('is_active', true)
       .order('display_name', { ascending: true })
 
@@ -20,8 +34,29 @@ export async function GET() {
       )
     }
 
-    // Return brands array directly
-    return NextResponse.json(brands || [])
+    // Get ASIN counts for each brand
+    const brandsWithCounts = await Promise.all(
+      (brands || []).map(async (brand) => {
+        const { count } = await supabase
+          .from('asin_brand_mapping')
+          .select('*', { count: 'exact', head: true })
+          .eq('brand_id', brand.id)
+        
+        return {
+          ...brand,
+          asin_count: count || 0
+        } as Brand
+      })
+    )
+
+    // Return brands in consistent format
+    const response: BrandsResponse = {
+      data: brandsWithCounts,
+      total: brandsWithCounts.length,
+      timestamp: new Date().toISOString()
+    }
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Unexpected error in brands API:', error)
     return NextResponse.json(

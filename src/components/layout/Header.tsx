@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { ChevronDownIcon, UserIcon } from 'lucide-react'
+import { ChevronDownIcon, UserIcon, AlertCircle, Loader2 } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-
-interface Brand {
-  id: string
-  display_name: string
-}
+import type { Brand, BrandsResponse } from '@/types/brand'
+import { getBrandErrorMessage } from '@/lib/utils/error-messages'
 
 interface HeaderProps {
   selectedBrand?: string
@@ -17,8 +14,8 @@ async function fetchBrands(): Promise<Brand[]> {
   if (!response.ok) {
     throw new Error('Failed to fetch brands')
   }
-  const data = await response.json()
-  return data.data
+  const result = await response.json()
+  return result.data || []
 }
 
 export const Header: React.FC<HeaderProps> = ({ selectedBrand, onBrandChange }) => {
@@ -37,11 +34,22 @@ export const Header: React.FC<HeaderProps> = ({ selectedBrand, onBrandChange }) 
 
   // Load selected brand from localStorage on mount
   useEffect(() => {
-    const savedBrandId = localStorage.getItem('selectedBrandId')
-    if (savedBrandId && !selectedBrand) {
-      onBrandChange(savedBrandId)
+    try {
+      const savedBrandId = localStorage.getItem('selectedBrandId')
+      if (savedBrandId && !selectedBrand && brands.length > 0) {
+        // Verify the saved brand still exists
+        const brandExists = brands.some(b => b.id === savedBrandId)
+        if (brandExists) {
+          onBrandChange(savedBrandId)
+        } else {
+          // Clear invalid brand ID
+          localStorage.removeItem('selectedBrandId')
+        }
+      }
+    } catch (error) {
+      console.error('Error loading saved brand:', error)
     }
-  }, [selectedBrand, onBrandChange])
+  }, [brands]) // Only depend on brands, not selectedBrand or onBrandChange to avoid loops
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -71,9 +79,16 @@ export const Header: React.FC<HeaderProps> = ({ selectedBrand, onBrandChange }) 
   }
 
   const selectBrand = (brandId: string) => {
-    onBrandChange(brandId)
-    localStorage.setItem('selectedBrandId', brandId)
-    setIsDropdownOpen(false)
+    try {
+      localStorage.setItem('selectedBrandId', brandId)
+      onBrandChange(brandId)
+      setIsDropdownOpen(false)
+    } catch (error) {
+      console.error('Error saving brand selection:', error)
+      // Still update the UI even if storage fails
+      onBrandChange(brandId)
+      setIsDropdownOpen(false)
+    }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -102,29 +117,69 @@ export const Header: React.FC<HeaderProps> = ({ selectedBrand, onBrandChange }) 
             <div className="hidden md:block relative" ref={dropdownRef}>
               <button
                 data-testid="brand-selector"
-                className="flex items-center space-x-2 px-4 py-2 rounded-md border border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors"
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md border transition-colors ${
+                  error 
+                    ? 'border-red-300 bg-red-50 hover:bg-red-100' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                } ${isLoading || error ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                 onClick={toggleDropdown}
                 onKeyDown={handleKeyDown}
                 aria-label="Select brand"
                 aria-haspopup="true"
                 aria-expanded={isDropdownOpen}
+                disabled={isLoading}
               >
-                <span className="text-gray-700">
-                  {selectedBrandObj ? selectedBrandObj.display_name : 'Select Brand'}
-                </span>
-                <ChevronDownIcon 
-                  size={16} 
-                  className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
-                />
+                {isLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin text-gray-500" />
+                    <span className="text-gray-500">Loading brands...</span>
+                  </>
+                ) : error ? (
+                  <>
+                    <AlertCircle size={16} className="text-red-500" />
+                    <span className="text-red-700">Error loading brands</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-gray-700">
+                      {selectedBrandObj ? selectedBrandObj.display_name : 'Select Brand'}
+                    </span>
+                    <ChevronDownIcon 
+                      size={16} 
+                      className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    />
+                  </>
+                )}
               </button>
               
               {/* Dropdown Menu */}
               {isDropdownOpen && (
                 <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[200px]">
                   {isLoading ? (
-                    <div className="px-4 py-2 text-sm text-gray-500">Loading brands...</div>
+                    <div className="px-4 py-3 flex items-center space-x-2 text-sm text-gray-500">
+                      <Loader2 size={14} className="animate-spin" />
+                      <span>Loading brands...</span>
+                    </div>
                   ) : error ? (
-                    <div className="px-4 py-2 text-sm text-red-600">Failed to load brands</div>
+                    <div className="px-4 py-3">
+                      <div className="flex items-start space-x-2 text-sm text-red-600">
+                        <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
+                        <div>
+                          <p className="font-medium">Failed to load brands</p>
+                          <p className="text-xs text-red-500 mt-1">{getBrandErrorMessage(error)}</p>
+                          <button 
+                            onClick={() => window.location.reload()}
+                            className="text-xs text-red-600 underline mt-2 hover:text-red-700"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : brands.length === 0 ? (
+                    <div className="px-4 py-3 text-sm text-gray-500">
+                      No brands available
+                    </div>
                   ) : (
                     <ul className="py-1" role="listbox">
                       {brands.map((brand) => (

@@ -40,7 +40,9 @@ describe('GET /api/brands', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toEqual({ data: mockBrands })
+    expect(data.data).toEqual(mockBrands)
+    expect(data.total).toBe(3)
+    expect(data.timestamp).toBeDefined()
     expect(mockSupabase.from).toHaveBeenCalledWith('brands')
     expect(mockSupabase.select).toHaveBeenCalledWith('id, display_name')
     expect(mockSupabase.eq).toHaveBeenCalledWith('is_active', true)
@@ -57,7 +59,9 @@ describe('GET /api/brands', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toEqual({ data: [] })
+    expect(data.data).toEqual([])
+    expect(data.total).toBe(0)
+    expect(data.timestamp).toBeDefined()
   })
 
   it('should handle null data from Supabase', async () => {
@@ -70,7 +74,9 @@ describe('GET /api/brands', () => {
     const data = await response.json()
 
     expect(response.status).toBe(200)
-    expect(data).toEqual({ data: [] })
+    expect(data.data).toEqual([])
+    expect(data.total).toBe(0)
+    expect(data.timestamp).toBeDefined()
   })
 
   it('should handle Supabase errors', async () => {
