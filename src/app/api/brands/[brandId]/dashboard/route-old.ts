@@ -74,10 +74,10 @@ export async function GET(
       })
     }
     
-    // Fetch aggregated KPIs for current period - WITH CORRECT COLUMN NAMES
+    // Fetch aggregated KPIs for current period
     const { data: currentKpis, error: kpisError } = await supabase
       .from('search_performance_summary')
-      .select('total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -89,18 +89,18 @@ export async function GET(
     // Aggregate KPI totals
     const kpiTotals = (currentKpis || []).reduce(
       (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
-        impressions: acc.impressions + (row.total_query_impression_count || 0),
-        clicks: acc.clicks + (row.asin_click_count || 0),
-        cartAdds: acc.cartAdds + (row.asin_cart_add_count || 0),
-        purchases: acc.purchases + (row.asin_purchase_count || 0),
+        impressions: acc.impressions + (row.impressions || 0),
+        clicks: acc.clicks + (row.clicks || 0),
+        cartAdds: acc.cartAdds + (row.cart_adds || 0),
+        purchases: acc.purchases + (row.purchases || 0),
       }),
       { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
     )
     
-    // Fetch weekly time series data for the brand - WITH CORRECT COLUMN NAMES
+    // Fetch weekly time series data for the brand
     const { data: weeklyData, error: weeklyError } = await supabase
       .from('search_performance_summary')
-      .select('start_date, end_date, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('start_date, end_date, impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -123,10 +123,10 @@ export async function GET(
           purchases: 0 
         }
       }
-      acc[weekKey].impressions += row.total_query_impression_count || 0
-      acc[weekKey].clicks += row.asin_click_count || 0
-      acc[weekKey].cartAdds += row.asin_cart_add_count || 0
-      acc[weekKey].purchases += row.asin_purchase_count || 0
+      acc[weekKey].impressions += row.impressions || 0
+      acc[weekKey].clicks += row.clicks || 0
+      acc[weekKey].cartAdds += row.cart_adds || 0
+      acc[weekKey].purchases += row.purchases || 0
       return acc
     }, {})
     
@@ -141,13 +141,13 @@ export async function GET(
         purchases: week.purchases,
       }))
     
-    // Fetch last 5 weeks of data specifically for sparklines - WITH CORRECT COLUMN NAMES
+    // Fetch last 5 weeks of data specifically for sparklines
     const fiveWeeksAgo = new Date()
     fiveWeeksAgo.setDate(fiveWeeksAgo.getDate() - 35) // 5 weeks
     
     const { data: sparklineData, error: sparklineError } = await supabase
       .from('search_performance_summary')
-      .select('start_date, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('start_date, impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', fiveWeeksAgo.toISOString().split('T')[0])
       .order('start_date', { ascending: true })
@@ -167,10 +167,10 @@ export async function GET(
           purchases: 0 
         }
       }
-      acc[weekKey].impressions += row.total_query_impression_count || 0
-      acc[weekKey].clicks += row.asin_click_count || 0
-      acc[weekKey].cartAdds += row.asin_cart_add_count || 0
-      acc[weekKey].purchases += row.asin_purchase_count || 0
+      acc[weekKey].impressions += row.impressions || 0
+      acc[weekKey].clicks += row.clicks || 0
+      acc[weekKey].cartAdds += row.cart_adds || 0
+      acc[weekKey].purchases += row.purchases || 0
       return acc
     }, {})
     
@@ -181,7 +181,7 @@ export async function GET(
     const cartAddsTrend = sparklineWeeks.map(week => sparklineAggregates[week].cartAdds)
     const purchasesTrend = sparklineWeeks.map(week => sparklineAggregates[week].purchases)
     
-    // Handle comparison period if provided - WITH CORRECT COLUMN NAMES
+    // Handle comparison period if provided
     let comparison: {
       impressions: number;
       clicks: number;
@@ -191,17 +191,17 @@ export async function GET(
     if (comparisonDateFrom && comparisonDateTo) {
       const { data: comparisonKpis } = await supabase
         .from('search_performance_summary')
-        .select('total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+        .select('impressions, clicks, cart_adds, purchases')
         .in('asin', asinList)
         .gte('start_date', comparisonDateFrom)
         .lte('end_date', comparisonDateTo)
       
       const comparisonTotals = (comparisonKpis || []).reduce(
         (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
-          impressions: acc.impressions + (row.total_query_impression_count || 0),
-          clicks: acc.clicks + (row.asin_click_count || 0),
-          cartAdds: acc.cartAdds + (row.asin_cart_add_count || 0),
-          purchases: acc.purchases + (row.asin_purchase_count || 0),
+          impressions: acc.impressions + (row.impressions || 0),
+          clicks: acc.clicks + (row.clicks || 0),
+          cartAdds: acc.cartAdds + (row.cart_adds || 0),
+          purchases: acc.purchases + (row.purchases || 0),
         }),
         { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
       )
@@ -214,48 +214,22 @@ export async function GET(
       }
     }
     
-    // Fetch product performance data from our brand materialized view
+    // Fetch product performance data
     const { data: products, error: productsError } = await supabase
-      .from('brand_performance_summary')
-      .select(`
-        brand_id,
-        asin_count,
-        total_impressions,
-        total_clicks,
-        total_cart_adds,
-        total_purchases,
-        avg_ctr,
-        avg_cvr,
-        estimated_revenue
-      `)
+      .from('asin_performance_by_brand')
+      .select('*')
       .eq('brand_id', brandId)
-      .single()
-    
-    if (productsError && productsError.code !== 'PGRST116') { // Ignore "not found" error
-      console.error('Brand performance summary error:', productsError)
-    }
-    
-    // Fetch top performing ASINs for this brand
-    const { data: topAsins, error: topAsinsError } = await supabase
-      .from('search_performance_summary')
-      .select(`
-        asin,
-        SUM(total_query_impression_count) as impressions,
-        SUM(asin_click_count) as clicks,
-        SUM(asin_cart_add_count) as cart_adds,
-        SUM(asin_purchase_count) as purchases
-      `)
-      .in('asin', asinList)
-      .gte('start_date', dateFrom)
-      .lte('end_date', dateTo)
-      .group('asin')
       .order('impressions', { ascending: false })
       .limit(productLimit)
     
+    if (productsError) {
+      throw productsError
+    }
+    
     // Format products data
-    const formattedProducts = (topAsins || []).map((product: any) => ({
+    const formattedProducts = (products || []).map((product: any) => ({
       id: product.asin,
-      name: product.asin, // We don't have product titles in the summary
+      name: product.product_title || product.asin,
       childAsin: product.asin,
       image: `/api/products/${product.asin}/image`,
       impressions: product.impressions || 0,
@@ -266,26 +240,26 @@ export async function GET(
       cartAddsComparison: comparison ? comparison.cartAdds : null,
       purchases: product.purchases || 0,
       purchasesComparison: comparison ? comparison.purchases : null,
-      ctr: product.impressions > 0 ? `${((product.clicks / product.impressions) * 100).toFixed(1)}%` : '0%',
+      ctr: `${product.click_through_rate?.toFixed(1) || 0}%`,
       ctrComparison: null,
-      cvr: product.clicks > 0 ? `${((product.purchases / product.clicks) * 100).toFixed(1)}%` : '0%',
+      cvr: `${product.conversion_rate?.toFixed(1) || 0}%`,
       cvrComparison: null,
-      impressionShare: '0%', // Not available in this view
+      impressionShare: `${product.impression_share?.toFixed(0) || 0}%`,
       impressionShareComparison: null,
-      cvrShare: '0%',
+      cvrShare: `${product.cvr_share?.toFixed(0) || 0}%`,
       cvrShareComparison: null,
-      ctrShare: '0%',
+      ctrShare: `${product.ctr_share?.toFixed(0) || 0}%`,
       ctrShareComparison: null,
-      cartAddShare: '0%',
+      cartAddShare: `${product.cart_add_share?.toFixed(0) || 0}%`,
       cartAddShareComparison: null,
-      purchaseShare: '0%',
+      purchaseShare: `${product.purchase_share?.toFixed(0) || 0}%`,
       purchaseShareComparison: null,
     }))
     
-    // Fetch search query performance - WITH CORRECT COLUMN NAMES
+    // Fetch search query performance by aggregating from search_performance_summary
     const { data: searchQueries, error: queriesError } = await supabase
       .from('search_performance_summary')
-      .select('search_query, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('search_query, impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -300,10 +274,10 @@ export async function GET(
       if (!acc[query]) {
         acc[query] = { impressions: 0, clicks: 0, cart_adds: 0, purchases: 0 }
       }
-      acc[query].impressions += row.total_query_impression_count || 0
-      acc[query].clicks += row.asin_click_count || 0
-      acc[query].cart_adds += row.asin_cart_add_count || 0
-      acc[query].purchases += row.asin_purchase_count || 0
+      acc[query].impressions += row.impressions || 0
+      acc[query].clicks += row.clicks || 0
+      acc[query].cart_adds += row.cart_adds || 0
+      acc[query].purchases += row.purchases || 0
       return acc
     }, {})
     
@@ -339,13 +313,13 @@ export async function GET(
       cvrComparison: null,
       impressionShare: `0%`, // Not available without the materialized view
       impressionShareComparison: null,
-      cvrShare: `0%`,
+      cvrShare: `0%`, // Not available without the materialized view
       cvrShareComparison: null,
-      ctrShare: `0%`,
+      ctrShare: `0%`, // Not available without the materialized view
       ctrShareComparison: null,
-      cartAddShare: `0%`,
+      cartAddShare: `0%`, // Not available without the materialized view
       cartAddShareComparison: null,
-      purchaseShare: `0%`,
+      purchaseShare: `0%`, // Not available without the materialized view
       purchaseShareComparison: null,
     }))
     
