@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch aggregated data for the time series
     const { data: performanceData, error: performanceError } = await supabase
-      .from('search_performance_summary')
+      .from('search_query_detail')
       .select('*')
       .eq('asin', asin)
       .gte('start_date', startDate)
@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
     let comparisonTimeSeries = null
     if (compareStartDate && compareEndDate) {
       const { data: compareData } = await supabase
-        .from('search_performance_summary')
+        .from('search_query_detail')
         .select('*')
         .eq('asin', asin)
         .gte('start_date', compareStartDate)
@@ -158,10 +158,10 @@ export async function GET(request: NextRequest) {
 
     // Fetch top search queries for the ASIN
     const { data: searchQueryData, error: searchQueryError } = await supabase
-      .from('search_performance_summary')
+      .from('search_query_detail')
       .select('*')
       .eq('asin', asin)
-      .gte('start_date', startDate)
+      .gte('start_date', startDate)  
       .lte('end_date', endDate)
       .order('impressions', { ascending: false })
       .limit(1000) // Increase limit to get all data for aggregation
