@@ -247,8 +247,9 @@ npm run test:new-apis         # Test v2 API endpoints
 npm run verify:schema         # Verify BigQuery schema matches expectations
 
 # Production debugging scripts
-npx tsx src/scripts/test-bigquery-simple.ts    # Test simplified BigQuery connection
-npx tsx src/scripts/debug-credentials-format.ts # Debug and fix credential format issues
+npx tsx src/scripts/diagnose-bigquery-auth.ts   # Comprehensive BigQuery auth diagnosis
+npx tsx src/scripts/test-bigquery-simple.ts     # Test simplified BigQuery connection
+npx tsx src/scripts/debug-credentials-format.ts  # Debug and fix credential format issues
 npx tsx src/scripts/check-missing-migrations.ts # Check for missing database migrations
 npx tsx src/scripts/apply-missing-migrations.ts # Apply missing migrations (requires exec_sql function)
 ```
@@ -302,7 +303,8 @@ npm run fix:columns        # Add missing columns to tables
 
 ### Configuration
 - `/src/config/bigquery.config.ts` - BigQuery connection and table configuration
-- `/src/config/bigquery-simple.config.ts` - Simplified BigQuery client for production use
+- `/src/config/bigquery-production.config.ts` - Production-ready BigQuery client with multiple auth strategies
+- `/src/config/bigquery-simple.config.ts` - Simplified BigQuery client for basic use
 - `/src/config/bigquery-auth.config.ts` - Authentication-aware BigQuery client (alternative)
 - `/src/config/supabase.config.ts` - Supabase client configuration
 - `/src/config/column-mappings.ts` - BigQuery to Supabase column mappings
@@ -567,9 +569,10 @@ The application will be available at:
 
 ### Common Issues
 1. **BigQuery Connection Failures**: Check credentials and project access
-   - Use `npx tsx src/scripts/test-bigquery-simple.ts` to test connection
+   - Use `npx tsx src/scripts/diagnose-bigquery-auth.ts` for comprehensive diagnosis
    - Use `npx tsx src/scripts/debug-credentials-format.ts` to fix credential format
    - Ensure GOOGLE_APPLICATION_CREDENTIALS_JSON is properly formatted (single line, escaped newlines)
+   - The production client tries multiple auth strategies: inline credentials, temp file, env var, default auth
 2. **Supabase Migration Errors**: Verify migration order and dependencies
 3. **Sync Timeouts**: Adjust batch sizes and connection pool settings
 4. **Missing Data**: Check date ranges and ASIN filters
