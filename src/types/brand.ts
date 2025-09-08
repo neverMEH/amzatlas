@@ -181,7 +181,7 @@ export function isBrand(obj: any): obj is Brand {
 }
 
 export function isBrandWithHierarchy(obj: any): obj is BrandWithHierarchy {
-  return isBrand(obj) && (obj.children === undefined || Array.isArray(obj.children))
+  return isBrand(obj) && ('children' in obj ? Array.isArray(obj.children) : true)
 }
 
 /**
