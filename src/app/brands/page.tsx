@@ -3,10 +3,11 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useBrands } from '@/lib/api/brands'
+import type { Brand } from '@/types/brand'
 
 export default function BrandsPage() {
   const router = useRouter()
-  const { data: brands, isLoading } = useBrands()
+  const { data: brands = [], isLoading } = useBrands()
 
   useEffect(() => {
     // Redirect to first brand when brands are loaded
