@@ -94,7 +94,14 @@ async function diagnoseBigQueryAuth() {
       
       const client = new BigQuery({
         projectId: projectId,
-        credentials: creds,
+        credentials: {
+          type: creds.type,
+          project_id: creds.project_id,
+          private_key_id: creds.private_key_id,
+          private_key: creds.private_key,
+          client_email: creds.client_email,
+          client_id: creds.client_id
+        },
         location: 'US'
       })
       

@@ -31,7 +31,7 @@ export function getSimpleBigQueryClient(): BigQuery {
         }
         
         // Create BigQuery client with inline credentials
-        // Important: Set both projectId AND credentials.project_id
+        // Important: Only include the fields that BigQuery expects
         bigQueryClient = new BigQuery({
           projectId: credentials.project_id || projectId,
           credentials: {
@@ -41,11 +41,7 @@ export function getSimpleBigQueryClient(): BigQuery {
             private_key: credentials.private_key,
             client_email: credentials.client_email,
             client_id: credentials.client_id,
-            auth_uri: credentials.auth_uri,
-            token_uri: credentials.token_uri,
-            auth_provider_x509_cert_url: credentials.auth_provider_x509_cert_url,
-            client_x509_cert_url: credentials.client_x509_cert_url,
-            universe_domain: credentials.universe_domain
+            // Note: auth_uri, token_uri, and other fields are not needed by the BigQuery client
           },
           location: process.env.BIGQUERY_LOCATION || 'US',
           // Disable auto-retry to see actual errors

@@ -86,7 +86,14 @@ function tryInlineCredentials(projectId: string): BigQuery | null {
   
   return new BigQuery({
     projectId: credentials.project_id || projectId,
-    credentials: credentials,
+    credentials: {
+      type: credentials.type,
+      project_id: credentials.project_id,
+      private_key_id: credentials.private_key_id,
+      private_key: credentials.private_key,
+      client_email: credentials.client_email,
+      client_id: credentials.client_id
+    },
     location: process.env.BIGQUERY_LOCATION || 'US'
   })
 }
