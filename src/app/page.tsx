@@ -11,6 +11,7 @@ import { SearchQueryTable, SearchQueryData } from '@/components/asin-performance
 import { KeywordAnalysisModal } from '@/components/asin-performance/KeywordAnalysisModal'
 import { useASINPerformance } from '@/lib/api/asin-performance'
 import { DataDebugger } from '@/components/debug/DataDebugger'
+import { getDefaultDateRange } from '@/lib/date-utils/get-default-date-range'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -32,17 +33,8 @@ export default function Dashboard() {
   // Initialize date range after component mounts to avoid hydration issues
   useEffect(() => {
     if (!dateRange.startDate && !dateRange.endDate) {
-      const today = new Date()
-      const dayOfWeek = today.getDay()
-      const startOfWeek = new Date(today)
-      startOfWeek.setDate(today.getDate() - dayOfWeek) // Sunday
-      const endOfWeek = new Date(startOfWeek)
-      endOfWeek.setDate(startOfWeek.getDate() + 6) // Saturday
-      
-      setDateRange({
-        startDate: startOfWeek.toISOString().split('T')[0],
-        endDate: endOfWeek.toISOString().split('T')[0],
-      })
+      const defaultRange = getDefaultDateRange()
+      setDateRange(defaultRange)
     }
   }, [])
   const [compareRange, setCompareRange] = useState({

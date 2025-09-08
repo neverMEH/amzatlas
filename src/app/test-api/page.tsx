@@ -4,8 +4,8 @@ import { useState } from 'react'
 
 export default function TestAPIPage() {
   const [asin, setAsin] = useState('')
-  const [startDate, setStartDate] = useState('2024-08-18')
-  const [endDate, setEndDate] = useState('2024-08-24')
+  const [startDate, setStartDate] = useState('2025-08-25')
+  const [endDate, setEndDate] = useState('2025-08-31')
   const [response, setResponse] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
