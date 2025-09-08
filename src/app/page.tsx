@@ -10,7 +10,6 @@ import { FunnelChart } from '@/components/asin-performance/FunnelChart'
 import { SearchQueryTable, SearchQueryData } from '@/components/asin-performance/SearchQueryTable'
 import { KeywordAnalysisModal } from '@/components/asin-performance/KeywordAnalysisModal'
 import { useASINPerformance } from '@/lib/api/asin-performance'
-import { DataDebugger } from '@/components/debug/DataDebugger'
 import { getDefaultDateRange } from '@/lib/date-utils/get-default-date-range'
 
 export default function Dashboard() {
@@ -182,14 +181,6 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Debug component - REMOVE THIS IN PRODUCTION */}
-            <DataDebugger 
-              data={data} 
-              isLoading={isLoading} 
-              error={error} 
-              title="ASIN Performance API Response"
-            />
-            
             {/* Metrics cards */}
             <section>
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Performance Indicators</h2>

@@ -91,13 +91,32 @@ export async function GET(request: NextRequest) {
     }
 
     // Prepare time series data from performance data
-    const timeSeries = performanceData?.map((row: any) => ({
-      date: row.start_date,
-      impressions: row.impressions || 0,
-      clicks: row.clicks || 0,
-      cartAdds: row.cart_adds || 0,
-      purchases: row.purchases || 0,
-    })) || []
+    // Aggregate by date since we may have multiple search queries per date
+    const timeSeriesMap = new Map<string, any>()
+    
+    performanceData?.forEach((row: any) => {
+      const date = row.start_date
+      if (!timeSeriesMap.has(date)) {
+        timeSeriesMap.set(date, {
+          date,
+          impressions: 0,
+          clicks: 0,
+          cartAdds: 0,
+          purchases: 0,
+        })
+      }
+      
+      const existing = timeSeriesMap.get(date)
+      existing.impressions += row.impressions || 0
+      existing.clicks += row.clicks || 0
+      existing.cartAdds += row.cart_adds || 0
+      existing.purchases += row.purchases || 0
+    })
+    
+    // Convert map to array and sort by date
+    const timeSeries = Array.from(timeSeriesMap.values()).sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    )
 
     // Fetch comparison data if requested
     let comparison = null
@@ -145,14 +164,32 @@ export async function GET(request: NextRequest) {
           },
         }
 
-        // Prepare comparison time series data
-        comparisonTimeSeries = compareData.map((row: any) => ({
-          date: row.start_date,
-          impressions: row.impressions || 0,
-          clicks: row.clicks || 0,
-          cartAdds: row.cart_adds || 0,
-          purchases: row.purchases || 0,
-        }))
+        // Prepare comparison time series data with aggregation by date
+        const comparisonTimeSeriesMap = new Map<string, any>()
+        
+        compareData.forEach((row: any) => {
+          const date = row.start_date
+          if (!comparisonTimeSeriesMap.has(date)) {
+            comparisonTimeSeriesMap.set(date, {
+              date,
+              impressions: 0,
+              clicks: 0,
+              cartAdds: 0,
+              purchases: 0,
+            })
+          }
+          
+          const existing = comparisonTimeSeriesMap.get(date)
+          existing.impressions += row.impressions || 0
+          existing.clicks += row.clicks || 0
+          existing.cartAdds += row.cart_adds || 0
+          existing.purchases += row.purchases || 0
+        })
+        
+        // Convert map to array and sort by date
+        comparisonTimeSeries = Array.from(comparisonTimeSeriesMap.values()).sort((a, b) => 
+          new Date(a.date).getTime() - new Date(b.date).getTime()
+        )
       }
     }
 
