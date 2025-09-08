@@ -19,8 +19,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Daily Sync**: Implemented and deployed on Railway with cron schedule
 - **Node.js Version**: Requires upgrade to v20+ (currently using v20 in production)
 - **Environment**: .env file needs to be configured with actual credentials for local development
+- **Brand Selection Dropdown Phase 1**: Completed with all TypeScript errors resolved (Sep 8, 2025)
 
 ### 📅 Latest Updates (September 8, 2025)
+- **Brand Selection Dropdown Phase 1 Complete**: 
+  - Fixed API response format inconsistency
+  - Added comprehensive TypeScript types with proper type guards
+  - Implemented retry logic and error handling
+  - Fixed brand persistence with localStorage/sessionStorage
+  - Resolved React Query v5 compatibility (cacheTime → gcTime)
+  - Fixed type guard for BrandWithHierarchy to properly check for children property
 - **Chart Data Population Fixes**: Resolved issues preventing charts from displaying data
   - Fixed "weekly_summary table not found" error by updating API to use `search_query_detail` view
   - Created missing database views: `search_query_detail`, `search_performance_summary_detail`
