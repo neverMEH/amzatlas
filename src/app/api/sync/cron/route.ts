@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
-import { runDailySync } from '@/scripts/daily-sync'
+
+// Import the daily sync function
+const { runDailySync } = require('../../../../scripts/daily-sync')
 
 // This endpoint can be called by Railway cron or external services
 export async function GET(request: Request) {
@@ -27,7 +29,7 @@ export async function GET(request: Request) {
       success: true,
       message: 'Daily sync completed',
       stats: {
-        duration: `${(result.endTime - result.startTime) / 1000}s`,
+        duration: result.endTime ? `${(result.endTime - result.startTime) / 1000}s` : 'unknown',
         parentRecordsInserted: result.parentRecordsInserted,
         searchQueriesInserted: result.searchQueriesInserted,
         totalRows: result.totalRows,
