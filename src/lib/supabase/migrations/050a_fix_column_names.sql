@@ -26,15 +26,15 @@ RETURNS TABLE (
 BEGIN
   RETURN QUERY
   SELECT
-    SUM(sqp.total_impression_count)::BIGINT as total_impressions,
+    SUM(sqp.total_query_impression_count)::BIGINT as total_impressions,
     SUM(sqp.asin_click_count)::BIGINT as total_clicks,
     SUM(sqp.asin_cart_add_count)::BIGINT as total_cart_adds,
     SUM(sqp.asin_purchase_count)::BIGINT as total_purchases,
     COUNT(DISTINCT apd.asin)::INTEGER as unique_asins,
     COUNT(DISTINCT sqp.search_query)::INTEGER as unique_queries,
     CASE 
-      WHEN SUM(sqp.total_impression_count) > 0 
-      THEN (SUM(sqp.asin_click_count)::NUMERIC / SUM(sqp.total_impression_count)::NUMERIC * 100)
+      WHEN SUM(sqp.total_query_impression_count) > 0 
+      THEN (SUM(sqp.asin_click_count)::NUMERIC / SUM(sqp.total_query_impression_count)::NUMERIC * 100)
       ELSE 0
     END as avg_ctr,
     CASE 
@@ -76,14 +76,14 @@ WITH brand_metrics AS (
     b.brand_color,
     COUNT(DISTINCT abm.asin) as asin_count,
     COUNT(DISTINCT sqp.search_query) as query_count,
-    SUM(sqp.total_impression_count) as total_impressions,
+    SUM(sqp.total_query_impression_count) as total_impressions,
     SUM(sqp.asin_click_count) as total_clicks,
     SUM(sqp.asin_cart_add_count) as total_cart_adds,
     SUM(sqp.asin_purchase_count) as total_purchases,
     -- Calculate rates
     CASE 
-      WHEN SUM(sqp.total_impression_count) > 0 
-      THEN (SUM(sqp.asin_click_count)::NUMERIC / SUM(sqp.total_impression_count)::NUMERIC * 100)
+      WHEN SUM(sqp.total_query_impression_count) > 0 
+      THEN (SUM(sqp.asin_click_count)::NUMERIC / SUM(sqp.total_query_impression_count)::NUMERIC * 100)
       ELSE 0
     END as avg_ctr,
     CASE 
