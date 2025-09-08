@@ -22,12 +22,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Brand Selection Dropdown Phase 1**: Completed with all TypeScript errors resolved (Sep 8, 2025)
 
 ### 📅 Latest Updates (September 8, 2025)
+- **Brand Product List Enhanced Phase 2 Complete**: 
+  - **API Endpoints**: Created `/api/brands/[brandId]/products` and `/api/brands/[brandId]/products/[asin]/segments` endpoints
+  - **Features**: Segment metadata, comparison periods, filtering, sorting, pagination, and caching
+  - **Performance**: Query timing, 5-10min caching, stale-while-revalidate, and comprehensive error handling
+  - **Testing**: Complete test suites and manual integration test runner created
+  - **Status**: Tasks 1-2 of 5 complete, ready for expandable table component development
 - **Brand Product List Enhanced Infrastructure Complete**: 
   - **Migration 053**: Successfully deployed brand_product_segments materialized view
   - **Performance**: 3,665 weekly segments aggregated with 6 optimized indexes for <200ms queries
   - **Database Objects**: Created materialized view, enhanced performance view, helper functions, and validation
   - **Key Fixes**: Corrected segment classification (weekly not daily), fixed column references, resolved view conflicts
-  - **Infrastructure Ready**: Database foundation complete for expandable date ranges in brand dashboard
 - **Brand Selection Dropdown Phase 1 Complete**: 
   - Fixed API response format inconsistency
   - Added comprehensive TypeScript types with proper type guards

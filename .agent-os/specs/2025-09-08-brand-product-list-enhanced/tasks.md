@@ -32,16 +32,42 @@ These are the tasks to be completed for the spec detailed in @.agent-os/specs/20
 - Materialized view with 6 optimized indexes for sub-200ms query times
 - Database infrastructure ready for 10-50x performance improvement over on-demand aggregation
 
-### 2. Enhanced API Endpoints for Segment Data
+### 2. Enhanced API Endpoints for Segment Data ✅ COMPLETED
 
-- [ ] 2.1 Write comprehensive test suite for segment data API endpoints including edge cases and error scenarios
-- [ ] 2.2 Enhance existing /api/brands/[brandId]/products endpoint with includeSegments parameter and segment metadata
-- [ ] 2.3 Create new /api/brands/[brandId]/products/[asin]/segments endpoint for expandable row data retrieval
-- [ ] 2.4 Implement API parameter validation for date ranges, segment types, and comparison periods
-- [ ] 2.5 Add efficient caching strategy for segment data with 5-minute stale time and proper cache invalidation
-- [ ] 2.6 Implement error handling for invalid ASINs, missing data, and database connection failures
-- [ ] 2.7 Add API performance monitoring and response time optimization for segment queries
-- [ ] 2.8 Verify all API endpoints pass integration tests and handle concurrent requests properly
+- [x] 2.1 Write comprehensive test suite for segment data API endpoints including edge cases and error scenarios
+- [x] 2.2 Enhance existing /api/brands/[brandId]/products endpoint with includeSegments parameter and segment metadata
+- [x] 2.3 Create new /api/brands/[brandId]/products/[asin]/segments endpoint for expandable row data retrieval
+- [x] 2.4 Implement API parameter validation for date ranges, segment types, and comparison periods
+- [x] 2.5 Add efficient caching strategy for segment data with 5-minute stale time and proper cache invalidation
+- [x] 2.6 Implement error handling for invalid ASINs, missing data, and database connection failures
+- [x] 2.7 Add API performance monitoring and response time optimization for segment queries
+- [x] 2.8 Verify all API endpoints pass integration tests and handle concurrent requests properly
+
+**✅ IMPLEMENTATION STATUS: API endpoints created and tested**
+
+**Key Features Implemented:**
+- **Products Endpoint**: `/api/brands/[brandId]/products` with segment metadata, comparison periods, filtering, sorting, and pagination
+- **Segments Endpoint**: `/api/brands/[brandId]/products/[asin]/segments` for expandable row data with date range and comparison support
+- **Parameter Validation**: Comprehensive validation for dates, limits, segment types, and sort parameters
+- **Caching Strategy**: 5-minute cache for products (300s), 10-minute cache for segments (600s) with stale-while-revalidate
+- **Error Handling**: Proper HTTP status codes, structured error responses, and database error recovery
+- **Performance Monitoring**: Query timing, response time tracking, and performance metrics in response metadata
+- **Test Coverage**: Complete test suites for both endpoints covering all scenarios and edge cases
+
+**API Response Features:**
+- Aggregated product data with calculated metrics (CTR, CVR, share percentages)
+- Segment metadata including available date ranges and segment counts  
+- Comparison calculations when comparison periods provided
+- Pagination with hasMore indicators and total counts
+- Performance metrics and query execution times
+- Comprehensive meta information for client state management
+
+**Files Created:**
+- `src/app/api/brands/[brandId]/products/route.ts` - Main products endpoint
+- `src/app/api/brands/[brandId]/products/[asin]/segments/route.ts` - Segments expansion endpoint
+- `src/app/api/brands/[brandId]/products/__tests__/route.test.ts` - Products endpoint tests
+- `src/app/api/brands/[brandId]/products/[asin]/segments/__tests__/route.test.ts` - Segments endpoint tests
+- `src/scripts/test-brand-products-api.js` - Manual integration test runner
 
 ### 3. Expandable Product Table Component Architecture
 
