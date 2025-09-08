@@ -36,7 +36,7 @@ export async function GET() {
 
     // Get ASIN counts for each brand
     const brandsWithCounts = await Promise.all(
-      (brands || []).map(async (brand) => {
+      (brands || []).map(async (brand: any) => {
         const { count } = await supabase
           .from('asin_brand_mapping')
           .select('*', { count: 'exact', head: true })
