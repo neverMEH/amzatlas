@@ -226,8 +226,20 @@ export class BigQuerySyncService {
       AND (\`Parent ASIN\` IS NOT NULL OR \`Child ASIN\` IS NOT NULL)
     `
     
-    const [rows] = await this.bigquery.query({ query })
-    console.log(`Found ${rows.length} unique ASIN/date combinations`)
+    console.log('Executing parent records query:', query)
+    
+    let rows: any[] = []
+    try {
+      [rows] = await this.bigquery.query({ query })
+      console.log(`Found ${rows.length} unique ASIN/date combinations`)
+    } catch (error: any) {
+      console.error('Parent records query failed:', error.message)
+      if (error.errors) {
+        console.error('Error details:', JSON.stringify(error.errors, null, 2))
+      }
+      // Don't throw - continue with sync even if parent records fail
+      return
+    }
     
     if (rows.length === 0) return
     

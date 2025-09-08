@@ -58,7 +58,10 @@ export const getBigQueryConfig = (): BigQueryConfig => {
   }
 
   const projectId = process.env.BIGQUERY_PROJECT_ID || credentials?.project_id || 'amazon-sp-report-loader'
-  const dataset = process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85'
+  let dataset = process.env.BIGQUERY_DATASET || 'dataclient_amzatlas_agency_85'
+  
+  // Remove any trailing periods from dataset name
+  dataset = dataset.replace(/\.$/, '')
   
   console.log('BigQuery configuration loaded:', {
     projectId,
