@@ -7,15 +7,18 @@ import type { Brand } from '@/types/brand'
 
 export default function BrandsPage() {
   const router = useRouter()
-  const { data: brands = [], isLoading } = useBrands()
+  const { data: brands, isLoading } = useBrands()
+  
+  // Ensure brands is treated as an array
+  const brandsList = brands || []
 
   useEffect(() => {
     // Redirect to first brand when brands are loaded
-    if (brands && brands.length > 0) {
-      const firstBrandId = brands[0].id
+    if (brandsList.length > 0) {
+      const firstBrandId = brandsList[0].id
       router.replace(`/brands/${firstBrandId}`)
     }
-  }, [brands, router])
+  }, [brandsList, router])
 
   if (isLoading) {
     return (
@@ -25,7 +28,7 @@ export default function BrandsPage() {
     )
   }
 
-  if (!brands || brands.length === 0) {
+  if (brandsList.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
