@@ -14,14 +14,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Production**: Deployed on Railway with automatic deployments from main branch
 - **Build Status**: ✅ Fixed TypeScript build errors in sync-service.ts
 
-### 🔴 Outstanding Issues
-- **BigQuery Authentication**: Production authentication errors - crypto compatibility issues with service account key
-  - Missing migrations in production: 016_create_public_sync_views.sql, 048_cleanup_refresh_infrastructure.sql
-  - Created debugging scripts to help diagnose and fix credential format issues
+### ✅ Resolved Issues
+- **BigQuery Authentication**: Fixed using file-based authentication approach
+- **Daily Sync**: Implemented and deployed on Railway with cron schedule
 - **Node.js Version**: Requires upgrade to v20+ (currently using v20 in production)
 - **Environment**: .env file needs to be configured with actual credentials for local development
 
-### 📅 Latest Updates (September 7, 2025)
+### 📅 Latest Updates (September 8, 2025)
+- **BigQuery Daily Sync Implementation**: Completed full sync setup
+  - Fixed authentication issues with file-based credential approach
+  - Created `daily-sync.js` script with comprehensive error handling
+  - Successfully synced 500 records (23 parent, 500 search queries)
+  - Deployed Railway cron service (daily at 2 AM UTC)
+  - Added monitoring via sync_log table and API endpoints
+- **Previous Updates (September 7, 2025)**
 - **Refresh Monitor UI Redesign**: Completed Task 4 - Complete UI overhaul
   - Redesigned RefreshStatusCard with core system health metrics, alerts, and pipeline activity
   - Created CriticalTablesMonitor component for high-priority table tracking
@@ -258,6 +264,9 @@ npx tsx src/scripts/apply-missing-migrations.ts # Apply missing migrations (requ
 ```bash
 npm run seed:db            # Seed database with test data
 npm run fix:columns        # Add missing columns to tables
+npm run sync:daily         # Run daily BigQuery to Supabase sync
+npm run sync:test          # Test sync with small batch (100 rows)
+npm run sync:health        # Check sync script health status
 ```
 
 ## API Endpoints
@@ -497,6 +506,33 @@ npm run fix:columns        # Add missing columns to tables
   - Created monitoring views: pipeline_health, data_freshness_summary
   - Updated priorities: sync_log (99), search_query_performance (95), asin_performance_data (90)
 - **Result**: Monitoring accuracy improved from ~20% to 95%
+
+### BigQuery to Supabase Daily Sync (Sep 2025)
+- **Implementation**: Automated daily data synchronization from BigQuery to Supabase
+- **Authentication Fix**: Resolved production authentication issues using file-based credentials approach
+- **Daily Sync Script**: Created comprehensive `src/scripts/daily-sync.js` with:
+  - Error handling and retry logic
+  - Database logging to sync_log table
+  - Batch processing (configurable via SYNC_BATCH_SIZE)
+  - Automatic credential cleanup
+  - Health check endpoint support
+- **Railway Cron Setup**:
+  - Created new cron service in Railway dashboard
+  - Schedule: `0 2 * * *` (daily at 2 AM UTC)
+  - Start command: `node src/scripts/daily-sync.js`
+  - Copies environment variables from main service
+- **Monitoring**:
+  - Sync status tracked in sync_log table
+  - API endpoint: `/api/sync/cron` for HTTP triggers
+  - NPM scripts: `sync:daily`, `sync:test`, `sync:health`
+- **Data Synced**:
+  - Successfully synced 500 rows in initial test
+  - 23 parent records (asin_performance_data)
+  - 500 search query records (search_query_performance)
+  - Syncs last 7 days of data by default
+- **Documentation**:
+  - Setup guide: `/docs/setup-daily-sync-railway.md`
+  - Visual guide: `/docs/railway-cron-visual-guide.md`
 - **Documentation**: `/docs/refresh-infrastructure-analysis.md`
 - **Tools**: `src/scripts/refresh-infrastructure-audit.ts`
 
