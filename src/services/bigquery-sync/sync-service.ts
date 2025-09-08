@@ -186,43 +186,43 @@ export class BigQuerySyncService {
     const queries: Record<string, string> = {
       asin_performance_data: `
         SELECT 
-          ASIN as asin,
-          "Start Date" as start_date,
-          "End Date" as end_date,
-          "Child ASIN" as child_asin,
+          \`ASIN\` as asin,
+          \`Start Date\` as start_date,
+          \`End Date\` as end_date,
+          \`Child ASIN\` as child_asin,
           ARRAY_AGG(
             STRUCT(
-              "Search Query" as search_query,
-              "Impressions" as impressions,
-              "Clicks" as clicks,
-              "Cart Adds" as cart_adds,
-              "Purchases" as purchases
+              \`Search Query\` as search_query,
+              \`Impressions\` as impressions,
+              \`Clicks\` as clicks,
+              \`Cart Adds\` as cart_adds,
+              \`Purchases\` as purchases
             )
           ) as search_query_performance
         FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : ''}
-        GROUP BY ASIN, "Start Date", "End Date", "Child ASIN"
+        ${dateRange ? `WHERE DATE(\`End Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : ''}
+        GROUP BY \`ASIN\`, \`Start Date\`, \`End Date\`, \`Child ASIN\`
         LIMIT 1000
       `,
       
       search_query_performance: `
         SELECT *
         FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE(Date) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(Date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
+        ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
         LIMIT 10000
       `,
       
       daily_sqp_data: `
         SELECT 
-          ASIN as asin,
-          DATE("End Date") as date,
-          SUM(CAST("Impressions" AS INT64)) as impressions,
-          SUM(CAST("Clicks" AS INT64)) as clicks,
-          SUM(CAST("Cart Adds" AS INT64)) as cart_adds,
-          SUM(CAST("Purchases" AS INT64)) as purchases
+          \`ASIN\` as asin,
+          DATE(\`End Date\`) as date,
+          SUM(CAST(\`Impressions\` AS INT64)) as impressions,
+          SUM(CAST(\`Clicks\` AS INT64)) as clicks,
+          SUM(CAST(\`Cart Adds\` AS INT64)) as cart_adds,
+          SUM(CAST(\`Purchases\` AS INT64)) as purchases
         FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE("End Date") BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE("End Date") >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'}
-        GROUP BY ASIN, date
+        ${dateRange ? `WHERE DATE(\`End Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`End Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'}
+        GROUP BY \`ASIN\`, date
       `
     }
     
@@ -239,18 +239,18 @@ export class BigQuerySyncService {
     // Get unique ASINs for the date range
     let whereClause = ''
     if (dateRange) {
-      whereClause = `WHERE DATE(Date) BETWEEN '${dateRange.start}' AND '${dateRange.end}'`
+      whereClause = `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'`
     } else {
-      whereClause = `WHERE DATE(Date) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)`
+      whereClause = `WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)`
     }
     
     const query = `
       SELECT DISTINCT
-        COALESCE("Parent ASIN", "Child ASIN") as asin,
-        DATE(Date) as date
+        COALESCE(\`Parent ASIN\`, \`Child ASIN\`) as asin,
+        DATE(\`Date\`) as date
       FROM \`${config.projectId}.${dataset}.${tableName}\`
       ${whereClause}
-      AND ("Parent ASIN" IS NOT NULL OR "Child ASIN" IS NOT NULL)
+      AND (\`Parent ASIN\` IS NOT NULL OR \`Child ASIN\` IS NOT NULL)
     `
     
     const [rows] = await this.bigquery.query({ query })
