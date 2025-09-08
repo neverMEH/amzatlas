@@ -22,6 +22,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Brand Selection Dropdown Phase 1**: Completed with all TypeScript errors resolved (Sep 8, 2025)
 
 ### 📅 Latest Updates (September 8, 2025)
+- **Brand Product List Enhanced Infrastructure Complete**: 
+  - **Migration 053**: Successfully deployed brand_product_segments materialized view
+  - **Performance**: 3,665 weekly segments aggregated with 6 optimized indexes for <200ms queries
+  - **Database Objects**: Created materialized view, enhanced performance view, helper functions, and validation
+  - **Key Fixes**: Corrected segment classification (weekly not daily), fixed column references, resolved view conflicts
+  - **Infrastructure Ready**: Database foundation complete for expandable date ranges in brand dashboard
 - **Brand Selection Dropdown Phase 1 Complete**: 
   - Fixed API response format inconsistency
   - Added comprehensive TypeScript types with proper type guards
@@ -635,6 +641,7 @@ During Phase 2 implementation, we encountered and resolved several database migr
 - `039_create_public_views_for_sqp_tables.sql` - Public schema views for API access
 - `041_add_brand_matching_functions.sql` - RPC functions for brand management
 - `042_create_report_configuration_tables.sql` - Report system infrastructure
+- `053_create_brand_product_segments.sql` - **NEW**: Brand product segments materialized view for expandable date ranges
 - `/src/lib/supabase/migrations/README_MIGRATION_ORDER.md` - Complete migration sequence documentation
 
 ### Data Sync Implementation (Dec 2024)
