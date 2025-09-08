@@ -71,3 +71,35 @@ GRANT SELECT ON public.brand_extraction_analytics TO authenticated;
 -- Update comments
 COMMENT ON MATERIALIZED VIEW public.brand_extraction_analytics IS 
 'Analytics on brand extraction rules and their effectiveness';
+
+-- Update the refresh function to include brand_extraction_analytics
+CREATE OR REPLACE FUNCTION public.refresh_brand_materialized_views()
+RETURNS void AS $$
+BEGIN
+  -- Refresh in dependency order
+  REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_performance_summary;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_hierarchy_view;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_extraction_analytics;
+  
+  -- Log refresh (only if table exists)
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'materialized_view_refresh_log'
+  ) THEN
+    INSERT INTO public.materialized_view_refresh_log (
+      view_name,
+      refresh_start,
+      refresh_end,
+      status,
+      row_count
+    )
+    VALUES
+      ('brand_performance_summary', NOW(), NOW(), 'success', 
+       (SELECT COUNT(*) FROM public.brand_performance_summary)),
+      ('brand_hierarchy_view', NOW(), NOW(), 'success',
+       (SELECT COUNT(*) FROM public.brand_hierarchy_view)),
+      ('brand_extraction_analytics', NOW(), NOW(), 'success',
+       (SELECT COUNT(*) FROM public.brand_extraction_analytics));
+  END IF;
+END;
+$$ LANGUAGE plpgsql;

@@ -168,41 +168,7 @@ CREATE INDEX idx_brand_hierarchy_view_path_gin ON public.brand_hierarchy_view US
 GRANT SELECT ON public.brand_performance_summary TO authenticated;
 GRANT SELECT ON public.brand_hierarchy_view TO authenticated;
 
--- Create brand_extraction_analytics view
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.brand_extraction_analytics AS
-SELECT 
-  b.id as brand_id,
-  b.brand_name,
-  b.display_name,
-  COUNT(DISTINCT ber.id) as total_rules,
-  COUNT(DISTINCT CASE WHEN ber.is_active THEN ber.id END) as active_rules,
-  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.extraction_method IS NOT NULL) as extracted_asins,
-  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.verified = true) as verified_asins,
-  AVG(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as avg_confidence,
-  MIN(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as min_confidence,
-  MAX(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as max_confidence,
-  -- Rule type breakdown
-  jsonb_object_agg(
-    COALESCE(ber.rule_type, 'manual'), 
-    COUNT(DISTINCT abm.asin)
-  ) FILTER (WHERE ber.rule_type IS NOT NULL OR abm.extraction_method = 'manual') as mapping_by_method,
-  -- Recent extraction activity
-  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.created_at >= NOW() - INTERVAL '7 days') as new_mappings_7d,
-  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.created_at >= NOW() - INTERVAL '30 days') as new_mappings_30d,
-  NOW() as last_updated
-FROM public.brands b
-LEFT JOIN public.brand_extraction_rules ber ON b.id = ber.brand_id
-LEFT JOIN public.asin_brand_mapping abm ON b.id = abm.brand_id
-WHERE b.is_active = true
-GROUP BY b.id, b.brand_name, b.display_name;
-
--- Create indexes on extraction analytics
-CREATE INDEX idx_extraction_analytics_brand ON public.brand_extraction_analytics(brand_id);
-CREATE INDEX idx_extraction_analytics_confidence ON public.brand_extraction_analytics(avg_confidence DESC);
-CREATE INDEX idx_extraction_analytics_extracted ON public.brand_extraction_analytics(extracted_asins DESC);
-
--- Grant permissions
-GRANT SELECT ON public.brand_extraction_analytics TO authenticated;
+-- Note: brand_extraction_analytics is created in migration 051b due to nested aggregate issue
 
 -- Update the refresh function to handle dependencies correctly
 CREATE OR REPLACE FUNCTION public.refresh_brand_materialized_views()
@@ -211,7 +177,7 @@ BEGIN
   -- Refresh in dependency order
   REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_performance_summary;
   REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_hierarchy_view;
-  REFRESH MATERIALIZED VIEW CONCURRENTLY public.brand_extraction_analytics;
+  -- brand_extraction_analytics will be added in migration 051b
   
   -- Log refresh (only if table exists)
   IF EXISTS (
@@ -229,9 +195,7 @@ BEGIN
       ('brand_performance_summary', NOW(), NOW(), 'success', 
        (SELECT COUNT(*) FROM public.brand_performance_summary)),
       ('brand_hierarchy_view', NOW(), NOW(), 'success',
-       (SELECT COUNT(*) FROM public.brand_hierarchy_view)),
-      ('brand_extraction_analytics', NOW(), NOW(), 'success',
-       (SELECT COUNT(*) FROM public.brand_extraction_analytics));
+       (SELECT COUNT(*) FROM public.brand_hierarchy_view));
   END IF;
 END;
 $$ LANGUAGE plpgsql;
