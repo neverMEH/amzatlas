@@ -28,6 +28,7 @@
     "sync:schedule": "tsx src/scripts/sync-bigquery-to-supabase.ts schedule",
     "sync:nested-bigquery": "tsx src/scripts/sync-nested-bigquery-to-supabase.ts",
     "sync:daily": "node src/scripts/daily-sync.js",
+    "sync:weekly": "node src/scripts/weekly-sync.js",
     "sync:test": "SYNC_BATCH_SIZE=100 node src/scripts/daily-sync.js",
     "sync:health": "node src/scripts/daily-sync.js --health-check",
     "migrate:up": "tsx src/scripts/run-migrations.ts up",

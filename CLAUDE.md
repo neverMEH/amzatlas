@@ -251,6 +251,7 @@ npm run sync:run            # Manual data sync from BigQuery
 npm run sync:status         # Check sync status
 npm run sync:nested-bigquery # Sync using new nested structure (single week)
 npx tsx src/scripts/sync-all-data.ts # Full sync of all data (weekly batches)
+node src/scripts/weekly-sync.js # Weekly 60-day rolling sync (production)
 npm run pipeline:run        # Run full data pipeline
 npm run pipeline:status     # Check pipeline health
 ```
@@ -276,7 +277,8 @@ npx tsx src/scripts/apply-missing-migrations.ts # Apply missing migrations (requ
 ```bash
 npm run seed:db            # Seed database with test data
 npm run fix:columns        # Add missing columns to tables
-npm run sync:daily         # Run daily BigQuery to Supabase sync
+npm run sync:daily         # Run daily BigQuery sync (7-day lookback)
+npm run sync:weekly        # Run weekly 60-day rolling sync
 npm run sync:test          # Test sync with small batch (100 rows)
 npm run sync:health        # Check sync script health status
 ```
@@ -519,7 +521,9 @@ npm run sync:health        # Check sync script health status
   - Updated priorities: sync_log (99), search_query_performance (95), asin_performance_data (90)
 - **Result**: Monitoring accuracy improved from ~20% to 95%
 
-### BigQuery to Supabase Daily Sync (Sep 2025)
+### BigQuery to Supabase Sync System (Sep 2025)
+
+#### Daily Sync (Original Implementation)
 - **Implementation**: Automated daily data synchronization from BigQuery to Supabase
 - **Authentication Fix**: Resolved production authentication issues using file-based credentials approach
 - **Daily Sync Script**: Created comprehensive `src/scripts/daily-sync.js` with:
@@ -528,23 +532,41 @@ npm run sync:health        # Check sync script health status
   - Batch processing (configurable via SYNC_BATCH_SIZE)
   - Automatic credential cleanup
   - Health check endpoint support
+- **Critical Issue Found**: Daily sync only looks back 7 days (`WHERE Date >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 7 DAY)`)
+  - This misses any data older than 7 days
+  - Caused sync failures when BigQuery data was delayed
+
+#### Weekly 60-Day Rolling Sync (Current Solution)
+- **Implementation**: Weekly sync that captures last 60 days of data
+- **Script**: `src/scripts/weekly-sync.js` - Comprehensive weekly sync with:
+  - 60-day rolling window (configurable via SYNC_DAYS env var)
+  - De-duplication strategy for search queries
+  - Batch processing with configurable size (default 5000)
+  - Detailed sync_log entries for monitoring
+  - Railway-specific health checks and exit codes
 - **Railway Cron Setup**:
-  - Created new cron service in Railway dashboard
-  - Schedule: `0 2 * * *` (daily at 2 AM UTC)
-  - Start command: `node src/scripts/daily-sync.js`
-  - Copies environment variables from main service
+  - Service name: `weekly-bigquery-sync`
+  - Schedule: `0 3 * * 1` (every Monday at 3 AM UTC)
+  - Start command: `node src/scripts/weekly-sync.js`
+  - Environment: Copy all vars from main service
+- **Key Advantages**:
+  - Catches all data within 60-day window
+  - Handles BigQuery data delays
+  - Prevents duplicate search query conflicts
+  - Comprehensive error handling and logging
 - **Monitoring**:
-  - Sync status tracked in sync_log table
-  - API endpoint: `/api/sync/cron` for HTTP triggers
-  - NPM scripts: `sync:daily`, `sync:test`, `sync:health`
+  - Check Railway cron service logs
+  - Query `sync_log` table: `WHERE sync_type = 'weekly-60-day'`
+  - Detailed metadata includes date ranges, row counts, errors
+- **Manual Testing**:
+  ```bash
+  node src/scripts/weekly-sync.js
+  ```
 - **Data Synced**:
   - Successfully synced 500 rows in initial test
   - 23 parent records (asin_performance_data)
   - 500 search query records (search_query_performance)
-  - Syncs last 7 days of data by default
-- **Documentation**:
-  - Setup guide: `/docs/setup-daily-sync-railway.md`
-  - Visual guide: `/docs/railway-cron-visual-guide.md`
+  - Covers 60-day rolling window
 - **Documentation**: `/docs/refresh-infrastructure-analysis.md`
 - **Tools**: `src/scripts/refresh-infrastructure-audit.ts`
 
