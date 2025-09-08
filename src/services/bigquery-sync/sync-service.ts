@@ -186,60 +186,20 @@ export class BigQuerySyncService {
       tableName: tableName
     })
     
-    // Map Supabase table names to BigQuery table names
-    const tableMapping: Record<string, string> = {
-      'search_query_performance': 'seller-search_query_performance',
-      'asin_performance_data': 'seller-search_query_performance',
-      'daily_sqp_data': 'seller-search_query_performance'
-    }
+    // ALL Supabase tables pull from the same BigQuery source table
+    const bigQueryTable = 'seller-search_query_performance'
     
-    const bigQueryTable = tableMapping[tableName] || tableName
+    // ALL data comes from the same BigQuery table, just transform it differently for each target
+    // Simple query - just get the raw data and let transformData handle the rest
+    const query = `
+      SELECT *
+      FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
+      ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
+      LIMIT 10000
+    `
     
-    // Base query for each table type
-    const queries: Record<string, string> = {
-      asin_performance_data: `
-        SELECT 
-          \`ASIN\` as asin,
-          \`Start Date\` as start_date,
-          \`End Date\` as end_date,
-          \`Child ASIN\` as child_asin,
-          ARRAY_AGG(
-            STRUCT(
-              \`Search Query\` as search_query,
-              \`Impressions\` as impressions,
-              \`Clicks\` as clicks,
-              \`Cart Adds\` as cart_adds,
-              \`Purchases\` as purchases
-            )
-          ) as search_query_performance
-        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE(\`End Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : ''}
-        GROUP BY \`ASIN\`, \`Start Date\`, \`End Date\`, \`Child ASIN\`
-        LIMIT 1000
-      `,
-      
-      search_query_performance: `
-        SELECT *
-        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
-        LIMIT 10000
-      `,
-      
-      daily_sqp_data: `
-        SELECT 
-          \`ASIN\` as asin,
-          DATE(\`End Date\`) as date,
-          SUM(CAST(\`Impressions\` AS INT64)) as impressions,
-          SUM(CAST(\`Clicks\` AS INT64)) as clicks,
-          SUM(CAST(\`Cart Adds\` AS INT64)) as cart_adds,
-          SUM(CAST(\`Purchases\` AS INT64)) as purchases
-        FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-        ${dateRange ? `WHERE DATE(\`End Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`End Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'}
-        GROUP BY \`ASIN\`, date
-      `
-    }
-    
-    return queries[tableName] || `SELECT * FROM \`${config.projectId}.${dataset}.${tableName}\` LIMIT 1000`
+    console.log('Query to execute:', query)
+    return query
   }
   
   private async ensureParentRecords(dateRange?: { start: string; end: string }) {
