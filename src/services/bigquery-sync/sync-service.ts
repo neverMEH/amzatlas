@@ -41,7 +41,12 @@ export class BigQuerySyncService {
       
       // For search_query_performance, we need to ensure parent records exist first
       if (tableName === 'search_query_performance') {
+        console.log('Syncing search_query_performance - ensuring parent records exist...')
         await this.ensureParentRecords(dateRange)
+      } else if (tableName === 'asin_performance_data') {
+        console.log('Syncing asin_performance_data - this will create parent records')
+        // When syncing asin_performance_data, we'll create the parent records
+        // that search_query_performance depends on
       }
       
       // Get table configuration
@@ -209,18 +214,12 @@ export class BigQuerySyncService {
     
     // ALL data comes from the same BigQuery table, just transform it differently for each target
     // Simple query - just get the raw data and let transformData handle the rest
-    // Try without WHERE clause first to see if table is accessible
-    let query = `
+    const query = `
       SELECT *
       FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-      LIMIT 10
+      ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
+      LIMIT 10000
     `
-    
-    // If we need date filtering, add it
-    if (dateRange || !dateRange) {
-      // For now, let's test without the WHERE clause to isolate the issue
-      console.log('Testing query without WHERE clause first...')
-    }
     
     console.log('Query to execute:', query)
     return query
@@ -306,9 +305,16 @@ export class BigQuerySyncService {
         const { error } = await this.supabase
           .from('asin_performance_data')
           .insert(newRecords)
+          .select() // Return inserted records
         
         if (error) {
           console.error(`Error inserting parent records:`, error)
+          // If it's a unique violation, that's OK - the record already exists
+          if (!error.message?.includes('duplicate key')) {
+            console.error('Non-duplicate error, this might be a problem')
+          }
+        } else {
+          console.log(`Inserted ${newRecords.length} parent records`)
         }
       }
     }
@@ -440,15 +446,32 @@ export class BigQuerySyncService {
     }
     
     if (tableName === 'asin_performance_data') {
-      // This table only stores basic ASIN info, not metrics
-      // The metrics are stored in search_query_performance table
-      return data.map(row => ({
-        asin: row.asin,
-        start_date: row.start_date,
-        end_date: row.end_date,
-        // Note: child_asin, total_impressions etc don't exist in this table
-        // This is just a parent record for search_query_performance entries
-      }))
+      // Extract unique ASIN/date combinations from raw BigQuery data
+      // This creates parent records that search_query_performance can reference
+      const uniqueRecords = new Map<string, any>()
+      
+      data.forEach(row => {
+        // Get date from BigQuery format
+        const dateValue = row.Date?.value || row.Date || row['Date']
+        const dateStr = dateValue ? dateValue.split('T')[0] : new Date().toISOString().split('T')[0]
+        
+        // Get ASIN - prefer Parent ASIN if available
+        const asin = row['Parent ASIN'] || row['ASIN'] || row['Child ASIN']
+        
+        if (asin && dateStr) {
+          const key = `${asin}_${dateStr}_${dateStr}` // start_date and end_date are the same for daily data
+          
+          if (!uniqueRecords.has(key)) {
+            uniqueRecords.set(key, {
+              asin: asin,
+              start_date: dateStr,
+              end_date: dateStr
+            })
+          }
+        }
+      })
+      
+      return Array.from(uniqueRecords.values())
     }
     
     return data
