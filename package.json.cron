@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "sync:daily": "node src/scripts/daily-sync.js",
+    "sync:test": "SYNC_BATCH_SIZE=100 node src/scripts/daily-sync.js",
+    "sync:health": "node src/scripts/daily-sync.js --health-check"
+  }
+}
