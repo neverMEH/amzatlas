@@ -110,6 +110,16 @@ Each migration should have a corresponding rollback:
 
 Always backup before applying migrations to production.
 
+## Additional Views Created for Chart Data (Sep 8, 2025)
+
+After migration 048, the following views were created to fix chart data issues:
+- `public.search_query_detail` - Row-level view providing search query metrics per ASIN/date
+- `public.search_performance_summary_detail` - Alias for search_query_detail
+- `public.asin_performance_by_brand` - Brand aggregation view (if not exists)
+- `public.period_comparisons` - Period comparison view (if not exists)
+
+These views are created by running `/fix-missing-views.sql`.
+
 ---
-*Last updated: 2025-09-06*
-*Total migrations: 47 (after consolidation)*
+*Last updated: 2025-09-08*
+*Total migrations: 48 (after consolidation + chart fix views)*

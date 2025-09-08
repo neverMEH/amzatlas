@@ -21,6 +21,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Environment**: .env file needs to be configured with actual credentials for local development
 
 ### 📅 Latest Updates (September 8, 2025)
+- **Chart Data Population Fixes**: Resolved issues preventing charts from displaying data
+  - Fixed "weekly_summary table not found" error by updating API to use `search_query_detail` view
+  - Created missing database views: `search_query_detail`, `search_performance_summary_detail`
+  - Fixed duplicate dates in trend charts by aggregating time series data by date
+  - Updated default date range logic to use weeks with actual data (Aug 25-31, 2025)
+  - Added debugging tools: DataDebugger component and /test-api page
+  - Fixed ambiguous column references in period_comparisons view
 - **BigQuery Daily Sync Implementation**: Completed full sync setup
   - Fixed authentication issues with file-based credential approach
   - Created `daily-sync.js` script with comprehensive error handling
@@ -197,10 +204,15 @@ asin_performance_data (start_date, end_date, asin)
 ```
 
 ### Key Views and Tables
+- `search_query_detail` - Row-level search query data with all metrics (created to fix chart data issues)
+- `search_performance_summary` - Aggregated materialized view (different structure than detail view)
+- `asin_performance_by_brand` - Brand performance aggregations
 - `period_comparisons` - Week/month/quarter comparison view
-- `weekly_summary`, `monthly_summary`, `quarterly_summary`, `yearly_summary` - Aggregated metrics
-- `daily_sqp_data` - Daily performance tracking
-- `search_performance_summary` - Optimized materialized view (in public schema)
+- `data_freshness_summary` - Monitoring view for data freshness
+- `pipeline_health` - Monitoring view for pipeline health
+
+#### Important Note on Views
+The `weekly_summary`, `monthly_summary`, `quarterly_summary`, and `yearly_summary` tables were marked as deprecated in migration 048. The API now uses `search_query_detail` view for time series data.
 
 ## Available Scripts
 
@@ -610,14 +622,23 @@ The application will be available at:
    - Use `npx tsx src/scripts/debug-credentials-format.ts` to fix credential format
    - Ensure GOOGLE_APPLICATION_CREDENTIALS_JSON is properly formatted (single line, escaped newlines)
    - The production client tries multiple auth strategies: inline credentials, temp file, env var, default auth
-2. **Supabase Migration Errors**: Verify migration order and dependencies
-3. **Sync Timeouts**: Adjust batch sizes and connection pool settings
-4. **Missing Data**: Check date ranges and ASIN filters
-5. **Permission Errors**: Run migration 017 to fix table permissions
-6. **ON CONFLICT Errors**: Normal for views with rules - data still syncs correctly
-7. **Date Format Issues**: BigQuery returns dates as `{value: "2024-01-01T00:00:00.000Z"}` objects
-8. **Table Reference Errors**: Use `search_performance_summary` not `sqp.search_performance_summary`
-9. **Infinite Re-rendering**: Set `hasManualSelection={true}` on DateRangePickerV2 for keyword analysis
+2. **Charts Not Showing Data**:
+   - Ensure the selected date range has data (use SQL queries in `/find-best-weeks.sql`)
+   - Check that `search_query_detail` view exists and has data
+   - Verify the API is returning data using `/test-api` page
+   - Default date range is set to Aug 25-31, 2025 (last week of August)
+3. **"weekly_summary table not found" Error**: 
+   - This table was deprecated - API now uses `search_query_detail` view
+   - Run `/fix-missing-views.sql` to create the necessary views
+4. **Duplicate Dates in Charts**: Fixed by aggregating time series data by date in the API
+5. **Supabase Migration Errors**: Verify migration order and dependencies
+6. **Sync Timeouts**: Adjust batch sizes and connection pool settings
+7. **Missing Data**: Check date ranges and ASIN filters
+8. **Permission Errors**: Run migration 017 to fix table permissions
+9. **ON CONFLICT Errors**: Normal for views with rules - data still syncs correctly
+10. **Date Format Issues**: BigQuery returns dates as `{value: "2024-01-01T00:00:00.000Z"}` objects
+11. **Table Reference Errors**: Use `search_performance_summary` not `sqp.search_performance_summary`
+12. **Infinite Re-rendering**: Set `hasManualSelection={true}` on DateRangePickerV2 for keyword analysis
 
 ### Debug Commands
 ```bash

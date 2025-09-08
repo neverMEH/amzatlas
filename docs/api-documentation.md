@@ -292,6 +292,74 @@ Historical purchase trends data.
 ]
 ```
 
+### Get ASIN Overview (v2)
+Complete ASIN performance overview with time series data and search query metrics.
+
+**Endpoint:** `GET /api/dashboard/v2/asin-overview`
+
+**Query Parameters:**
+- `asin` (string, required): ASIN to analyze
+- `startDate` (date, required): Start date
+- `endDate` (date, required): End date
+- `compareStartDate` (date, optional): Comparison period start date
+- `compareEndDate` (date, optional): Comparison period end date
+- `includeQueries` (boolean, optional): Include search query data
+
+**Response:**
+```json
+{
+  "asin": "B08XYZ123",
+  "productTitle": "Product Name",
+  "brand": "Brand Name",
+  "dateRange": {
+    "start": "2025-08-25",
+    "end": "2025-08-31"
+  },
+  "metrics": {
+    "totals": {
+      "impressions": 50000,
+      "clicks": 2500,
+      "cartAdds": 500,
+      "purchases": 250
+    },
+    "rates": {
+      "clickThroughRate": 5.0,
+      "cartAddRate": 20.0,
+      "purchaseRate": 50.0,
+      "overallConversionRate": 0.5
+    },
+    "marketShare": {
+      "impressionShare": 15.2,
+      "clickShare": 18.5,
+      "purchaseShare": 22.3
+    }
+  },
+  "timeSeries": [
+    {
+      "date": "2025-08-25",
+      "impressions": 7000,
+      "clicks": 350,
+      "cartAdds": 70,
+      "purchases": 35
+    }
+  ],
+  "topQueries": [
+    {
+      "searchQuery": "wireless headphones",
+      "impressions": 5000,
+      "clicks": 250,
+      "ctr": 5.0,
+      "cvr": 10.0
+    }
+  ]
+}
+```
+
+**Notes:**
+- Time series data is aggregated by date to prevent duplicate dates
+- Uses `search_query_detail` view for data retrieval
+- Includes comparison data if comparison dates are provided
+
 ### Get Search Performance (v2)
 Enhanced search performance metrics with funnel analysis.
 
