@@ -29,6 +29,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - Fixed brand persistence with localStorage/sessionStorage
   - Resolved React Query v5 compatibility (cacheTime → gcTime)
   - Fixed type guard for BrandWithHierarchy to properly check for children property
+- **Brand Selection Dropdown Phase 2 Complete**:
+  - Created 8 database migrations (049, 049a, 049b, 050, 050a, 051, 051a, 051b, 052, 052a)
+  - Fixed schema issues: brands table moved from sqp to public schema
+  - Fixed column name mismatches in search_query_performance table
+  - Resolved nested aggregate errors in materialized views
+  - Successfully created brand hierarchy, extraction rules, and performance tracking
+  - Applied initial brand extraction rules for Work Sharp brand
 - **Chart Data Population Fixes**: Resolved issues preventing charts from displaying data
   - Fixed "weekly_summary table not found" error by updating API to use `search_query_detail` view
   - Created missing database views: `search_query_detail`, `search_performance_summary_detail`
@@ -505,11 +512,18 @@ npm run sync:health        # Check sync script health status
   - `src/components/asin-performance/FunnelChart.tsx`
   - `src/lib/api/asin-performance.ts`
 
-### Brand Management System (Aug 2025)
-- Added automatic ASIN-to-brand mapping based on product titles
-- Implemented RPC functions for brand matching and creation
-- Successfully mapped 83 ASINs to Work Sharp brand
-- Added CLI tools for brand management (add-brand.ts, cleanup-brands.ts)
+### Brand Management System (Aug-Sep 2025)
+- **Phase 1 (Aug 2025)**: Initial implementation
+  - Added automatic ASIN-to-brand mapping based on product titles
+  - Implemented RPC functions for brand matching and creation
+  - Successfully mapped 83 ASINs to Work Sharp brand
+  - Added CLI tools for brand management (add-brand.ts, cleanup-brands.ts)
+- **Phase 2 (Sep 8, 2025)**: Enhanced brand infrastructure
+  - Created brand_hierarchy table for parent/child relationships
+  - Added brand_extraction_rules for pattern-based detection
+  - Implemented 6 PostgreSQL functions for brand operations
+  - Created 3 materialized views for performance optimization
+  - Fixed multiple migration issues (schema references, column names, nested aggregates)
 - See `/docs/brand-management-system.md` for detailed documentation
 
 ### BigQuery Schema Migration (Dec 2024)
@@ -577,6 +591,37 @@ npm run sync:health        # Check sync script health status
   - Covers 60-day rolling window
 - **Documentation**: `/docs/refresh-infrastructure-analysis.md`
 - **Tools**: `src/scripts/refresh-infrastructure-audit.ts`
+
+### Brand Selection Dropdown Migration Issues & Fixes (Sep 8, 2025)
+During Phase 2 implementation, we encountered and resolved several database migration issues:
+
+1. **Schema Confusion (049a)**: 
+   - Problem: brands table existed in `sqp` schema but migrations referenced `public` schema
+   - Solution: Created migration 049a to copy/create tables in public schema
+
+2. **Missing Extension (049b)**:
+   - Problem: `gin_trgm_ops` operator class requires pg_trgm extension
+   - Solution: Created migration 049b to enable pg_trgm, made GIN index conditional
+
+3. **Column Name Mismatches (050a, 050b)**:
+   - Problem: Functions used wrong column names (query_impressions vs total_query_impression_count)
+   - Solution: Fixed all column references to match actual schema from migration 013
+   - Correct mapping:
+     - `total_query_impression_count` (not `query_impressions` or `total_impression_count`)
+     - `asin_click_count` (not `query_clicks`)
+     - `asin_cart_add_count` (not `query_cart_adds`) 
+     - `asin_purchase_count` (not `query_purchases`)
+
+4. **Nested Aggregate Error (051a, 051b)**:
+   - Problem: PostgreSQL doesn't allow COUNT(DISTINCT) inside jsonb_object_agg
+   - Solution: Split brand_extraction_analytics into separate migration with CTE approach
+
+5. **Missing Table (052a)**:
+   - Problem: Migration 052 tried to insert into non-existent migration_log table
+   - Solution: Created 052a without migration_log dependency, used RAISE NOTICE instead
+
+**Final Working Migration Sequence**:
+- 049a → 049b → 049 → 050a → 051a → 051b → 052a
 
 ### Key Migration Files
 - `013_restructure_for_bigquery_schema.sql` - New table structure

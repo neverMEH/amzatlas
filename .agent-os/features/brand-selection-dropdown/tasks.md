@@ -50,7 +50,7 @@
 - [x] Used `in` operator to safely check optional property existence
 - [x] Resolved TypeScript build error preventing deployment
 
-## Phase 2: Database Schema Updates (3 days)
+## Phase 2: Database Schema Updates (3 days) ✅ COMPLETED (Sep 8, 2025)
 
 ### Task 2.1: Create Migration Files ✅
 **Priority**: High  
@@ -93,6 +93,17 @@
 - [x] Add common brand patterns (auto-generation) (052)
 - [x] Apply extractions to unmapped ASINs (052)
 - [x] Create monitoring view for rule effectiveness (052)
+
+### Migration Issues Fixed During Phase 2:
+1. **Schema Issues (049a)**: Moved brands tables from sqp to public schema
+2. **Missing Extension (049b)**: Added pg_trgm extension for pattern matching
+3. **Column Names (050a, 050b)**: Fixed column references to match actual schema:
+   - `total_query_impression_count` (not `query_impressions`)
+   - `asin_click_count`, `asin_cart_add_count`, `asin_purchase_count`
+4. **Nested Aggregates (051a, 051b)**: Split views to avoid nested COUNT(DISTINCT) in jsonb_object_agg
+5. **Missing Table (052a)**: Removed migration_log dependency
+
+**Final Migration Order**: 049a → 049b → 049 → 050a → 051a → 051b → 052a
 
 ## Phase 3: Brand Extraction System (5 days)
 
