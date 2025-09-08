@@ -298,6 +298,7 @@ npm run fix:columns        # Add missing columns to tables
 ### System Health
 - `GET /api/health/pipeline` - Pipeline health check
 - `GET /api/monitoring/pipeline` - Pipeline monitoring data
+- `GET /api/test/bigquery-auth` - Test BigQuery authentication (debug endpoint)
 
 ## Key File Locations
 

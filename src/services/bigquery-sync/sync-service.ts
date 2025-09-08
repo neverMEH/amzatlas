@@ -1,7 +1,7 @@
 import { BigQuery } from '@google-cloud/bigquery'
 import { createClient } from '@supabase/supabase-js'
 import { getBigQueryConfig } from '../../config/bigquery.config'
-import { getProductionBigQueryClient } from '../../config/bigquery-production.config'
+import { getFileBigQueryClient } from '../../config/bigquery-file-auth.config'
 import { getSupabaseConfig } from '../../config/supabase.config'
 
 export interface SyncResult {
@@ -17,8 +17,8 @@ export class BigQuerySyncService {
   private supabase: any
   
   constructor() {
-    // Use the production BigQuery client
-    this.bigquery = getProductionBigQueryClient()
+    // Use the file-based BigQuery client which is more reliable in production
+    this.bigquery = getFileBigQueryClient()
     
     const supabaseConfig = getSupabaseConfig()
     this.supabase = createClient(
