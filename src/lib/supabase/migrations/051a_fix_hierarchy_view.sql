@@ -1,10 +1,79 @@
--- Migration: 051a_fix_hierarchy_view.sql
--- Description: Recreate brand_hierarchy_view after fixing brand_performance_summary
+-- Migration: 051a_fix_all_brand_materialized_views.sql
+-- Description: Recreate all brand materialized views with correct column names
+-- This replaces migration 051 which had incorrect column names:
+--   - query_impressions -> total_query_impression_count
+--   - query_clicks -> asin_click_count
+--   - query_cart_adds -> asin_cart_add_count
+--   - query_purchases -> asin_purchase_count
 -- Date: 2025-09-08
 -- Author: Claude
 
--- Drop and recreate the brand_hierarchy_view
+-- First drop all dependent views
+DROP MATERIALIZED VIEW IF EXISTS public.brand_extraction_analytics CASCADE;
 DROP MATERIALIZED VIEW IF EXISTS public.brand_hierarchy_view CASCADE;
+DROP MATERIALIZED VIEW IF EXISTS public.brand_performance_summary CASCADE;
+
+-- Create brand_performance_summary with correct column names
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.brand_performance_summary AS
+WITH brand_metrics AS (
+  SELECT 
+    b.id as brand_id,
+    b.brand_name,
+    b.display_name,
+    b.normalized_name,
+    b.parent_brand_id,
+    b.logo_url,
+    b.brand_color,
+    COUNT(DISTINCT abm.asin) as asin_count,
+    COUNT(DISTINCT sqp.search_query) as query_count,
+    SUM(sqp.total_query_impression_count) as total_impressions,
+    SUM(sqp.asin_click_count) as total_clicks,
+    SUM(sqp.asin_cart_add_count) as total_cart_adds,
+    SUM(sqp.asin_purchase_count) as total_purchases,
+    -- Calculate rates
+    CASE 
+      WHEN SUM(sqp.total_query_impression_count) > 0 
+      THEN (SUM(sqp.asin_click_count)::NUMERIC / SUM(sqp.total_query_impression_count)::NUMERIC * 100)
+      ELSE 0
+    END as avg_ctr,
+    CASE 
+      WHEN SUM(sqp.asin_click_count) > 0 
+      THEN (SUM(sqp.asin_cart_add_count)::NUMERIC / SUM(sqp.asin_click_count)::NUMERIC * 100)
+      ELSE 0
+    END as avg_cart_add_rate,
+    CASE 
+      WHEN SUM(sqp.asin_click_count) > 0 
+      THEN (SUM(sqp.asin_purchase_count)::NUMERIC / SUM(sqp.asin_click_count)::NUMERIC * 100)
+      ELSE 0
+    END as avg_cvr,
+    -- Revenue metrics
+    SUM(sqp.asin_purchase_count * sqp.asin_median_purchase_price) as estimated_revenue,
+    AVG(sqp.asin_median_purchase_price) as avg_price,
+    -- Time range
+    MIN(apd.start_date) as earliest_data,
+    MAX(apd.end_date) as latest_data,
+    NOW() as last_updated
+  FROM public.brands b
+  LEFT JOIN public.asin_brand_mapping abm ON b.id = abm.brand_id
+  LEFT JOIN sqp.asin_performance_data apd ON abm.asin = apd.asin
+  LEFT JOIN sqp.search_query_performance sqp ON apd.id = sqp.asin_performance_id
+  WHERE b.is_active = true
+  GROUP BY 
+    b.id, 
+    b.brand_name, 
+    b.display_name, 
+    b.normalized_name,
+    b.parent_brand_id,
+    b.logo_url,
+    b.brand_color
+)
+SELECT * FROM brand_metrics;
+
+-- Create indexes on brand_performance_summary
+CREATE INDEX idx_brand_perf_summary_brand_id ON public.brand_performance_summary(brand_id);
+CREATE INDEX idx_brand_perf_summary_parent ON public.brand_performance_summary(parent_brand_id);
+CREATE INDEX idx_brand_perf_summary_impressions ON public.brand_performance_summary(total_impressions DESC);
+CREATE INDEX idx_brand_perf_summary_revenue ON public.brand_performance_summary(estimated_revenue DESC);
 
 -- Recreate materialized view for brand hierarchy with aggregated metrics
 CREATE MATERIALIZED VIEW IF NOT EXISTS public.brand_hierarchy_view AS
@@ -96,7 +165,44 @@ CREATE INDEX idx_brand_hierarchy_view_level ON public.brand_hierarchy_view(level
 CREATE INDEX idx_brand_hierarchy_view_path_gin ON public.brand_hierarchy_view USING gin(path);
 
 -- Grant permissions
+GRANT SELECT ON public.brand_performance_summary TO authenticated;
 GRANT SELECT ON public.brand_hierarchy_view TO authenticated;
+
+-- Create brand_extraction_analytics view
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.brand_extraction_analytics AS
+SELECT 
+  b.id as brand_id,
+  b.brand_name,
+  b.display_name,
+  COUNT(DISTINCT ber.id) as total_rules,
+  COUNT(DISTINCT CASE WHEN ber.is_active THEN ber.id END) as active_rules,
+  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.extraction_method IS NOT NULL) as extracted_asins,
+  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.verified = true) as verified_asins,
+  AVG(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as avg_confidence,
+  MIN(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as min_confidence,
+  MAX(abm.confidence_score) FILTER (WHERE abm.confidence_score IS NOT NULL) as max_confidence,
+  -- Rule type breakdown
+  jsonb_object_agg(
+    COALESCE(ber.rule_type, 'manual'), 
+    COUNT(DISTINCT abm.asin)
+  ) FILTER (WHERE ber.rule_type IS NOT NULL OR abm.extraction_method = 'manual') as mapping_by_method,
+  -- Recent extraction activity
+  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.created_at >= NOW() - INTERVAL '7 days') as new_mappings_7d,
+  COUNT(DISTINCT abm.asin) FILTER (WHERE abm.created_at >= NOW() - INTERVAL '30 days') as new_mappings_30d,
+  NOW() as last_updated
+FROM public.brands b
+LEFT JOIN public.brand_extraction_rules ber ON b.id = ber.brand_id
+LEFT JOIN public.asin_brand_mapping abm ON b.id = abm.brand_id
+WHERE b.is_active = true
+GROUP BY b.id, b.brand_name, b.display_name;
+
+-- Create indexes on extraction analytics
+CREATE INDEX idx_extraction_analytics_brand ON public.brand_extraction_analytics(brand_id);
+CREATE INDEX idx_extraction_analytics_confidence ON public.brand_extraction_analytics(avg_confidence DESC);
+CREATE INDEX idx_extraction_analytics_extracted ON public.brand_extraction_analytics(extracted_asins DESC);
+
+-- Grant permissions
+GRANT SELECT ON public.brand_extraction_analytics TO authenticated;
 
 -- Update the refresh function to handle dependencies correctly
 CREATE OR REPLACE FUNCTION public.refresh_brand_materialized_views()
