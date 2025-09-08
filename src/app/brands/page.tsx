@@ -9,8 +9,8 @@ export default function BrandsPage() {
   const router = useRouter()
   const { data: brands, isLoading } = useBrands()
   
-  // Ensure brands is treated as an array
-  const brandsList = brands || []
+  // Ensure brands is treated as an array with explicit type
+  const brandsList: Brand[] = brands || []
 
   useEffect(() => {
     // Redirect to first brand when brands are loaded
