@@ -47,7 +47,19 @@ CREATE TABLE IF NOT EXISTS public.brand_extraction_rules (
 CREATE INDEX idx_extraction_rules_brand ON public.brand_extraction_rules(brand_id);
 CREATE INDEX idx_extraction_rules_active ON public.brand_extraction_rules(is_active) WHERE is_active = true;
 CREATE INDEX idx_extraction_rules_priority ON public.brand_extraction_rules(priority DESC);
-CREATE INDEX idx_extraction_rules_pattern_gin ON public.brand_extraction_rules USING gin(pattern gin_trgm_ops);
+
+-- Create trigram index only if pg_trgm extension exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm') THEN
+    CREATE INDEX IF NOT EXISTS idx_extraction_rules_pattern_gin 
+      ON public.brand_extraction_rules USING gin(pattern gin_trgm_ops);
+  ELSE
+    -- Fallback to regular btree index if trigram not available
+    CREATE INDEX IF NOT EXISTS idx_extraction_rules_pattern 
+      ON public.brand_extraction_rules(pattern);
+  END IF;
+END $$;
 
 -- Update brands table with new columns
 ALTER TABLE public.brands 
