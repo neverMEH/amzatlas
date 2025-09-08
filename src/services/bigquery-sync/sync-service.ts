@@ -39,6 +39,18 @@ export class BigQuerySyncService {
     try {
       console.log(`Starting sync for table: ${tableSchema}.${tableName}`)
       
+      // Skip tables that shouldn't be synced from BigQuery
+      const skipTables = ['brands', 'asin_brand_mapping', 'brand_hierarchy', 'sync_log', 'data_quality_checks']
+      if (skipTables.includes(tableName)) {
+        console.log(`Skipping ${tableName} - this table is not synced from BigQuery`)
+        return {
+          success: true,
+          table: tableName,
+          rowsProcessed: 0,
+          duration: Date.now() - startTime
+        }
+      }
+      
       // For search_query_performance, we need to ensure parent records exist first
       if (tableName === 'search_query_performance') {
         console.log('Syncing search_query_performance - ensuring parent records exist...')
@@ -217,7 +229,7 @@ export class BigQuerySyncService {
     const query = `
       SELECT *
       FROM \`${config.projectId}.${dataset}.${bigQueryTable}\`
-      ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)'}
+      ${dateRange ? `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'` : 'WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'}
       LIMIT 10000
     `
     
@@ -237,7 +249,7 @@ export class BigQuerySyncService {
     if (dateRange) {
       whereClause = `WHERE DATE(\`Date\`) BETWEEN '${dateRange.start}' AND '${dateRange.end}'`
     } else {
-      whereClause = `WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY)`
+      whereClause = `WHERE DATE(\`Date\`) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)`
     }
     
     const query = `
