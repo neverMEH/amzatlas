@@ -254,9 +254,9 @@ export async function GET(
     const products = Array.from(productMap.values()).map((product: any) => {
       const comparison = comparisonMap.get(product.asin)
       
-      // Calculate current period rates
-      const currentCtr = product.impressions > 0 ? (product.clicks / product.impressions) : 0
-      const currentCvr = product.clicks > 0 ? (product.purchases / product.clicks) : 0
+      // Calculate current period rates (as percentages)
+      const currentCtr = product.impressions > 0 ? (product.clicks / product.impressions) * 100 : 0
+      const currentCvr = product.clicks > 0 ? (product.purchases / product.clicks) * 100 : 0
       
       const result: any = {
         asin: product.asin,
@@ -279,9 +279,9 @@ export async function GET(
         result.cartAddsComparison = calculateComparison(product.cartAdds, comparison.cartAdds)
         result.purchasesComparison = calculateComparison(product.purchases, comparison.purchases)
         
-        // Calculate comparison period rates and add CTR/CVR comparisons
-        const comparisonCtr = comparison.impressions > 0 ? (comparison.clicks / comparison.impressions) : 0
-        const comparisonCvr = comparison.clicks > 0 ? (comparison.purchases / comparison.clicks) : 0
+        // Calculate comparison period rates and add CTR/CVR comparisons (as percentages)
+        const comparisonCtr = comparison.impressions > 0 ? (comparison.clicks / comparison.impressions) * 100 : 0
+        const comparisonCvr = comparison.clicks > 0 ? (comparison.purchases / comparison.clicks) * 100 : 0
         
         result.ctrComparison = comparisonCtr > 0 ? calculateComparison(currentCtr, comparisonCtr) : null
         result.cvrComparison = comparisonCvr > 0 ? calculateComparison(currentCvr, comparisonCvr) : null
