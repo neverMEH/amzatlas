@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from 'react'
-import { FilterIcon, ChevronUp, ChevronDown } from 'lucide-react'
-import { ProductListItem } from './ProductListItem'
+import React, { useState, useMemo, useEffect } from 'react'
+import { FilterIcon, ChevronUp, ChevronDown, BarChart3 } from 'lucide-react'
+import { ExpandableProductRow } from './ExpandableProductRow'
 import { useSortedData } from '@/hooks/useSortedData'
+import { useExpandableRows } from '@/hooks/useBrandProductSegments'
+import { useUrlStateWithQuerySync } from '@/hooks/useUrlState'
 
 interface Product {
-  id: string
-  name: string
-  childAsin: string
-  image: string
+  asin: string
+  productName: string
   impressions: number
   impressionsComparison?: number
   clicks: number
@@ -16,20 +16,23 @@ interface Product {
   cartAddsComparison?: number
   purchases: number
   purchasesComparison?: number
-  ctr: string
+  ctr: number
   ctrComparison?: number
-  cvr: string
+  cvr: number
   cvrComparison?: number
-  impressionShare: string
-  impressionShareComparison?: number
-  cvrShare: string
-  cvrShareComparison?: number
-  ctrShare: string
-  ctrShareComparison?: number
-  cartAddShare: string
-  cartAddShareComparison?: number
-  purchaseShare: string
-  purchaseShareComparison?: number
+  clickShare: number
+  cartAddShare: number
+  purchaseShare: number
+  segmentMetadata?: {
+    weeklySegmentsAvailable: number
+    monthlySegmentsAvailable: number
+    hasWeeklyData: boolean
+    hasMonthlyData: boolean
+    dateRange: {
+      earliest: number
+      latest: number
+    }
+  }
 }
 
 interface ProductListProps {
@@ -42,6 +45,15 @@ interface ProductListProps {
   onSort?: (column: string) => void
   onProductClick?: (asin: string) => void
   onSelect?: (selectedIds: string[]) => void
+  brandId: string
+  dateRange?: {
+    startDate: string
+    endDate: string
+  }
+  comparisonDateRange?: {
+    startDate: string
+    endDate: string
+  }
 }
 
 export const ProductList: React.FC<ProductListProps> = ({
@@ -54,9 +66,53 @@ export const ProductList: React.FC<ProductListProps> = ({
   onSort,
   onProductClick,
   onSelect,
+  brandId,
+  dateRange,
+  comparisonDateRange,
 }) => {
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  
+  // URL state management
+  const {
+    urlState,
+    updatePagination,
+    updateSorting,
+    updateSelectedProducts,
+    navigateToAsinDashboard,
+    syncExpandedRows
+  } = useUrlStateWithQuerySync()
+  
+  // Use optimized React Query state management for expanded rows
+  const {
+    isExpanded,
+    toggleExpanded,
+    expandAll,
+    collapseAll,
+    expandedCount,
+    setExpandedFromUrl
+  } = useExpandableRows()
+
+  // Sync expanded rows from URL on mount
+  useEffect(() => {
+    if (urlState.expanded && urlState.expanded.length > 0) {
+      setExpandedFromUrl(urlState.expanded)
+    }
+  }, [urlState.expanded, setExpandedFromUrl])
+
+  // Sync selected products from URL
+  useEffect(() => {
+    if (urlState.selected) {
+      setSelectedProducts(new Set(urlState.selected))
+    }
+  }, [urlState.selected])
+
+  // Sync pagination from URL
+  useEffect(() => {
+    if (urlState.page && urlState.page !== currentPage) {
+      setCurrentPage(urlState.page)
+    }
+  }, [urlState.page, currentPage])
   
   // Use sorting hook
   const { sortedData, sortConfig, handleSort } = useSortedData(products)
@@ -67,37 +123,70 @@ export const ProductList: React.FC<ProductListProps> = ({
   const endIndex = startIndex + itemsPerPage
   const currentProducts = sortedData.slice(startIndex, endIndex)
 
+  // Products with segment data for bulk expand functionality
+  const productsWithSegments = useMemo(() => {
+    return products.filter(product => 
+      product.segmentMetadata && 
+      (product.segmentMetadata.hasWeeklyData || product.segmentMetadata.hasMonthlyData)
+    ).map(product => product.asin)
+  }, [products])
+
   // Handle select all
   const isAllSelected = useMemo(() => {
     if (currentProducts.length === 0) return false
-    return currentProducts.every(product => selectedProducts.has(product.id))
+    return currentProducts.every(product => selectedProducts.has(product.asin))
   }, [currentProducts, selectedProducts])
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newSelectedProducts = new Set(selectedProducts)
     if (e.target.checked) {
-      currentProducts.forEach(product => newSelectedProducts.add(product.id))
+      currentProducts.forEach(product => newSelectedProducts.add(product.asin))
     } else {
-      currentProducts.forEach(product => newSelectedProducts.delete(product.id))
+      currentProducts.forEach(product => newSelectedProducts.delete(product.asin))
     }
     setSelectedProducts(newSelectedProducts)
     onSelect?.(Array.from(newSelectedProducts))
   }
 
-  const handleSelectProduct = (productId: string, checked: boolean) => {
+  const handleSelectProduct = (asin: string, checked: boolean) => {
     const newSelectedProducts = new Set(selectedProducts)
     if (checked) {
-      newSelectedProducts.add(productId)
+      newSelectedProducts.add(asin)
     } else {
-      newSelectedProducts.delete(productId)
+      newSelectedProducts.delete(asin)
     }
     setSelectedProducts(newSelectedProducts)
-    onSelect?.(Array.from(newSelectedProducts))
+    
+    // Update URL state
+    const selectedArray = Array.from(newSelectedProducts)
+    updateSelectedProducts(selectedArray)
+    
+    onSelect?.(selectedArray)
+  }
+
+  // Enhanced expand handlers with URL sync
+  const handleToggleExpand = (asin: string) => {
+    const newExpanded = toggleExpanded(asin)
+    syncExpandedRows(newExpanded)
+  }
+
+  const handleExpandAll = (asins: string[]) => {
+    const newExpanded = expandAll(asins)
+    syncExpandedRows(newExpanded)
+  }
+
+  const handleCollapseAll = () => {
+    const newExpanded = collapseAll()
+    syncExpandedRows(newExpanded)
   }
 
   const handleColumnClick = (column: string) => {
     handleSort(column)
     onSort?.(column)
+    
+    // Update URL with sorting
+    const newSortOrder = sortConfig?.key === column && sortConfig.direction === 'asc' ? 'desc' : 'asc'
+    updateSorting(column, newSortOrder)
   }
   
   const renderSortIcon = (column: string) => {
@@ -111,6 +200,18 @@ export const ProductList: React.FC<ProductListProps> = ({
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+    updatePagination(page, itemsPerPage)
+  }
+
+  // Product click handler with enhanced navigation
+  const handleProductClick = (asin: string) => {
+    if (onProductClick) {
+      // Use existing prop if provided
+      onProductClick(asin)
+    } else {
+      // Navigate to ASIN dashboard with preserved context
+      navigateToAsinDashboard(asin, true)
+    }
   }
 
   if (loading) {
@@ -154,8 +255,27 @@ export const ProductList: React.FC<ProductListProps> = ({
             </h1>
           </div>
           <div className="flex space-x-2">
+            {productsWithSegments.length > 0 && (
+              <>
+                <button
+                  className="px-3 py-2 border border-gray-300 rounded-md flex items-center text-sm hover:bg-gray-50"
+                  onClick={() => handleExpandAll(productsWithSegments)}
+                  disabled={expandedCount === productsWithSegments.length}
+                >
+                  <BarChart3 size={16} className="mr-2" />
+                  Expand All ({productsWithSegments.length})
+                </button>
+                <button
+                  className="px-3 py-2 border border-gray-300 rounded-md flex items-center text-sm hover:bg-gray-50"
+                  onClick={handleCollapseAll}
+                  disabled={expandedCount === 0}
+                >
+                  Collapse All
+                </button>
+              </>
+            )}
             <button
-              className="px-4 py-2 border border-gray-300 rounded-md flex items-center text-sm"
+              className="px-4 py-2 border border-gray-300 rounded-md flex items-center text-sm hover:bg-gray-50"
               onClick={onFilter}
             >
               <FilterIcon size={16} className="mr-2" />
@@ -179,18 +299,10 @@ export const ProductList: React.FC<ProductListProps> = ({
                 <th
                   scope="col"
                   className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleColumnClick('name')}
+                  onClick={() => handleColumnClick('productName')}
                 >
-                  Product Name
-                  {renderSortIcon('name')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleColumnClick('childAsin')}
-                >
-                  Child ASIN
-                  {renderSortIcon('childAsin')}
+                  Product
+                  {renderSortIcon('productName')}
                 </th>
                 <th
                   scope="col"
@@ -243,26 +355,10 @@ export const ProductList: React.FC<ProductListProps> = ({
                 <th
                   scope="col"
                   className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleColumnClick('impressionShare')}
+                  onClick={() => handleColumnClick('clickShare')}
                 >
-                  Impression Share
-                  {renderSortIcon('impressionShare')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleColumnClick('cvrShare')}
-                >
-                  CVR Share
-                  {renderSortIcon('cvrShare')}
-                </th>
-                <th
-                  scope="col"
-                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleColumnClick('ctrShare')}
-                >
-                  CTR Share
-                  {renderSortIcon('ctrShare')}
+                  Click Share
+                  {renderSortIcon('clickShare')}
                 </th>
                 <th
                   scope="col"
@@ -280,16 +376,27 @@ export const ProductList: React.FC<ProductListProps> = ({
                   Purchase Share
                   {renderSortIcon('purchaseShare')}
                 </th>
+                <th
+                  scope="col"
+                  className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24"
+                >
+                  Segments
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentProducts.map((product) => (
-                <ProductListItem
-                  key={product.id}
+                <ExpandableProductRow
+                  key={product.asin}
                   product={product}
                   showComparison={showComparison}
-                  onSelect={(checked) => handleSelectProduct(product.id, checked)}
-                  onClick={() => onProductClick?.(product.childAsin)}
+                  onSelect={(checked) => handleSelectProduct(product.asin, checked)}
+                  onClick={handleProductClick}
+                  isExpanded={isExpanded(product.asin)}
+                  onToggleExpand={handleToggleExpand}
+                  brandId={brandId}
+                  dateRange={dateRange}
+                  comparisonDateRange={comparisonDateRange}
                 />
               ))}
             </tbody>

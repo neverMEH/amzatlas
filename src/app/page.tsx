@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useNavigationContext } from '@/hooks/useUrlState'
 import { ASINSelector } from '@/components/asin-performance/ASINSelector'
 import { DateRangePickerV2 } from '@/components/asin-performance/DateRangePickerV2'
 import { MetricsCards } from '@/components/asin-performance/MetricsCards'
@@ -16,6 +17,9 @@ export default function Dashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedASIN, setSelectedASIN] = useState<string>('')
+  
+  // Navigation context for brand dashboard integration
+  const { isFromBrandDashboard, context, hasPreservedDateRange, hasPreservedComparison } = useNavigationContext()
   
   // Check for ASIN in URL params on mount
   useEffect(() => {
@@ -32,10 +36,30 @@ export default function Dashboard() {
   // Initialize date range after component mounts to avoid hydration issues
   useEffect(() => {
     if (!dateRange.startDate && !dateRange.endDate) {
-      const defaultRange = getDefaultDateRange()
-      setDateRange(defaultRange)
+      if (hasPreservedDateRange) {
+        // Use preserved date range from brand dashboard navigation
+        setDateRange({
+          startDate: context.preservedDateFrom!,
+          endDate: context.preservedDateTo!
+        })
+        setHasManualDateSelection(true)
+      } else {
+        const defaultRange = getDefaultDateRange()
+        setDateRange(defaultRange)
+      }
     }
-  }, [])
+  }, [hasPreservedDateRange, context])
+
+  // Initialize comparison range from preserved context
+  useEffect(() => {
+    if (hasPreservedComparison && !compareRange.enabled) {
+      setCompareRange({
+        startDate: context.preservedCompareFrom!,
+        endDate: context.preservedCompareTo!,
+        enabled: true
+      })
+    }
+  }, [hasPreservedComparison, context, compareRange.enabled])
   const [compareRange, setCompareRange] = useState({
     startDate: '',
     endDate: '',

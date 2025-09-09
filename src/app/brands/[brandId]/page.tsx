@@ -8,6 +8,7 @@ import { ProductList } from '@/components/dashboard/ProductList'
 import { SearchQueryList } from '@/components/dashboard/SearchQueryList'
 import { useBrandDashboard } from '@/lib/api/brand-dashboard'
 import { DateRangePickerV2 } from '@/components/asin-performance/DateRangePickerV2'
+import { BrandDashboardBreadcrumb } from '@/components/navigation/BrandDashboardBreadcrumb'
 
 interface BrandDashboardProps {
   params: {
@@ -95,6 +96,13 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
       />
       
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Breadcrumb Navigation */}
+        <BrandDashboardBreadcrumb 
+          brandName={data?.data.brand?.brand_name || `Brand ${selectedBrand}`}
+          brandId={selectedBrand}
+          currentPage="overview"
+        />
+
         {/* Date Range Picker and Comparison Toggle */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -147,6 +155,9 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
             loading={isLoading}
             error={error?.message}
             onProductClick={handleProductClick}
+            brandId={selectedBrand}
+            dateRange={dateRange}
+            comparisonDateRange={compareRange.enabled ? compareRange : undefined}
           />
         </div>
 
