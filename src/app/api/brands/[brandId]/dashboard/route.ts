@@ -77,7 +77,7 @@ export async function GET(
     // Fetch aggregated KPIs for current period - WITH CORRECT COLUMN NAMES
     const { data: currentKpis, error: kpisError } = await supabase
       .from('search_performance_summary')
-      .select('total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('total_impressions, total_clicks, total_cart_adds, total_purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -89,10 +89,10 @@ export async function GET(
     // Aggregate KPI totals
     const kpiTotals = (currentKpis || []).reduce(
       (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
-        impressions: acc.impressions + (row.total_query_impression_count || 0),
-        clicks: acc.clicks + (row.asin_click_count || 0),
-        cartAdds: acc.cartAdds + (row.asin_cart_add_count || 0),
-        purchases: acc.purchases + (row.asin_purchase_count || 0),
+        impressions: acc.impressions + (row.total_impressions || 0),
+        clicks: acc.clicks + (row.total_clicks || 0),
+        cartAdds: acc.cartAdds + (row.total_cart_adds || 0),
+        purchases: acc.purchases + (row.total_purchases || 0),
       }),
       { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
     )
@@ -100,7 +100,7 @@ export async function GET(
     // Fetch weekly time series data for the brand - WITH CORRECT COLUMN NAMES
     const { data: weeklyData, error: weeklyError } = await supabase
       .from('search_performance_summary')
-      .select('start_date, end_date, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('start_date, end_date, total_impressions, total_clicks, total_cart_adds, total_purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -123,10 +123,10 @@ export async function GET(
           purchases: 0 
         }
       }
-      acc[weekKey].impressions += row.total_query_impression_count || 0
-      acc[weekKey].clicks += row.asin_click_count || 0
-      acc[weekKey].cartAdds += row.asin_cart_add_count || 0
-      acc[weekKey].purchases += row.asin_purchase_count || 0
+      acc[weekKey].impressions += row.total_impressions || 0
+      acc[weekKey].clicks += row.total_clicks || 0
+      acc[weekKey].cartAdds += row.total_cart_adds || 0
+      acc[weekKey].purchases += row.total_purchases || 0
       return acc
     }, {})
     
@@ -147,7 +147,7 @@ export async function GET(
     
     const { data: sparklineData, error: sparklineError } = await supabase
       .from('search_performance_summary')
-      .select('start_date, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('start_date, total_impressions, total_clicks, total_cart_adds, total_purchases')
       .in('asin', asinList)
       .gte('start_date', fiveWeeksAgo.toISOString().split('T')[0])
       .order('start_date', { ascending: true })
@@ -167,10 +167,10 @@ export async function GET(
           purchases: 0 
         }
       }
-      acc[weekKey].impressions += row.total_query_impression_count || 0
-      acc[weekKey].clicks += row.asin_click_count || 0
-      acc[weekKey].cartAdds += row.asin_cart_add_count || 0
-      acc[weekKey].purchases += row.asin_purchase_count || 0
+      acc[weekKey].impressions += row.total_impressions || 0
+      acc[weekKey].clicks += row.total_clicks || 0
+      acc[weekKey].cartAdds += row.total_cart_adds || 0
+      acc[weekKey].purchases += row.total_purchases || 0
       return acc
     }, {})
     
@@ -191,17 +191,17 @@ export async function GET(
     if (comparisonDateFrom && comparisonDateTo) {
       const { data: comparisonKpis } = await supabase
         .from('search_performance_summary')
-        .select('total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+        .select('total_impressions, total_clicks, total_cart_adds, total_purchases')
         .in('asin', asinList)
         .gte('start_date', comparisonDateFrom)
         .lte('end_date', comparisonDateTo)
       
       const comparisonTotals = (comparisonKpis || []).reduce(
         (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
-          impressions: acc.impressions + (row.total_query_impression_count || 0),
-          clicks: acc.clicks + (row.asin_click_count || 0),
-          cartAdds: acc.cartAdds + (row.asin_cart_add_count || 0),
-          purchases: acc.purchases + (row.asin_purchase_count || 0),
+          impressions: acc.impressions + (row.total_impressions || 0),
+          clicks: acc.clicks + (row.total_clicks || 0),
+          cartAdds: acc.cartAdds + (row.total_cart_adds || 0),
+          purchases: acc.purchases + (row.total_purchases || 0),
         }),
         { impressions: 0, clicks: 0, cartAdds: 0, purchases: 0 }
       )
@@ -240,10 +240,10 @@ export async function GET(
       .from('search_performance_summary')
       .select(`
         asin,
-        SUM(total_query_impression_count) as impressions,
-        SUM(asin_click_count) as clicks,
-        SUM(asin_cart_add_count) as cart_adds,
-        SUM(asin_purchase_count) as purchases
+        SUM(total_impressions) as impressions,
+        SUM(clicks) as clicks,
+        SUM(cart_adds) as cart_adds,
+        SUM(purchases) as purchases
       `)
       .in('asin', asinList)
       .gte('start_date', dateFrom)
@@ -285,7 +285,7 @@ export async function GET(
     // Fetch search query performance - WITH CORRECT COLUMN NAMES
     const { data: searchQueries, error: queriesError } = await supabase
       .from('search_performance_summary')
-      .select('search_query, total_query_impression_count, asin_click_count, asin_cart_add_count, asin_purchase_count')
+      .select('search_query, total_impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -300,10 +300,10 @@ export async function GET(
       if (!acc[query]) {
         acc[query] = { impressions: 0, clicks: 0, cart_adds: 0, purchases: 0 }
       }
-      acc[query].impressions += row.total_query_impression_count || 0
-      acc[query].clicks += row.asin_click_count || 0
-      acc[query].cart_adds += row.asin_cart_add_count || 0
-      acc[query].purchases += row.asin_purchase_count || 0
+      acc[query].impressions += row.total_impressions || 0
+      acc[query].clicks += row.clicks || 0
+      acc[query].cart_adds += row.cart_adds || 0
+      acc[query].purchases += row.purchases || 0
       return acc
     }, {})
     
