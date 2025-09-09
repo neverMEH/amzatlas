@@ -74,11 +74,7 @@ export function useBrandDashboardEnhanced(params: UseBrandDashboardEnhancedParam
       error: enhancedProducts.error,
       data: enhancedProducts.data,
       prefetchStatus: enhancedProducts.prefetchStatus,
-    },
-
-    // Methods for optimistic updates
-    updateProductOptimistically: enhancedProducts.updateProductOptimistically,
-    invalidateProductSegments: enhancedProducts.invalidateProductSegments,
+    }
   }
 }
 
