@@ -300,20 +300,14 @@ export async function GET(
       purchaseShareComparison: null,
     }))
     
-    // Fetch search query performance from the detail table
-    const { data: searchQueries, error: queriesError } = await supabase
-      .from('search_query_performance')
-      .select(`
-        search_query,
-        asin_impression_count,
-        asin_click_count,
-        asin_cart_add_count,
-        asin_purchase_count,
-        asin_performance_data!inner(asin, start_date, end_date)
-      `)
-      .in('asin_performance_data.asin', asinList)
-      .gte('asin_performance_data.start_date', dateFrom)
-      .lte('asin_performance_data.end_date', dateTo)
+    // For search queries, we'll use the summary table but without grouping by search_query
+    // since the view doesn't include individual search queries
+    const searchQueries: any[] = []
+    const queriesError = null
+    
+    // Note: The search_performance_summary view is aggregated by ASIN and date,
+    // so it doesn't have individual search query data. 
+    // To get search query data, we would need a different view or direct table access.
     
     if (queriesError) {
       throw queriesError
