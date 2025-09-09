@@ -236,21 +236,39 @@ export async function GET(
     }
     
     // Fetch top performing ASINs for this brand
-    const { data: topAsins, error: topAsinsError } = await supabase
+    const { data: topAsinsRaw, error: topAsinsError } = await supabase
       .from('search_performance_summary')
-      .select(`
-        asin,
-        SUM(total_impressions) as impressions,
-        SUM(clicks) as clicks,
-        SUM(cart_adds) as cart_adds,
-        SUM(purchases) as purchases
-      `)
+      .select('asin, total_impressions, clicks, cart_adds, purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
-      .group('asin')
-      .order('impressions', { ascending: false })
-      .limit(productLimit)
+    
+    if (topAsinsError) {
+      console.error('Error fetching top ASINs:', topAsinsError)
+    }
+    
+    // Aggregate data by ASIN
+    const asinAggregates = (topAsinsRaw || []).reduce((acc: Record<string, any>, row: any) => {
+      if (!acc[row.asin]) {
+        acc[row.asin] = { 
+          asin: row.asin,
+          impressions: 0, 
+          clicks: 0, 
+          cart_adds: 0, 
+          purchases: 0 
+        }
+      }
+      acc[row.asin].impressions += row.total_impressions || 0
+      acc[row.asin].clicks += row.clicks || 0
+      acc[row.asin].cart_adds += row.cart_adds || 0
+      acc[row.asin].purchases += row.purchases || 0
+      return acc
+    }, {})
+    
+    // Convert to array and sort by impressions
+    const topAsins = Object.values(asinAggregates)
+      .sort((a: any, b: any) => b.impressions - a.impressions)
+      .slice(0, productLimit)
     
     // Format products data
     const formattedProducts = (topAsins || []).map((product: any) => ({
