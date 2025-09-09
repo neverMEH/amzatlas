@@ -269,11 +269,13 @@ export async function GET(
     }
     
     // Fetch product titles from brand_product_segments which has complete data
+    // Get all records and deduplicate in code since DISTINCT ON is not available through Supabase client
     const { data: productTitles, error: titlesError } = await supabase
       .from('brand_product_segments')
       .select('asin, product_name')
       .eq('brand_id', brandId)
       .not('product_name', 'is', null)
+      .order('asin')
     
     if (titlesError) {
       console.error('Error fetching product titles:', titlesError)
@@ -287,9 +289,13 @@ export async function GET(
       return acc
     }, {})
     
-    // Debug: Log how many titles we found
-    console.log(`Found product titles for ${Object.keys(titleMap).length} out of ${asinList.length} ASINs`)
-    console.log('Title map sample:', Object.entries(titleMap).slice(0, 5))
+    // Debug: Log detailed information
+    console.log(`Brand ${brandId}: Found ${productTitles?.length || 0} product title records`)
+    console.log(`Unique ASINs with titles: ${Object.keys(titleMap).length} out of ${asinList.length} total ASINs`)
+    if (Object.keys(titleMap).length > 0) {
+      console.log('Sample titleMap entries:', Object.entries(titleMap).slice(0, 3).map(([k, v]) => `${k}: "${v}"`))
+    }
+    console.log('ASINs without titles:', asinList.filter(asin => !titleMap[asin]).slice(0, 5))
     
     // Aggregate data by ASIN
     const asinAggregates = (topAsinsRaw || []).reduce((acc: Record<string, any>, row: any) => {
@@ -314,6 +320,9 @@ export async function GET(
     const topAsins = Object.values(asinAggregates)
       .sort((a: any, b: any) => b.impressions - a.impressions)
       .slice(0, productLimit)
+    
+    // Debug: Log which ASINs made it to top products
+    console.log('Top ASINs being returned:', topAsins.map((p: any) => `${p.asin}: "${p.product_title || 'NO TITLE'}"`).slice(0, 5))
     
     // Format products data with proper CTR/CVR calculations
     const formattedProducts = (topAsins || []).map((product: any) => {
