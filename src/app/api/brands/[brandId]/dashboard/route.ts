@@ -259,7 +259,7 @@ export async function GET(
     // Fetch top performing ASINs for this brand
     const { data: topAsinsRaw, error: topAsinsError } = await supabase
       .from('search_performance_summary')
-      .select('asin, product_title, total_impressions, total_clicks, total_cart_adds, total_purchases')
+      .select('asin, total_impressions, total_clicks, total_cart_adds, total_purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -268,21 +268,36 @@ export async function GET(
       console.error('Error fetching top ASINs:', topAsinsError)
     }
     
+    // Fetch product titles for the ASINs
+    const { data: productTitles, error: titlesError } = await supabase
+      .from('asin_performance_data')
+      .select('asin, product_title')
+      .in('asin', asinList)
+      .not('product_title', 'is', null)
+    
+    if (titlesError) {
+      console.error('Error fetching product titles:', titlesError)
+    }
+    
+    // Create a map of ASIN to product title
+    const titleMap = (productTitles || []).reduce((acc: Record<string, string>, row: any) => {
+      if (row.asin && row.product_title) {
+        acc[row.asin] = row.product_title
+      }
+      return acc
+    }, {})
+    
     // Aggregate data by ASIN
     const asinAggregates = (topAsinsRaw || []).reduce((acc: Record<string, any>, row: any) => {
       if (!acc[row.asin]) {
         acc[row.asin] = { 
           asin: row.asin,
-          product_title: row.product_title, // Preserve product title
+          product_title: titleMap[row.asin] || null, // Get product title from map
           impressions: 0, 
           clicks: 0, 
           cart_adds: 0, 
           purchases: 0 
         }
-      }
-      // Update product_title if we have a non-null value (in case of multiple rows)
-      if (row.product_title && !acc[row.asin].product_title) {
-        acc[row.asin].product_title = row.product_title
       }
       acc[row.asin].impressions += parseInt(row.total_impressions) || 0
       acc[row.asin].clicks += parseInt(row.total_clicks) || 0
