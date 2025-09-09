@@ -268,24 +268,29 @@ export async function GET(
       console.error('Error fetching top ASINs:', topAsinsError)
     }
     
-    // Fetch product titles for the ASINs
+    // Fetch product titles for the ASINs (get distinct titles per ASIN)
     const { data: productTitles, error: titlesError } = await supabase
       .from('asin_performance_data')
       .select('asin, product_title')
       .in('asin', asinList)
       .not('product_title', 'is', null)
+      .order('product_title', { ascending: false }) // Put non-null titles first
     
     if (titlesError) {
       console.error('Error fetching product titles:', titlesError)
     }
     
-    // Create a map of ASIN to product title
+    // Create a map of ASIN to product title (use first non-null title found for each ASIN)
     const titleMap = (productTitles || []).reduce((acc: Record<string, string>, row: any) => {
-      if (row.asin && row.product_title) {
-        acc[row.asin] = row.product_title
+      if (row.asin && row.product_title && !acc[row.asin]) {
+        // Only set if we haven't already found a title for this ASIN
+        acc[row.asin] = row.product_title.trim()
       }
       return acc
     }, {})
+    
+    // Debug: Log how many titles we found
+    console.log(`Found product titles for ${Object.keys(titleMap).length} out of ${asinList.length} ASINs`)
     
     // Aggregate data by ASIN
     const asinAggregates = (topAsinsRaw || []).reduce((acc: Record<string, any>, row: any) => {
