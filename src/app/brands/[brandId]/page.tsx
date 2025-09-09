@@ -98,7 +98,7 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb Navigation */}
         <BrandDashboardBreadcrumb 
-          brandName={data?.data.brand?.brand_name || `Brand ${selectedBrand}`}
+          brandName={data?.meta?.brand?.display_name || `Brand ${selectedBrand}`}
           brandId={selectedBrand}
           currentPage="overview"
         />
