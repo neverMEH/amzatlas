@@ -67,6 +67,28 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
     router.push(`/?asin=${asin}`)
   }
 
+  // Transform ProductData to Product interface for ProductList component
+  const transformedProducts = data?.data.products?.map(product => ({
+    asin: product.childAsin,
+    productName: product.name,
+    impressions: product.impressions,
+    impressionsComparison: product.impressionsComparison,
+    clicks: product.clicks,
+    clicksComparison: product.clicksComparison,
+    cartAdds: product.cartAdds,
+    cartAddsComparison: product.cartAddsComparison,
+    purchases: product.purchases,
+    purchasesComparison: product.purchasesComparison,
+    ctr: parseFloat(product.ctr),
+    ctrComparison: product.ctrComparison,
+    cvr: parseFloat(product.cvr),
+    cvrComparison: product.cvrComparison,
+    clickShare: parseFloat(product.ctrShare || '0'),
+    cartAddShare: parseFloat(product.cartAddShare || '0'),
+    purchaseShare: parseFloat(product.purchaseShare || '0'),
+    segmentMetadata: undefined // Will be populated by enhanced API
+  }))
+
   // Handle date range change
   const handleDateRangeChange = (range: { startDate: string; endDate: string }) => {
     setDateRange(range)
@@ -150,7 +172,7 @@ export default function BrandDashboard({ params }: BrandDashboardProps) {
         {/* Product List */}
         <div className="mt-8">
           <ProductList
-            products={data?.data.products}
+            products={transformedProducts}
             showComparison={showComparison}
             loading={isLoading}
             error={error?.message}
