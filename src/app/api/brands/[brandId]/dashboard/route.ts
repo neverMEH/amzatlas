@@ -188,6 +188,10 @@ export async function GET(
       cartAdds: number;
       purchases: number;
     } | null = null
+    
+    // Store comparison data by ASIN for product-level comparisons
+    let comparisonByAsin: Record<string, any> = {}
+    
     if (comparisonDateFrom && comparisonDateTo) {
       const { data: comparisonKpis } = await supabase
         .from('search_performance_summary')
@@ -195,6 +199,23 @@ export async function GET(
         .in('asin', asinList)
         .gte('start_date', comparisonDateFrom)
         .lte('end_date', comparisonDateTo)
+      
+      // Aggregate comparison data by ASIN for product-level metrics
+      comparisonByAsin = (comparisonKpis || []).reduce((acc: Record<string, any>, row: any) => {
+        if (!acc[row.asin]) {
+          acc[row.asin] = { 
+            impressions: 0, 
+            clicks: 0, 
+            cart_adds: 0, 
+            purchases: 0 
+          }
+        }
+        acc[row.asin].impressions += parseInt(row.total_impressions) || 0
+        acc[row.asin].clicks += parseInt(row.total_clicks) || 0
+        acc[row.asin].cart_adds += parseInt(row.total_cart_adds) || 0
+        acc[row.asin].purchases += parseInt(row.total_purchases) || 0
+        return acc
+      }, {})
       
       const comparisonTotals = (comparisonKpis || []).reduce(
         (acc: { impressions: number; clicks: number; cartAdds: number; purchases: number }, row: any) => ({
@@ -270,35 +291,47 @@ export async function GET(
       .sort((a: any, b: any) => b.impressions - a.impressions)
       .slice(0, productLimit)
     
-    // Format products data
-    const formattedProducts = (topAsins || []).map((product: any) => ({
-      id: product.asin,
-      name: product.asin, // We don't have product titles in the summary
-      childAsin: product.asin,
-      image: `/api/products/${product.asin}/image`,
-      impressions: product.impressions || 0,
-      impressionsComparison: comparison ? comparison.impressions : null,
-      clicks: product.clicks || 0,
-      clicksComparison: comparison ? comparison.clicks : null,
-      cartAdds: product.cart_adds || 0,
-      cartAddsComparison: comparison ? comparison.cartAdds : null,
-      purchases: product.purchases || 0,
-      purchasesComparison: comparison ? comparison.purchases : null,
-      ctr: product.impressions > 0 ? `${((product.clicks / product.impressions) * 100).toFixed(1)}%` : '0%',
-      ctrComparison: null,
-      cvr: product.clicks > 0 ? `${((product.purchases / product.clicks) * 100).toFixed(1)}%` : '0%',
-      cvrComparison: null,
-      impressionShare: '0%', // Not available in this view
-      impressionShareComparison: null,
-      cvrShare: '0%',
-      cvrShareComparison: null,
-      ctrShare: '0%',
-      ctrShareComparison: null,
-      cartAddShare: '0%',
-      cartAddShareComparison: null,
-      purchaseShare: '0%',
-      purchaseShareComparison: null,
-    }))
+    // Format products data with proper CTR/CVR calculations
+    const formattedProducts = (topAsins || []).map((product: any) => {
+      const comparisonData = comparisonByAsin[product.asin] || { impressions: 0, clicks: 0, cart_adds: 0, purchases: 0 }
+      
+      // Calculate current period rates
+      const currentCtr = product.impressions > 0 ? (product.clicks / product.impressions) * 100 : 0
+      const currentCvr = product.clicks > 0 ? (product.purchases / product.clicks) * 100 : 0
+      
+      // Calculate comparison period rates
+      const comparisonCtr = comparisonData.impressions > 0 ? (comparisonData.clicks / comparisonData.impressions) * 100 : 0
+      const comparisonCvr = comparisonData.clicks > 0 ? (comparisonData.purchases / comparisonData.clicks) * 100 : 0
+      
+      return {
+        id: product.asin,
+        name: product.asin, // We don't have product titles in the summary
+        childAsin: product.asin,
+        image: `/api/products/${product.asin}/image`,
+        impressions: product.impressions || 0,
+        impressionsComparison: comparisonData.impressions > 0 ? calculateComparison(product.impressions, comparisonData.impressions) : null,
+        clicks: product.clicks || 0,
+        clicksComparison: comparisonData.clicks > 0 ? calculateComparison(product.clicks, comparisonData.clicks) : null,
+        cartAdds: product.cart_adds || 0,
+        cartAddsComparison: comparisonData.cart_adds > 0 ? calculateComparison(product.cart_adds, comparisonData.cart_adds) : null,
+        purchases: product.purchases || 0,
+        purchasesComparison: comparisonData.purchases > 0 ? calculateComparison(product.purchases, comparisonData.purchases) : null,
+        ctr: `${currentCtr.toFixed(1)}%`,
+        ctrComparison: comparisonCtr > 0 ? calculateComparison(currentCtr, comparisonCtr) : null,
+        cvr: `${currentCvr.toFixed(1)}%`,
+        cvrComparison: comparisonCvr > 0 ? calculateComparison(currentCvr, comparisonCvr) : null,
+        impressionShare: '0%', // Not available in this view
+        impressionShareComparison: null,
+        cvrShare: '0%',
+        cvrShareComparison: null,
+        ctrShare: '0%',
+        ctrShareComparison: null,
+        cartAddShare: '0%',
+        cartAddShareComparison: null,
+        purchaseShare: '0%',
+        purchaseShareComparison: null,
+      }
+    })
     
     // For search queries, we'll use the summary table but without grouping by search_query
     // since the view doesn't include individual search queries

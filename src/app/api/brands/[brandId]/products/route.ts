@@ -254,6 +254,10 @@ export async function GET(
     const products = Array.from(productMap.values()).map((product: any) => {
       const comparison = comparisonMap.get(product.asin)
       
+      // Calculate current period rates
+      const currentCtr = product.impressions > 0 ? (product.clicks / product.impressions) : 0
+      const currentCvr = product.clicks > 0 ? (product.purchases / product.clicks) : 0
+      
       const result: any = {
         asin: product.asin,
         productName: product.productName || product.asin,
@@ -261,8 +265,8 @@ export async function GET(
         clicks: product.clicks,
         cartAdds: product.cartAdds,
         purchases: product.purchases,
-        ctr: product.impressions > 0 ? (product.clicks / product.impressions) : 0,
-        cvr: product.clicks > 0 ? (product.purchases / product.clicks) : 0,
+        ctr: currentCtr,
+        cvr: currentCvr,
         clickShare: product.segments[0]?.click_share || 0,
         cartAddShare: product.segments[0]?.cart_add_share || 0,
         purchaseShare: product.segments[0]?.purchase_share || 0
@@ -274,6 +278,13 @@ export async function GET(
         result.clicksComparison = calculateComparison(product.clicks, comparison.clicks)
         result.cartAddsComparison = calculateComparison(product.cartAdds, comparison.cartAdds)
         result.purchasesComparison = calculateComparison(product.purchases, comparison.purchases)
+        
+        // Calculate comparison period rates and add CTR/CVR comparisons
+        const comparisonCtr = comparison.impressions > 0 ? (comparison.clicks / comparison.impressions) : 0
+        const comparisonCvr = comparison.clicks > 0 ? (comparison.purchases / comparison.clicks) : 0
+        
+        result.ctrComparison = comparisonCtr > 0 ? calculateComparison(currentCtr, comparisonCtr) : null
+        result.cvrComparison = comparisonCvr > 0 ? calculateComparison(currentCvr, comparisonCvr) : null
       }
       
       // Add segment metadata if requested
