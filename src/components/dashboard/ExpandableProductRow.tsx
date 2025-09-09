@@ -101,7 +101,9 @@ export const ExpandableProductRow: React.FC<ExpandableProductRowProps> = ({
   }
 
   const formatPercentage = (value: number) => {
-    return (value * 100).toFixed(1) + '%'
+    // Value is already a percentage from the API (2.6 for 2.6%)
+    // Just format with one decimal place
+    return value.toFixed(1) + '%'
   }
 
   const hasSegmentData = product.segmentMetadata && 
