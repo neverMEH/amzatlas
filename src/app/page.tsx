@@ -33,6 +33,12 @@ export default function Dashboard() {
     endDate: '',
   })
   
+  const [compareRange, setCompareRange] = useState({
+    startDate: '',
+    endDate: '',
+    enabled: false,
+  })
+  
   // Initialize date range after component mounts to avoid hydration issues
   useEffect(() => {
     if (!dateRange.startDate && !dateRange.endDate) {
@@ -60,11 +66,6 @@ export default function Dashboard() {
       })
     }
   }, [hasPreservedComparison, context, compareRange.enabled])
-  const [compareRange, setCompareRange] = useState({
-    startDate: '',
-    endDate: '',
-    enabled: false,
-  })
   const [selectedKeyword, setSelectedKeyword] = useState<string | null>(null)
   const [keywordModalOpen, setKeywordModalOpen] = useState(false)
   const [hasManualDateSelection, setHasManualDateSelection] = useState(false)
