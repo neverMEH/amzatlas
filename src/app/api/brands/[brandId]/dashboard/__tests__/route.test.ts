@@ -288,4 +288,216 @@ describe('GET /api/brands/[brandId]/dashboard', () => {
     expect(response.status).toBe(500)
     expect(data.error.code).toBe('DATABASE_ERROR')
   })
+
+  it('should return product titles in product list', async () => {
+    // Mock brand data
+    mockSupabase.single.mockResolvedValueOnce({
+      data: { id: brandId, display_name: 'Work Sharp' },
+      error: null
+    })
+
+    // Mock ASIN mapping
+    mockSupabase.eq.mockImplementation(function() {
+      if (this._lastCall === 'asin_brand_mapping') {
+        return {
+          data: [{ asin: 'B001' }, { asin: 'B002' }],
+          error: null
+        }
+      }
+      return this
+    })
+
+    // Mock search_performance_summary data with product titles
+    mockSupabase.lte.mockImplementation(function() {
+      if (this._lastCall === 'search_performance_summary') {
+        return {
+          data: [
+            { 
+              asin: 'B001',
+              product_title: 'Work Sharp Knife Sharpener',
+              impressions: 1000, 
+              clicks: 100, 
+              cart_adds: 50, 
+              purchases: 25 
+            },
+            { 
+              asin: 'B002',
+              product_title: 'Work Sharp Tool Grinder',
+              impressions: 2000, 
+              clicks: 200, 
+              cart_adds: 100, 
+              purchases: 50 
+            }
+          ],
+          error: null
+        }
+      }
+      return this
+    })
+
+    // Mock daily data
+    mockSupabase.order.mockImplementation(function() {
+      return { data: [], error: null }
+    })
+
+    // Mock product data with product titles
+    mockSupabase.limit.mockImplementation(function() {
+      if (this._lastCall === 'asin_performance_by_brand') {
+        return {
+          data: [
+            {
+              asin: 'B001',
+              product_title: 'Work Sharp Knife Sharpener',
+              impressions: 3000,
+              clicks: 300,
+              cart_adds: 150,
+              purchases: 75,
+              click_through_rate: 10.0,
+              conversion_rate: 25.0,
+              impression_share: 30.0
+            },
+            {
+              asin: 'B002',
+              product_title: 'Work Sharp Tool Grinder',
+              impressions: 2500,
+              clicks: 250,
+              cart_adds: 125,
+              purchases: 60,
+              click_through_rate: 10.0,
+              conversion_rate: 24.0,
+              impression_share: 25.0
+            }
+          ],
+          error: null
+        }
+      }
+      // Mock search queries
+      return { data: [], error: null }
+    })
+
+    // Track method calls
+    mockSupabase.from.mockImplementation(function(table: string) {
+      this._lastCall = table
+      return this
+    })
+
+    const request = createRequest()
+    const response = await GET(request, { params: { brandId } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.data.products).toHaveLength(2)
+    
+    // Check that products have names that are product titles, not ASINs
+    expect(data.data.products[0].name).toBe('Work Sharp Knife Sharpener')
+    expect(data.data.products[0].asin).toBe('B001')
+    expect(data.data.products[1].name).toBe('Work Sharp Tool Grinder')
+    expect(data.data.products[1].asin).toBe('B002')
+  })
+
+  it('should handle missing product titles with fallback to ASIN', async () => {
+    // Mock brand data
+    mockSupabase.single.mockResolvedValueOnce({
+      data: { id: brandId, display_name: 'Work Sharp' },
+      error: null
+    })
+
+    // Mock ASIN mapping
+    mockSupabase.eq.mockImplementation(function() {
+      if (this._lastCall === 'asin_brand_mapping') {
+        return {
+          data: [{ asin: 'B001' }, { asin: 'B002' }],
+          error: null
+        }
+      }
+      return this
+    })
+
+    // Mock search_performance_summary data - some with titles, some without
+    mockSupabase.lte.mockImplementation(function() {
+      if (this._lastCall === 'search_performance_summary') {
+        return {
+          data: [
+            { 
+              asin: 'B001',
+              product_title: 'Work Sharp Knife Sharpener',
+              impressions: 1000, 
+              clicks: 100, 
+              cart_adds: 50, 
+              purchases: 25 
+            },
+            { 
+              asin: 'B002',
+              product_title: null, // No title available
+              impressions: 2000, 
+              clicks: 200, 
+              cart_adds: 100, 
+              purchases: 50 
+            }
+          ],
+          error: null
+        }
+      }
+      return this
+    })
+
+    // Mock daily data
+    mockSupabase.order.mockImplementation(function() {
+      return { data: [], error: null }
+    })
+
+    // Mock product data with one missing title
+    mockSupabase.limit.mockImplementation(function() {
+      if (this._lastCall === 'asin_performance_by_brand') {
+        return {
+          data: [
+            {
+              asin: 'B001',
+              product_title: 'Work Sharp Knife Sharpener',
+              impressions: 3000,
+              clicks: 300,
+              cart_adds: 150,
+              purchases: 75,
+              click_through_rate: 10.0,
+              conversion_rate: 25.0,
+              impression_share: 30.0
+            },
+            {
+              asin: 'B002',
+              product_title: null, // Missing title
+              impressions: 2500,
+              clicks: 250,
+              cart_adds: 125,
+              purchases: 60,
+              click_through_rate: 10.0,
+              conversion_rate: 24.0,
+              impression_share: 25.0
+            }
+          ],
+          error: null
+        }
+      }
+      // Mock search queries
+      return { data: [], error: null }
+    })
+
+    // Track method calls
+    mockSupabase.from.mockImplementation(function(table: string) {
+      this._lastCall = table
+      return this
+    })
+
+    const request = createRequest()
+    const response = await GET(request, { params: { brandId } })
+    const data = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(data.data.products).toHaveLength(2)
+    
+    // Check fallback behavior
+    expect(data.data.products[0].name).toBe('Work Sharp Knife Sharpener')
+    expect(data.data.products[0].asin).toBe('B001')
+    expect(data.data.products[1].name).toBe('B002') // Falls back to ASIN when title is null
+    expect(data.data.products[1].asin).toBe('B002')
+  })
 })

@@ -259,7 +259,7 @@ export async function GET(
     // Fetch top performing ASINs for this brand
     const { data: topAsinsRaw, error: topAsinsError } = await supabase
       .from('search_performance_summary')
-      .select('asin, total_impressions, total_clicks, total_cart_adds, total_purchases')
+      .select('asin, product_title, total_impressions, total_clicks, total_cart_adds, total_purchases')
       .in('asin', asinList)
       .gte('start_date', dateFrom)
       .lte('end_date', dateTo)
@@ -273,11 +273,16 @@ export async function GET(
       if (!acc[row.asin]) {
         acc[row.asin] = { 
           asin: row.asin,
+          product_title: row.product_title, // Preserve product title
           impressions: 0, 
           clicks: 0, 
           cart_adds: 0, 
           purchases: 0 
         }
+      }
+      // Update product_title if we have a non-null value (in case of multiple rows)
+      if (row.product_title && !acc[row.asin].product_title) {
+        acc[row.asin].product_title = row.product_title
       }
       acc[row.asin].impressions += parseInt(row.total_impressions) || 0
       acc[row.asin].clicks += parseInt(row.total_clicks) || 0
@@ -305,8 +310,9 @@ export async function GET(
       
       return {
         id: product.asin,
-        name: product.asin, // We don't have product titles in the summary
+        name: (product.product_title && product.product_title.trim()) || product.asin, // Use product title if available and not empty, fallback to ASIN
         childAsin: product.asin,
+        asin: product.asin, // Include ASIN as separate field
         image: `/api/products/${product.asin}/image`,
         impressions: product.impressions || 0,
         impressionsComparison: comparisonData.impressions > 0 ? calculateComparison(product.impressions, comparisonData.impressions) : null,
